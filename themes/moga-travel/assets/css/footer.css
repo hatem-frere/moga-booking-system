@@ -1,0 +1,260 @@
+/* ============================================================
+   MOGA TRAVEL — FOOTER STYLESHEET
+   Description: Footer layout, widgets, bottom bar
+   Author:      Hatem Frere
+   Version:     1.0.0
+   ============================================================ */
+
+
+/* ============================================================
+   01. Footer Main
+   ============================================================ */
+.moga-footer {
+    background-color: var(--moga-gray-900);
+    color: var(--moga-gray-400);
+    margin-top: auto;
+}
+
+.moga-footer__top {
+    padding: var(--moga-spacing-xxl) 0 var(--moga-spacing-xl);
+}
+
+
+/* ============================================================
+   02. Footer Widgets
+   ============================================================ */
+.moga-footer__widgets {
+    display: grid;
+    grid-template-columns: 2.5fr 1fr 1fr 1fr;
+    gap: var(--moga-spacing-xxl);
+}
+
+/* About Widget */
+.moga-footer__about-logo {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+    margin-bottom: var(--moga-spacing-lg);
+    text-decoration: none;
+}
+
+.moga-footer__about-logo:hover {
+    text-decoration: none;
+}
+
+.moga-footer__about-logo img {
+    height: 36px;
+    width: auto;
+    filter: brightness(0) invert(1);
+}
+
+.moga-footer__about-logo-text {
+    color: var(--moga-white);
+    font-family: var(--moga-font-heading);
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.moga-footer__about-logo-text span {
+    color: var(--moga-accent);
+}
+
+.moga-footer__about-desc {
+    font-size: 0.875rem;
+    line-height: 1.7;
+    margin-bottom: var(--moga-spacing-lg);
+    color: var(--moga-gray-500);
+}
+
+/* Social Links */
+.moga-footer__social {
+    display: flex;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-footer__social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--moga-gray-800);
+    color: var(--moga-gray-400);
+    font-size: 0.9rem;
+    transition: var(--moga-transition-fast);
+    text-decoration: none;
+}
+
+.moga-footer__social-link:hover {
+    background-color: var(--moga-secondary);
+    color: var(--moga-white);
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+/* Widget Title & Links */
+.moga-footer__widget-title {
+    color: var(--moga-white);
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: var(--moga-spacing-lg);
+    font-family: var(--moga-font-heading);
+    letter-spacing: 0.3px;
+}
+
+.moga-footer__widget-links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-footer__widget-links a {
+    color: var(--moga-gray-500);
+    font-size: 0.875rem;
+    transition: var(--moga-transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.moga-footer__widget-links a:hover {
+    color: var(--moga-white);
+    text-decoration: none;
+    padding-left: 4px;
+}
+
+/* Contact Info */
+.moga-footer__contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--moga-spacing-sm);
+    margin-bottom: var(--moga-spacing-sm);
+    font-size: 0.875rem;
+    color: var(--moga-gray-500);
+}
+
+.moga-footer__contact-item a {
+    color: var(--moga-gray-500);
+}
+
+.moga-footer__contact-item a:hover {
+    color: var(--moga-white);
+    text-decoration: none;
+}
+
+
+/* ============================================================
+   03. Footer Newsletter
+   ============================================================ */
+.moga-footer__newsletter {
+    background-color: var(--moga-primary);
+    padding: var(--moga-spacing-xl) 0;
+}
+
+.moga-footer__newsletter-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--moga-spacing-xl);
+}
+
+.moga-footer__newsletter-text h3 {
+    color: var(--moga-white);
+    font-size: 1.25rem;
+    margin-bottom: var(--moga-spacing-xs);
+}
+
+.moga-footer__newsletter-text p {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+.moga-footer__newsletter-form {
+    display: flex;
+    gap: var(--moga-spacing-sm);
+    flex: 1;
+    max-width: 440px;
+}
+
+.moga-footer__newsletter-input {
+    flex: 1;
+    padding: 10px var(--moga-spacing-md);
+    border: none;
+    border-radius: var(--moga-border-radius);
+    font-size: 0.9rem;
+    outline: none;
+    font-family: var(--moga-font-primary);
+}
+
+.moga-footer__newsletter-input::placeholder {
+    color: var(--moga-gray-400);
+}
+
+
+/* ============================================================
+   04. Footer Bottom Bar
+   ============================================================ */
+.moga-footer__bottom {
+    background-color: #111827;
+    padding: var(--moga-spacing-lg) 0;
+}
+
+.moga-footer__bottom-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--moga-spacing-lg);
+}
+
+.moga-footer__copyright {
+    font-size: 0.85rem;
+    color: var(--moga-gray-600);
+}
+
+.moga-footer__copyright a {
+    color: var(--moga-gray-400);
+    transition: var(--moga-transition-fast);
+}
+
+.moga-footer__copyright a:hover {
+    color: var(--moga-white);
+    text-decoration: none;
+}
+
+.moga-footer__bottom-links {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-lg);
+}
+
+.moga-footer__bottom-links a {
+    color: var(--moga-gray-600);
+    font-size: 0.85rem;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-footer__bottom-links a:hover {
+    color: var(--moga-white);
+    text-decoration: none;
+}
+
+.moga-footer__payment-icons {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-footer__payment-icons img {
+    height: 24px;
+    width: auto;
+    filter: grayscale(1) brightness(1.5);
+    opacity: 0.6;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-footer__payment-icons img:hover {
+    filter: grayscale(0);
+    opacity: 1;
+}

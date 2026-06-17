@@ -1,0 +1,423 @@
+/* ============================================================
+   MOGA TRAVEL — MAIN STYLESHEET
+   Description: Core variables, reset, typography, layout
+   Author:      Hatem Frere
+   Version:     1.0.0
+   ============================================================ */
+
+
+/* ============================================================
+   01. CSS Variables (Design Tokens)
+   ============================================================ */
+:root {
+    /* Brand Colors */
+    --moga-primary:           #003580;
+    --moga-primary-dark:      #002a6e;
+    --moga-primary-light:     #e8f0fe;
+    --moga-secondary:         #0071c2;
+    --moga-secondary-dark:    #005a9e;
+    --moga-accent:            #f5a623;
+    --moga-accent-dark:       #e09200;
+
+    /* Neutral Colors */
+    --moga-white:             #ffffff;
+    --moga-black:             #000000;
+    --moga-gray-100:          #f8f9fa;
+    --moga-gray-200:          #e9ecef;
+    --moga-gray-300:          #dee2e6;
+    --moga-gray-400:          #ced4da;
+    --moga-gray-500:          #adb5bd;
+    --moga-gray-600:          #6c757d;
+    --moga-gray-700:          #495057;
+    --moga-gray-800:          #343a40;
+    --moga-gray-900:          #212529;
+
+    /* Status Colors */
+    --moga-success:           #28a745;
+    --moga-success-light:     #d4edda;
+    --moga-warning:           #ffc107;
+    --moga-warning-light:     #fff3cd;
+    --moga-danger:            #dc3545;
+    --moga-danger-light:      #f8d7da;
+    --moga-info:              #17a2b8;
+    --moga-info-light:        #d1ecf1;
+
+    /* Typography */
+    --moga-font-primary:      'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --moga-font-heading:      'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --moga-font-size-base:    16px;
+    --moga-line-height:       1.6;
+
+    /* Spacing */
+    --moga-spacing-xs:        4px;
+    --moga-spacing-sm:        8px;
+    --moga-spacing-md:        16px;
+    --moga-spacing-lg:        24px;
+    --moga-spacing-xl:        32px;
+    --moga-spacing-xxl:       48px;
+    --moga-spacing-xxxl:      64px;
+
+    /* Border */
+    --moga-border-radius:     8px;
+    --moga-border-radius-lg:  12px;
+    --moga-border-radius-xl:  20px;
+    --moga-border-color:      #dee2e6;
+
+    /* Shadows */
+    --moga-shadow-sm:         0 1px 3px rgba(0, 0, 0, 0.08);
+    --moga-shadow-md:         0 4px 12px rgba(0, 0, 0, 0.10);
+    --moga-shadow-lg:         0 8px 24px rgba(0, 0, 0, 0.12);
+    --moga-shadow-xl:         0 16px 40px rgba(0, 0, 0, 0.15);
+
+    /* Transitions */
+    --moga-transition:        all 0.3s ease;
+    --moga-transition-fast:   all 0.15s ease;
+
+    /* Z-index */
+    --moga-z-dropdown:        1000;
+    --moga-z-sticky:          1020;
+    --moga-z-fixed:           1030;
+    --moga-z-modal-backdrop:  1040;
+    --moga-z-modal:           1050;
+    --moga-z-tooltip:         1070;
+
+    /* Container */
+    --moga-container-max:     1280px;
+    --moga-container-pad:     20px;
+
+    /* Header */
+    --moga-header-height:     70px;
+    --moga-header-bg:         var(--moga-primary);
+}
+
+
+/* ============================================================
+   02. Reset & Base
+   ============================================================ */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: var(--moga-font-size-base);
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--moga-font-primary);
+    font-size: 1rem;
+    line-height: var(--moga-line-height);
+    color: var(--moga-gray-800);
+    background-color: var(--moga-gray-100);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+a {
+    color: var(--moga-secondary);
+    text-decoration: none;
+    transition: var(--moga-transition-fast);
+}
+
+a:hover {
+    color: var(--moga-primary);
+    text-decoration: underline;
+}
+
+ul,
+ol {
+    list-style: none;
+}
+
+button {
+    cursor: pointer;
+    font-family: var(--moga-font-primary);
+    border: none;
+    background: none;
+}
+
+input,
+select,
+textarea {
+    font-family: var(--moga-font-primary);
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+
+/* ============================================================
+   03. Typography
+   ============================================================ */
+h1, h2, h3,
+h4, h5, h6 {
+    font-family: var(--moga-font-heading);
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--moga-gray-900);
+    margin-bottom: var(--moga-spacing-md);
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1rem; }
+
+p {
+    margin-bottom: var(--moga-spacing-md);
+}
+
+p:last-child {
+    margin-bottom: 0;
+}
+
+small {
+    font-size: 0.875rem;
+}
+
+strong {
+    font-weight: 600;
+}
+
+em {
+    font-style: italic;
+}
+
+blockquote {
+    border-left: 4px solid var(--moga-primary);
+    padding-left: var(--moga-spacing-lg);
+    margin: var(--moga-spacing-lg) 0;
+    color: var(--moga-gray-600);
+    font-style: italic;
+}
+
+
+/* ============================================================
+   04. Layout & Grid
+   ============================================================ */
+.moga-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.moga-main {
+    flex: 1;
+}
+
+.moga-container {
+    width: 100%;
+    max-width: var(--moga-container-max);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--moga-container-pad);
+    padding-right: var(--moga-container-pad);
+}
+
+.moga-section {
+    padding: var(--moga-spacing-xxl) 0;
+}
+
+.moga-section--lg {
+    padding: var(--moga-spacing-xxxl) 0;
+}
+
+.moga-section--sm {
+    padding: var(--moga-spacing-xl) 0;
+}
+
+.moga-grid {
+    display: grid;
+    gap: var(--moga-spacing-lg);
+}
+
+.moga-grid--2       { grid-template-columns: repeat(2, 1fr); }
+.moga-grid--3       { grid-template-columns: repeat(3, 1fr); }
+.moga-grid--4       { grid-template-columns: repeat(4, 1fr); }
+.moga-grid--sidebar { grid-template-columns: 300px 1fr; gap: var(--moga-spacing-xl); }
+.moga-grid--sidebar-right { grid-template-columns: 1fr 300px; gap: var(--moga-spacing-xl); }
+
+.moga-section__header {
+    text-align: center;
+    margin-bottom: var(--moga-spacing-xxl);
+}
+
+.moga-section__title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+    margin-bottom: var(--moga-spacing-sm);
+}
+
+.moga-section__subtitle {
+    font-size: 1rem;
+    color: var(--moga-gray-600);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+
+/* ============================================================
+   05. Utilities
+   ============================================================ */
+
+/* Display */
+.moga-d-none         { display: none; }
+.moga-d-block        { display: block; }
+.moga-d-flex         { display: flex; }
+.moga-d-grid         { display: grid; }
+.moga-d-inline-flex  { display: inline-flex; }
+
+/* Flex */
+.moga-flex-col          { flex-direction: column; }
+.moga-flex-wrap         { flex-wrap: wrap; }
+.moga-align-center      { align-items: center; }
+.moga-align-start       { align-items: flex-start; }
+.moga-align-end         { align-items: flex-end; }
+.moga-justify-center    { justify-content: center; }
+.moga-justify-between   { justify-content: space-between; }
+.moga-justify-end       { justify-content: flex-end; }
+.moga-gap-1  { gap: var(--moga-spacing-sm); }
+.moga-gap-2  { gap: var(--moga-spacing-md); }
+.moga-gap-3  { gap: var(--moga-spacing-lg); }
+.moga-gap-4  { gap: var(--moga-spacing-xl); }
+
+/* Text */
+.moga-text-center    { text-align: center; }
+.moga-text-left      { text-align: left; }
+.moga-text-right     { text-align: right; }
+.moga-text-primary   { color: var(--moga-primary); }
+.moga-text-secondary { color: var(--moga-secondary); }
+.moga-text-accent    { color: var(--moga-accent); }
+.moga-text-muted     { color: var(--moga-gray-600); }
+.moga-text-white     { color: var(--moga-white); }
+.moga-text-danger    { color: var(--moga-danger); }
+.moga-text-success   { color: var(--moga-success); }
+.moga-fw-normal      { font-weight: 400; }
+.moga-fw-medium      { font-weight: 500; }
+.moga-fw-bold        { font-weight: 600; }
+.moga-fw-black       { font-weight: 700; }
+.moga-fs-xs          { font-size: 0.75rem; }
+.moga-fs-sm          { font-size: 0.875rem; }
+.moga-fs-lg          { font-size: 1.125rem; }
+.moga-fs-xl          { font-size: 1.25rem; }
+
+/* Background */
+.moga-bg-primary     { background-color: var(--moga-primary); }
+.moga-bg-secondary   { background-color: var(--moga-secondary); }
+.moga-bg-accent      { background-color: var(--moga-accent); }
+.moga-bg-light       { background-color: var(--moga-gray-100); }
+.moga-bg-white       { background-color: var(--moga-white); }
+.moga-bg-dark        { background-color: var(--moga-gray-900); }
+
+/* Spacing — Margin */
+.moga-mt-1  { margin-top: var(--moga-spacing-sm); }
+.moga-mt-2  { margin-top: var(--moga-spacing-md); }
+.moga-mt-3  { margin-top: var(--moga-spacing-lg); }
+.moga-mt-4  { margin-top: var(--moga-spacing-xl); }
+.moga-mt-5  { margin-top: var(--moga-spacing-xxl); }
+.moga-mb-1  { margin-bottom: var(--moga-spacing-sm); }
+.moga-mb-2  { margin-bottom: var(--moga-spacing-md); }
+.moga-mb-3  { margin-bottom: var(--moga-spacing-lg); }
+.moga-mb-4  { margin-bottom: var(--moga-spacing-xl); }
+.moga-mb-5  { margin-bottom: var(--moga-spacing-xxl); }
+.moga-mx-auto { margin-left: auto; margin-right: auto; }
+
+/* Spacing — Padding */
+.moga-p-1   { padding: var(--moga-spacing-sm); }
+.moga-p-2   { padding: var(--moga-spacing-md); }
+.moga-p-3   { padding: var(--moga-spacing-lg); }
+.moga-p-4   { padding: var(--moga-spacing-xl); }
+.moga-py-1  { padding-top: var(--moga-spacing-sm);  padding-bottom: var(--moga-spacing-sm); }
+.moga-py-2  { padding-top: var(--moga-spacing-md);  padding-bottom: var(--moga-spacing-md); }
+.moga-py-3  { padding-top: var(--moga-spacing-lg);  padding-bottom: var(--moga-spacing-lg); }
+.moga-px-1  { padding-left: var(--moga-spacing-sm); padding-right: var(--moga-spacing-sm); }
+.moga-px-2  { padding-left: var(--moga-spacing-md); padding-right: var(--moga-spacing-md); }
+.moga-px-3  { padding-left: var(--moga-spacing-lg); padding-right: var(--moga-spacing-lg); }
+
+/* Sizing */
+.moga-w-100  { width: 100%; }
+.moga-w-50   { width: 50%; }
+.moga-h-100  { height: 100%; }
+
+/* Border & Shadow */
+.moga-rounded      { border-radius: var(--moga-border-radius); }
+.moga-rounded-lg   { border-radius: var(--moga-border-radius-lg); }
+.moga-rounded-xl   { border-radius: var(--moga-border-radius-xl); }
+.moga-rounded-full { border-radius: 9999px; }
+.moga-shadow-sm    { box-shadow: var(--moga-shadow-sm); }
+.moga-shadow       { box-shadow: var(--moga-shadow-md); }
+.moga-shadow-lg    { box-shadow: var(--moga-shadow-lg); }
+.moga-border       { border: 1px solid var(--moga-border-color); }
+.moga-border-top   { border-top: 1px solid var(--moga-border-color); }
+.moga-border-bottom { border-bottom: 1px solid var(--moga-border-color); }
+
+/* Overflow & Position */
+.moga-overflow-hidden { overflow: hidden; }
+.moga-relative        { position: relative; }
+.moga-absolute        { position: absolute; }
+
+/* Accessibility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ============================================================
+   Back To Top Button
+   ============================================================ */
+.moga-back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 44px;
+    height: 44px;
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--moga-shadow-lg);
+    transition: var(--moga-transition-fast);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    z-index: var(--moga-z-fixed);
+}
+
+.moga-back-to-top.is-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.moga-back-to-top:hover {
+    background-color: var(--moga-secondary);
+    transform: translateY(-2px);
+    box-shadow: var(--moga-shadow-xl);
+}

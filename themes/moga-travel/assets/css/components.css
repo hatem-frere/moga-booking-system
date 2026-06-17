@@ -1,0 +1,764 @@
+/* ============================================================
+   MOGA TRAVEL — COMPONENTS STYLESHEET
+   Description: Buttons, forms, cards, badges, alerts, modals
+   Author:      Hatem Frere
+   Version:     1.0.0
+   ============================================================ */
+
+
+/* ============================================================
+   01. Buttons
+   ============================================================ */
+.moga-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--moga-spacing-sm);
+    padding: 10px var(--moga-spacing-lg);
+    border: 2px solid transparent;
+    border-radius: var(--moga-border-radius);
+    font-family: var(--moga-font-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+    text-decoration: none;
+    white-space: nowrap;
+    line-height: 1;
+    outline: none;
+}
+
+.moga-btn:hover {
+    text-decoration: none;
+}
+
+.moga-btn:focus-visible {
+    outline: 3px solid var(--moga-secondary);
+    outline-offset: 2px;
+}
+
+.moga-btn:disabled,
+.moga-btn.is-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+    transform: none !important;
+}
+
+/* Variants */
+.moga-btn--primary {
+    background-color: var(--moga-accent);
+    color: var(--moga-white);
+    border-color: var(--moga-accent);
+}
+
+.moga-btn--primary:hover {
+    background-color: var(--moga-accent-dark);
+    border-color: var(--moga-accent-dark);
+    color: var(--moga-white);
+    transform: translateY(-1px);
+    box-shadow: var(--moga-shadow-md);
+}
+
+.moga-btn--secondary {
+    background-color: var(--moga-secondary);
+    color: var(--moga-white);
+    border-color: var(--moga-secondary);
+}
+
+.moga-btn--secondary:hover {
+    background-color: var(--moga-secondary-dark);
+    border-color: var(--moga-secondary-dark);
+    color: var(--moga-white);
+    transform: translateY(-1px);
+}
+
+.moga-btn--dark {
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    border-color: var(--moga-primary);
+}
+
+.moga-btn--dark:hover {
+    background-color: var(--moga-primary-dark);
+    border-color: var(--moga-primary-dark);
+    color: var(--moga-white);
+    transform: translateY(-1px);
+}
+
+.moga-btn--outline {
+    background-color: transparent;
+    color: var(--moga-primary);
+    border-color: var(--moga-primary);
+}
+
+.moga-btn--outline:hover {
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+}
+
+.moga-btn--outline-white {
+    background-color: transparent;
+    color: var(--moga-white);
+    border-color: var(--moga-white);
+}
+
+.moga-btn--outline-white:hover {
+    background-color: var(--moga-white);
+    color: var(--moga-primary);
+}
+
+.moga-btn--white {
+    background-color: var(--moga-white);
+    color: var(--moga-primary);
+    border-color: var(--moga-white);
+}
+
+.moga-btn--white:hover {
+    background-color: var(--moga-gray-100);
+    color: var(--moga-primary);
+}
+
+.moga-btn--danger {
+    background-color: var(--moga-danger);
+    color: var(--moga-white);
+    border-color: var(--moga-danger);
+}
+
+.moga-btn--danger:hover {
+    background-color: #c82333;
+    border-color: #c82333;
+    color: var(--moga-white);
+}
+
+.moga-btn--success {
+    background-color: var(--moga-success);
+    color: var(--moga-white);
+    border-color: var(--moga-success);
+}
+
+/* Sizes */
+.moga-btn--lg {
+    padding: 14px var(--moga-spacing-xl);
+    font-size: 1rem;
+}
+
+.moga-btn--sm {
+    padding: 6px var(--moga-spacing-md);
+    font-size: 0.8rem;
+}
+
+.moga-btn--xs {
+    padding: 4px var(--moga-spacing-sm);
+    font-size: 0.75rem;
+}
+
+.moga-btn--block {
+    width: 100%;
+}
+
+/* Loading state */
+.moga-btn.is-loading {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.moga-btn.is-loading::after {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: moga-spin 0.6s linear infinite;
+    margin-left: var(--moga-spacing-sm);
+}
+
+@keyframes moga-spin {
+    to { transform: rotate(360deg); }
+}
+
+
+/* ============================================================
+   02. Forms
+   ============================================================ */
+.moga-form__group {
+    margin-bottom: var(--moga-spacing-lg);
+}
+
+.moga-form__row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--moga-spacing-md);
+}
+
+.moga-form__label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--moga-gray-700);
+    margin-bottom: var(--moga-spacing-xs);
+}
+
+.moga-form__label--required::after {
+    content: ' *';
+    color: var(--moga-danger);
+}
+
+.moga-form__input,
+.moga-form__select,
+.moga-form__textarea {
+    width: 100%;
+    padding: 10px var(--moga-spacing-md);
+    border: 1.5px solid var(--moga-border-color);
+    border-radius: var(--moga-border-radius);
+    font-family: var(--moga-font-primary);
+    font-size: 0.9rem;
+    color: var(--moga-gray-800);
+    background-color: var(--moga-white);
+    transition: var(--moga-transition-fast);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.moga-form__input:focus,
+.moga-form__select:focus,
+.moga-form__textarea:focus {
+    border-color: var(--moga-secondary);
+    box-shadow: 0 0 0 3px rgba(0, 113, 194, 0.15);
+}
+
+.moga-form__input::placeholder {
+    color: var(--moga-gray-400);
+}
+
+.moga-form__textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.moga-form__select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236c757d' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+.moga-form__input--error,
+.moga-form__select--error,
+.moga-form__textarea--error {
+    border-color: var(--moga-danger);
+}
+
+.moga-form__input--error:focus,
+.moga-form__select--error:focus,
+.moga-form__textarea--error:focus {
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15);
+}
+
+.moga-form__error {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--moga-danger);
+    margin-top: var(--moga-spacing-xs);
+}
+
+.moga-form__hint {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--moga-gray-500);
+    margin-top: var(--moga-spacing-xs);
+}
+
+/* Input with icon */
+.moga-form__input-wrap {
+    position: relative;
+}
+
+.moga-form__input-icon {
+    position: absolute;
+    left: var(--moga-spacing-md);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--moga-gray-500);
+    pointer-events: none;
+}
+
+.moga-form__input-wrap .moga-form__input {
+    padding-left: 40px;
+}
+
+/* Checkbox & Radio */
+.moga-form__check {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--moga-gray-700);
+}
+
+.moga-form__check input[type="checkbox"],
+.moga-form__check input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--moga-primary);
+    cursor: pointer;
+}
+
+
+/* ============================================================
+   03. Cards
+   ============================================================ */
+.moga-card {
+    background-color: var(--moga-white);
+    border-radius: var(--moga-border-radius-lg);
+    box-shadow: var(--moga-shadow-sm);
+    overflow: hidden;
+    transition: var(--moga-transition);
+    border: 1px solid var(--moga-gray-200);
+}
+
+.moga-card:hover {
+    box-shadow: var(--moga-shadow-lg);
+    transform: translateY(-3px);
+}
+
+/* Card Image */
+.moga-card__image-wrap {
+    position: relative;
+    overflow: hidden;
+    height: 200px;
+}
+
+.moga-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: var(--moga-transition);
+}
+
+.moga-card:hover .moga-card__image {
+    transform: scale(1.05);
+}
+
+/* Card Overlays */
+.moga-card__badge {
+    position: absolute;
+    top: var(--moga-spacing-sm);
+    left: var(--moga-spacing-sm);
+    background-color: var(--moga-accent);
+    color: var(--moga-white);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px var(--moga-spacing-sm);
+    border-radius: var(--moga-border-radius);
+    z-index: 1;
+}
+
+.moga-card__badge--primary {
+    background-color: var(--moga-primary);
+}
+
+.moga-card__badge--success {
+    background-color: var(--moga-success);
+}
+
+.moga-card__wishlist {
+    position: absolute;
+    top: var(--moga-spacing-sm);
+    right: var(--moga-spacing-sm);
+    background-color: var(--moga-white);
+    border: none;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--moga-shadow-sm);
+    transition: var(--moga-transition-fast);
+    z-index: 1;
+    color: var(--moga-gray-500);
+}
+
+.moga-card__wishlist:hover,
+.moga-card__wishlist.is-active {
+    color: var(--moga-danger);
+    transform: scale(1.1);
+}
+
+/* Card Body */
+.moga-card__body {
+    padding: var(--moga-spacing-lg);
+}
+
+.moga-card__title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: var(--moga-spacing-xs);
+    color: var(--moga-gray-900);
+    line-height: 1.4;
+}
+
+.moga-card__location {
+    font-size: 0.85rem;
+    color: var(--moga-gray-500);
+    margin-bottom: var(--moga-spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.moga-card__rating {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-xs);
+    margin-bottom: var(--moga-spacing-sm);
+    font-size: 0.85rem;
+    color: var(--moga-gray-600);
+}
+
+.moga-card__rating-score {
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+}
+
+.moga-card__amenities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--moga-spacing-xs);
+    margin-bottom: var(--moga-spacing-sm);
+}
+
+.moga-card__amenity-tag {
+    font-size: 0.75rem;
+    color: var(--moga-gray-600);
+    background-color: var(--moga-gray-100);
+    padding: 2px var(--moga-spacing-sm);
+    border-radius: var(--moga-border-radius);
+}
+
+/* Card Footer */
+.moga-card__footer {
+    padding: var(--moga-spacing-md) var(--moga-spacing-lg);
+    border-top: 1px solid var(--moga-gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.moga-card__price {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--moga-primary);
+    line-height: 1;
+}
+
+.moga-card__price-label {
+    font-size: 0.75rem;
+    color: var(--moga-gray-500);
+    font-weight: 400;
+    display: block;
+    margin-top: 2px;
+}
+
+.moga-card__price-old {
+    font-size: 0.85rem;
+    color: var(--moga-gray-500);
+    text-decoration: line-through;
+}
+
+
+/* ============================================================
+   04. Badges
+   ============================================================ */
+.moga-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.moga-badge--primary   { background-color: var(--moga-primary-light); color: var(--moga-primary); }
+.moga-badge--success   { background-color: var(--moga-success-light); color: var(--moga-success); }
+.moga-badge--warning   { background-color: var(--moga-warning-light); color: #856404; }
+.moga-badge--danger    { background-color: var(--moga-danger-light);  color: var(--moga-danger); }
+.moga-badge--info      { background-color: var(--moga-info-light);    color: var(--moga-info); }
+.moga-badge--dark      { background-color: var(--moga-gray-800);      color: var(--moga-white); }
+
+
+/* ============================================================
+   05. Alerts
+   ============================================================ */
+.moga-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--moga-spacing-md);
+    padding: var(--moga-spacing-md) var(--moga-spacing-lg);
+    border-radius: var(--moga-border-radius);
+    border-left: 4px solid transparent;
+    font-size: 0.9rem;
+    margin-bottom: var(--moga-spacing-lg);
+}
+
+.moga-alert--success {
+    background-color: var(--moga-success-light);
+    border-color: var(--moga-success);
+    color: #155724;
+}
+
+.moga-alert--warning {
+    background-color: var(--moga-warning-light);
+    border-color: var(--moga-warning);
+    color: #856404;
+}
+
+.moga-alert--danger {
+    background-color: var(--moga-danger-light);
+    border-color: var(--moga-danger);
+    color: #721c24;
+}
+
+.moga-alert--info {
+    background-color: var(--moga-info-light);
+    border-color: var(--moga-info);
+    color: #0c5460;
+}
+
+.moga-alert__close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.moga-alert__close:hover {
+    opacity: 1;
+}
+
+
+/* ============================================================
+   06. Modal
+   ============================================================ */
+.moga-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: var(--moga-z-modal-backdrop);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--moga-spacing-lg);
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-modal-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.moga-modal {
+    background-color: var(--moga-white);
+    border-radius: var(--moga-border-radius-lg);
+    box-shadow: var(--moga-shadow-xl);
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: translateY(-20px);
+    transition: var(--moga-transition-fast);
+}
+
+.moga-modal-backdrop.is-open .moga-modal {
+    transform: translateY(0);
+}
+
+.moga-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--moga-spacing-lg);
+    border-bottom: 1px solid var(--moga-gray-200);
+}
+
+.moga-modal__title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+    margin: 0;
+}
+
+.moga-modal__close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--moga-gray-500);
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-modal__close:hover {
+    color: var(--moga-gray-900);
+}
+
+.moga-modal__body {
+    padding: var(--moga-spacing-lg);
+}
+
+.moga-modal__footer {
+    padding: var(--moga-spacing-md) var(--moga-spacing-lg);
+    border-top: 1px solid var(--moga-gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--moga-spacing-sm);
+}
+
+
+/* ============================================================
+   07. Rating Stars
+   ============================================================ */
+.moga-stars {
+    display: inline-flex;
+    gap: 2px;
+    color: var(--moga-warning);
+    font-size: 0.9rem;
+}
+
+.moga-stars .star-empty {
+    color: var(--moga-gray-300);
+}
+
+
+/* ============================================================
+   08. Breadcrumb
+   ============================================================ */
+.moga-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--moga-spacing-xs);
+    font-size: 0.875rem;
+    color: var(--moga-gray-500);
+    padding: var(--moga-spacing-md) 0;
+}
+
+.moga-breadcrumb a {
+    color: var(--moga-gray-500);
+    transition: var(--moga-transition-fast);
+}
+
+.moga-breadcrumb a:hover {
+    color: var(--moga-primary);
+    text-decoration: none;
+}
+
+.moga-breadcrumb__separator {
+    color: var(--moga-gray-400);
+}
+
+.moga-breadcrumb__current {
+    color: var(--moga-gray-700);
+    font-weight: 500;
+}
+
+
+/* ============================================================
+   09. Pagination
+   ============================================================ */
+.moga-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--moga-spacing-xs);
+    margin-top: var(--moga-spacing-xxl);
+}
+
+.moga-pagination__item a,
+.moga-pagination__item span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--moga-border-radius);
+    font-size: 0.9rem;
+    font-weight: 500;
+    border: 1px solid var(--moga-border-color);
+    color: var(--moga-gray-700);
+    transition: var(--moga-transition-fast);
+    background-color: var(--moga-white);
+}
+
+.moga-pagination__item a:hover {
+    background-color: var(--moga-primary);
+    border-color: var(--moga-primary);
+    color: var(--moga-white);
+    text-decoration: none;
+}
+
+.moga-pagination__item.is-active span {
+    background-color: var(--moga-primary);
+    border-color: var(--moga-primary);
+    color: var(--moga-white);
+}
+
+
+/* ============================================================
+   10. Tabs
+   ============================================================ */
+.moga-tabs__nav {
+    display: flex;
+    border-bottom: 2px solid var(--moga-gray-200);
+    gap: 0;
+    margin-bottom: var(--moga-spacing-lg);
+}
+
+.moga-tabs__nav-item {
+    padding: var(--moga-spacing-sm) var(--moga-spacing-lg);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--moga-gray-600);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-tabs__nav-item:hover {
+    color: var(--moga-primary);
+}
+
+.moga-tabs__nav-item.is-active {
+    color: var(--moga-primary);
+    border-bottom-color: var(--moga-primary);
+    font-weight: 600;
+}
+
+.moga-tabs__panel {
+    display: none;
+}
+
+.moga-tabs__panel.is-active {
+    display: block;
+}

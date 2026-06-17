@@ -1,0 +1,220 @@
+/* ============================================================
+   MOGA TRAVEL — RESPONSIVE STYLESHEET
+   Description: All media queries for all breakpoints
+   Author:      Hatem Frere
+   Version:     1.0.0
+
+   BREAKPOINTS
+   ----------------------------------------------------------
+   xs:  < 480px   (Small phones)
+   sm:  < 576px   (Phones)
+   md:  < 768px   (Tablets portrait)
+   lg:  < 1024px  (Tablets landscape / small laptops)
+   xl:  < 1280px  (Laptops)
+   xxl: > 1280px  (Large desktops)
+   ============================================================ */
+
+
+/* ============================================================
+   Large Desktop — max-width: 1280px
+   ============================================================ */
+@media (max-width: 1280px) {
+    :root {
+        --moga-container-max: 1140px;
+    }
+
+    .moga-footer__widgets {
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: var(--moga-spacing-xl);
+    }
+}
+
+
+/* ============================================================
+   Laptop — max-width: 1024px
+   ============================================================ */
+@media (max-width: 1024px) {
+    /* Typography */
+    h1 { font-size: 2.25rem; }
+    h2 { font-size: 1.75rem; }
+
+    /* Grid */
+    .moga-grid--4         { grid-template-columns: repeat(2, 1fr); }
+    .moga-grid--3         { grid-template-columns: repeat(2, 1fr); }
+    .moga-grid--sidebar   { grid-template-columns: 260px 1fr; }
+
+    /* Header */
+    .moga-header__nav     { display: none; }
+    .moga-nav__toggle     { display: flex; }
+    .moga-mobile-menu     { display: block; }
+
+    .moga-header__currency,
+    .moga-header__lang    { display: none; }
+
+    /* Footer */
+    .moga-footer__widgets {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--moga-spacing-xl);
+    }
+
+    .moga-footer__newsletter-inner {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .moga-footer__newsletter-form {
+        max-width: 100%;
+        width: 100%;
+    }
+}
+
+
+/* ============================================================
+   Tablet Portrait — max-width: 768px
+   ============================================================ */
+@media (max-width: 768px) {
+    /* Typography */
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.25rem; }
+    h4 { font-size: 1.1rem; }
+
+    /* Layout */
+    .moga-grid--2,
+    .moga-grid--3,
+    .moga-grid--4           { grid-template-columns: 1fr; }
+    .moga-grid--sidebar,
+    .moga-grid--sidebar-right { grid-template-columns: 1fr; }
+
+    .moga-section           { padding: var(--moga-spacing-xl) 0; }
+    .moga-section--lg       { padding: var(--moga-spacing-xxl) 0; }
+
+    /* Section Header */
+    .moga-section__title    { font-size: 1.5rem; }
+
+    /* Header */
+    .moga-header__divider   { display: none; }
+    .moga-header__user .moga-header__login-btn { display: none; }
+
+    /* Footer */
+    .moga-footer__widgets   { grid-template-columns: 1fr; gap: var(--moga-spacing-xl); }
+
+    .moga-footer__bottom-inner {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--moga-spacing-md);
+    }
+
+    .moga-footer__bottom-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--moga-spacing-md);
+    }
+
+    /* Forms */
+    .moga-form__row         { grid-template-columns: 1fr; }
+
+    /* Modal */
+    .moga-modal-backdrop    { padding: var(--moga-spacing-md); align-items: flex-end; }
+    .moga-modal             { max-height: 85vh; border-radius: var(--moga-border-radius-lg) var(--moga-border-radius-lg) 0 0; }
+
+    /* Tabs */
+    .moga-tabs__nav         { overflow-x: auto; }
+    .moga-tabs__nav-item    { white-space: nowrap; }
+
+    /* Pagination */
+    .moga-pagination        { flex-wrap: wrap; }
+
+    /* Utilities */
+    .moga-d-md-none         { display: none; }
+    .moga-d-md-block        { display: block; }
+}
+
+
+/* ============================================================
+   Phone — max-width: 576px
+   ============================================================ */
+@media (max-width: 576px) {
+    /* Header */
+    .moga-header__logo-text { font-size: 1.2rem; }
+    .moga-header__register-btn { display: none; }
+
+    /* Cards */
+    .moga-card__image-wrap  { height: 180px; }
+    .moga-card__footer      { flex-direction: column; align-items: flex-start; gap: var(--moga-spacing-sm); }
+
+    /* Buttons */
+    .moga-btn--lg           { padding: 12px var(--moga-spacing-lg); font-size: 0.9rem; }
+
+    /* Alerts */
+    .moga-alert             { flex-direction: column; gap: var(--moga-spacing-sm); }
+
+    /* Utilities */
+    .moga-d-sm-none         { display: none; }
+    .moga-d-sm-block        { display: block; }
+}
+
+
+/* ============================================================
+   Small Phone — max-width: 480px
+   ============================================================ */
+@media (max-width: 480px) {
+    :root {
+        --moga-container-pad:  16px;
+        --moga-header-height:  60px;
+        --moga-font-size-base: 15px;
+    }
+
+    /* Typography */
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.3rem; }
+
+    /* Header */
+    .moga-header__logo img  { height: 32px; }
+    .moga-header__logo-text { font-size: 1.1rem; }
+
+    /* Section */
+    .moga-section           { padding: var(--moga-spacing-lg) 0; }
+
+    /* Cards */
+    .moga-card__body        { padding: var(--moga-spacing-md); }
+    .moga-card__footer      { padding: var(--moga-spacing-sm) var(--moga-spacing-md); }
+
+    /* Footer */
+    .moga-footer__newsletter-form {
+        flex-direction: column;
+    }
+
+    /* Utilities */
+    .moga-d-xs-none         { display: none; }
+    .moga-d-xs-block        { display: block; }
+
+    .moga-back-to-top {
+        bottom: 16px;
+        right: 16px;
+        width: 38px;
+        height: 38px;
+    }
+}
+
+
+/* ============================================================
+   Print
+   ============================================================ */
+@media print {
+    .moga-header,
+    .moga-footer,
+    .moga-nav__toggle,
+    .moga-mobile-menu,
+    .moga-btn           { display: none !important; }
+
+    body {
+        background: white;
+        color: black;
+        font-size: 12pt;
+    }
+
+    a { color: black; text-decoration: underline; }
+
+    .moga-container     { max-width: 100%; padding: 0; }
+}
