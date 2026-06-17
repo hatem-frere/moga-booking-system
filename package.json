@@ -1,0 +1,23 @@
+{
+  "name": "wp-content",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hatem-frere/moga-booking-system.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hatem-frere/moga-booking-system/issues"
+  },
+  "homepage": "https://github.com/hatem-frere/moga-booking-system#readme",
+  "devDependencies": {
+    "@types/wordpress__blocks": "^15.17.0"
+  }
+}

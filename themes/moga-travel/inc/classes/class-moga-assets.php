@@ -61,10 +61,11 @@ class Moga_Assets {
      *   3. components.css — buttons, forms, cards, modals
      *   4. header.css     — header and navigation
      *   5. footer.css     — footer
-     *   6. booking.css    — booking-specific styles
-     *   7. dashboard.css  — owner dashboard styles
-     *   8. responsive.css — all media queries (always last)
-     *   9. rtl.css        — RTL overrides (if RTL language)
+     *   6. home.css       — homepage hero, search, sections
+     *   7. booking.css    — booking-specific styles
+     *   8. dashboard.css  — owner dashboard styles
+     *   9. responsive.css — all media queries (always last)
+     *  10. rtl.css        — RTL overrides (if RTL language)
      *
      * @since  1.0.0
      * @return void
@@ -113,6 +114,16 @@ class Moga_Assets {
             array( 'moga-main' ),
             $ver
         );
+
+        // Home page styles — only on the homepage.
+        if ( is_front_page() || is_page_template( 'page-templates/template-home.php' ) ) {
+            wp_enqueue_style(
+                'moga-home',
+                $css . 'home.css',
+                array( 'moga-main', 'moga-components' ),
+                $ver
+            );
+        }
 
         // Booking styles — only on booking-related pages.
         if ( self::is_booking_page() ) {
@@ -201,25 +212,24 @@ class Moga_Assets {
         }
 
         // Pass PHP data to JavaScript via wp_localize_script().
-        // This makes WordPress data available as a JS object.
         wp_localize_script(
             'moga-main',
             'mogaData',
             array(
-                'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
-                'restUrl'     => rest_url( 'moga/v1/' ),
-                'nonce'       => wp_create_nonce( 'moga_nonce' ),
-                'siteUrl'     => home_url(),
-                'currency'    => get_option( 'moga_currency', 'USD' ),
+                'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+                'restUrl'        => rest_url( 'moga/v1/' ),
+                'nonce'          => wp_create_nonce( 'moga_nonce' ),
+                'siteUrl'        => home_url(),
+                'currency'       => get_option( 'moga_currency', 'USD' ),
                 'currencySymbol' => get_option( 'moga_currency_symbol', '$' ),
-                'isLoggedIn'  => is_user_logged_in(),
-                'userId'      => get_current_user_id(),
-                'i18n'        => array(
-                    'loading'     => __( 'Loading...', 'moga-travel' ),
-                    'error'       => __( 'Something went wrong. Please try again.', 'moga-travel' ),
-                    'confirm'     => __( 'Are you sure?', 'moga-travel' ),
-                    'seatTaken'   => __( 'This seat is already taken.', 'moga-travel' ),
-                    'seatLocked'  => __( 'This seat is temporarily reserved.', 'moga-travel' ),
+                'isLoggedIn'     => is_user_logged_in(),
+                'userId'         => get_current_user_id(),
+                'i18n'           => array(
+                    'loading'    => __( 'Loading...', 'moga-travel' ),
+                    'error'      => __( 'Something went wrong. Please try again.', 'moga-travel' ),
+                    'confirm'    => __( 'Are you sure?', 'moga-travel' ),
+                    'seatTaken'  => __( 'This seat is already taken.', 'moga-travel' ),
+                    'seatLocked' => __( 'This seat is temporarily reserved.', 'moga-travel' ),
                 ),
             )
         );
@@ -238,7 +248,6 @@ class Moga_Assets {
      */
     private static function enqueue_admin_styles() {
         // Admin styles will be added in Phase 6 (Admin Panel).
-        // Placeholder for now.
     }
 
     /**
@@ -249,7 +258,6 @@ class Moga_Assets {
      */
     private static function enqueue_admin_scripts() {
         // Admin scripts will be added in Phase 6 (Admin Panel).
-        // Placeholder for now.
     }
 
 

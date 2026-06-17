@@ -218,3 +218,40 @@
 
     .moga-container     { max-width: 100%; padding: 0; }
 }
+
+/* ============================================================
+   07. Home Page Responsive
+   ============================================================ */
+@media (max-width: 1024px) {
+    .moga-hero__title          { font-size: 2.5rem; }
+    .moga-destinations__grid   { grid-template-columns: repeat(2, 1fr); }
+    .moga-search-form__fields  { flex-wrap: wrap; }
+    .moga-search-form__field--date  { flex: 0 0 calc(50% - 4px); }
+}
+
+@media (max-width: 768px) {
+    .moga-hero                 { min-height: 400px; padding: var(--moga-spacing-xl) 0; }
+    .moga-hero__title          { font-size: 1.75rem; }
+    .moga-hero__subtitle       { font-size: 1rem; }
+
+    .moga-search-box__tabs     { overflow-x: auto; }
+    .moga-search-box__tab      { white-space: nowrap; font-size: 0.85rem; padding: var(--moga-spacing-sm) var(--moga-spacing-md); }
+
+    .moga-search-form__fields  { flex-direction: column; }
+    .moga-search-form__field,
+    .moga-search-form__field--date,
+    .moga-search-form__field--guests { flex: 1 1 100%; }
+    .moga-search-form__btn     { width: 100%; justify-content: center; }
+
+    .moga-destinations__grid   { grid-template-columns: 1fr; }
+
+    .moga-cta__inner           { flex-direction: column; text-align: center; }
+    .moga-cta__actions         { justify-content: center; flex-wrap: wrap; }
+    .moga-cta__title           { font-size: 1.5rem; }
+}
+
+@media (max-width: 480px) {
+    .moga-hero__title          { font-size: 1.5rem; }
+    .moga-search-box           { border-radius: var(--moga-border-radius-lg); }
+    .moga-search-box__panel    { padding: var(--moga-spacing-md); }
+}

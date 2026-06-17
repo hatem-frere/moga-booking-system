@@ -8,6 +8,7 @@
  *   - Alert dismissal
  *   - Smooth scroll
  *   - Back to top button
+ *   - Search box tabs
  *
  * @package MogaTravel
  * @since   1.0.0
@@ -27,6 +28,7 @@
         Moga.alerts.init();
         Moga.backToTop.init();
         Moga.smoothScroll.init();
+        Moga.searchTabs.init();
 
     } );
 
@@ -197,10 +199,10 @@
             if ( $( '#moga-back-to-top' ).length ) return;
 
             this.btn = $( '<button>', {
-                id:             'moga-back-to-top',
-                class:          'moga-back-to-top',
-                'aria-label':   mogaData.i18n.loading || 'Back to top',
-                html: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>',
+                id:           'moga-back-to-top',
+                class:        'moga-back-to-top',
+                'aria-label': mogaData.i18n.loading || 'Back to top',
+                html:         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>',
             } );
 
             $( 'body' ).append( this.btn );
@@ -271,7 +273,60 @@
 
 
     // ============================================================
-    // 08. UTILITY FUNCTIONS
+    // 08. SEARCH BOX TABS
+    // ============================================================
+    Moga.searchTabs = {
+
+        init: function() {
+
+            // Switch active tab and panel.
+            $( document ).on( 'click', '.moga-search-box__tab', function() {
+                var tab    = $( this );
+                var target = tab.data( 'tab' );
+
+                // Update tabs.
+                $( '.moga-search-box__tab' )
+                    .removeClass( 'is-active' )
+                    .attr( 'aria-selected', 'false' );
+                tab.addClass( 'is-active' ).attr( 'aria-selected', 'true' );
+
+                // Update panels.
+                $( '.moga-search-box__panel' ).removeClass( 'is-active' );
+                $( '[data-panel="' + target + '"]' ).addClass( 'is-active' );
+            } );
+
+            // Bus city swap button.
+            $( document ).on( 'click', '#moga-swap-cities', function() {
+                var from = $( '#bus-from' );
+                var to   = $( '#bus-to' );
+                var temp = from.val();
+                from.val( to.val() );
+                to.val( temp );
+            } );
+
+            // Set minimum check-out date based on check-in selection.
+            $( document ).on( 'change', '#property-checkin, #rental-checkin', function() {
+                var checkin  = $( this );
+                var checkout = checkin
+                    .closest( '.moga-search-form__fields' )
+                    .find( '[name="check_out"]' );
+
+                checkout.attr( 'min', checkin.val() );
+
+                if ( checkout.val() && checkout.val() < checkin.val() ) {
+                    checkout.val( checkin.val() );
+                }
+            } );
+
+            // Set minimum dates to today on all date inputs.
+            var today = new Date().toISOString().split( 'T' )[0];
+            $( 'input[type="date"]' ).attr( 'min', today );
+        },
+    };
+
+
+    // ============================================================
+    // 09. UTILITY FUNCTIONS
     // ============================================================
 
     /**
@@ -281,8 +336,8 @@
      * @return {string}
      */
     Moga.formatPrice = function( amount ) {
-        var symbol   = mogaData.currencySymbol || '$';
-        var position = mogaData.currencyPosition || 'before';
+        var symbol    = mogaData.currencySymbol || '$';
+        var position  = mogaData.currencyPosition || 'before';
         var formatted = parseFloat( amount ).toFixed( 2 );
 
         return position === 'before'

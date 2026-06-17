@@ -1,0 +1,456 @@
+/* ============================================================
+   MOGA TRAVEL — HOME PAGE STYLESHEET
+   Description: Hero, search box, destinations, features, CTA
+   Author:      Hatem Frere
+   Version:     1.0.0
+   ============================================================ */
+
+
+/* ============================================================
+   01. Hero Section
+   ============================================================ */
+.moga-hero {
+    position: relative;
+    min-height: 560px;
+    display: flex;
+    align-items: center;
+    padding: var(--moga-spacing-xxl) 0;
+    overflow: hidden;
+}
+
+.moga-hero__bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        135deg,
+        #001f4d 0%,
+        #003580 40%,
+        #0071c2 100%
+    );
+    z-index: 0;
+}
+
+.moga-hero__bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient( circle at 20% 50%, rgba(255,255,255,0.05) 0%, transparent 50% ),
+        radial-gradient( circle at 80% 20%, rgba(245,166,35,0.1) 0%, transparent 40% );
+}
+
+.moga-hero__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.moga-hero__inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+}
+
+.moga-hero__text {
+    text-align: center;
+    margin-bottom: var(--moga-spacing-xl);
+}
+
+.moga-hero__title {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--moga-white);
+    margin-bottom: var(--moga-spacing-md);
+    line-height: 1.2;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.moga-hero__subtitle {
+    font-size: 1.15rem;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0;
+}
+
+
+/* ============================================================
+   02. Search Box
+   ============================================================ */
+.moga-search-box {
+    background-color: var(--moga-white);
+    border-radius: var(--moga-border-radius-xl);
+    box-shadow: var(--moga-shadow-xl);
+    overflow: hidden;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+/* Search Tabs */
+.moga-search-box__tabs {
+    display: flex;
+    background-color: var(--moga-gray-100);
+    border-bottom: 1px solid var(--moga-gray-200);
+    padding: var(--moga-spacing-sm) var(--moga-spacing-sm) 0;
+    gap: 4px;
+}
+
+.moga-search-box__tab {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+    padding: var(--moga-spacing-sm) var(--moga-spacing-lg);
+    background: none;
+    border: none;
+    border-radius: var(--moga-border-radius) var(--moga-border-radius) 0 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--moga-gray-600);
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.moga-search-box__tab:hover {
+    color: var(--moga-primary);
+    background-color: var(--moga-white);
+}
+
+.moga-search-box__tab.is-active {
+    color: var(--moga-primary);
+    background-color: var(--moga-white);
+    border-bottom-color: var(--moga-primary);
+    font-weight: 600;
+}
+
+/* Search Panels */
+.moga-search-box__panel {
+    display: none;
+    padding: var(--moga-spacing-lg);
+}
+
+.moga-search-box__panel.is-active {
+    display: block;
+}
+
+/* Search Form */
+.moga-search-form__fields {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-search-form__field {
+    flex: 1;
+    min-width: 0;
+}
+
+.moga-search-form__field--submit {
+    flex: 0 0 auto;
+}
+
+.moga-search-form__field--date {
+    flex: 0 0 160px;
+}
+
+.moga-search-form__field--guests {
+    flex: 0 0 130px;
+}
+
+.moga-search-form__label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--moga-gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.moga-search-form__input-wrap {
+    position: relative;
+}
+
+.moga-search-form__icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--moga-gray-400);
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+.moga-search-form__input {
+    width: 100%;
+    height: 48px;
+    padding: 0 var(--moga-spacing-md) 0 40px;
+    border: 1.5px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.9rem;
+    color: var(--moga-gray-800);
+    background-color: var(--moga-white);
+    transition: var(--moga-transition-fast);
+    outline: none;
+    font-family: var(--moga-font-primary);
+}
+
+.moga-search-form__input:focus {
+    border-color: var(--moga-secondary);
+    box-shadow: 0 0 0 3px rgba(0, 113, 194, 0.12);
+}
+
+.moga-search-form__input::placeholder {
+    color: var(--moga-gray-400);
+}
+
+.moga-search-form__btn {
+    height: 48px;
+    white-space: nowrap;
+    padding: 0 var(--moga-spacing-xl);
+}
+
+/* Bus Swap Button */
+.moga-search-form__swap {
+    flex: 0 0 auto;
+    padding-bottom: 2px;
+}
+
+.moga-search-form__swap-btn {
+    width: 40px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--moga-gray-100);
+    border: 1.5px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    color: var(--moga-gray-600);
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-search-form__swap-btn:hover {
+    background-color: var(--moga-primary);
+    border-color: var(--moga-primary);
+    color: var(--moga-white);
+}
+
+
+/* ============================================================
+   03. Destinations Section
+   ============================================================ */
+.moga-destinations__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--moga-spacing-md);
+}
+
+.moga-destination-card {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-md);
+    padding: var(--moga-spacing-lg);
+    background-color: var(--moga-white);
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: var(--moga-border-radius-lg);
+    text-decoration: none;
+    transition: var(--moga-transition);
+    cursor: pointer;
+}
+
+.moga-destination-card:hover {
+    border-color: var(--moga-secondary);
+    box-shadow: var(--moga-shadow-lg);
+    transform: translateY(-2px);
+    text-decoration: none;
+}
+
+.moga-destination-card__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--moga-border-radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    flex-shrink: 0;
+}
+
+.moga-destination-card__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.moga-destination-card__name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+    margin: 0 0 4px;
+    line-height: 1.3;
+}
+
+.moga-destination-card__count {
+    font-size: 0.85rem;
+    color: var(--moga-gray-500);
+    margin: 0;
+}
+
+.moga-destination-card__count strong {
+    color: var(--moga-secondary);
+}
+
+.moga-destination-card__arrow {
+    color: var(--moga-gray-400);
+    flex-shrink: 0;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-destination-card:hover .moga-destination-card__arrow {
+    color: var(--moga-secondary);
+    transform: translateX(4px);
+}
+
+
+/* ============================================================
+   04. Feature Cards (Why Choose Us)
+   ============================================================ */
+.moga-why-us {
+    background-color: var(--moga-gray-100);
+}
+
+.moga-feature-card {
+    background-color: var(--moga-white);
+    border-radius: var(--moga-border-radius-lg);
+    padding: var(--moga-spacing-xl);
+    text-align: center;
+    box-shadow: var(--moga-shadow-sm);
+    border: 1px solid var(--moga-gray-200);
+    transition: var(--moga-transition);
+}
+
+.moga-feature-card:hover {
+    box-shadow: var(--moga-shadow-lg);
+    transform: translateY(-3px);
+}
+
+.moga-feature-card__icon {
+    width: 72px;
+    height: 72px;
+    border-radius: var(--moga-border-radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--moga-spacing-lg);
+}
+
+.moga-feature-card__title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+    margin-bottom: var(--moga-spacing-sm);
+}
+
+.moga-feature-card__desc {
+    font-size: 0.9rem;
+    color: var(--moga-gray-600);
+    line-height: 1.6;
+    margin: 0;
+}
+
+
+/* ============================================================
+   05. Call To Action Section
+   ============================================================ */
+.moga-cta {
+    background: linear-gradient(135deg, #003580 0%, #0071c2 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.moga-cta::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.moga-cta__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--moga-spacing-xxl);
+}
+
+.moga-cta__title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--moga-white);
+    margin-bottom: var(--moga-spacing-md);
+}
+
+.moga-cta__desc {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    max-width: 500px;
+    margin: 0;
+    line-height: 1.7;
+}
+
+.moga-cta__actions {
+    display: flex;
+    gap: var(--moga-spacing-md);
+    flex-shrink: 0;
+}
+
+
+/* ============================================================
+   06. Placeholder / Shimmer Cards
+   ============================================================ */
+.moga-placeholder-shimmer {
+    background: linear-gradient(
+        90deg,
+        var(--moga-gray-200) 25%,
+        var(--moga-gray-100) 50%,
+        var(--moga-gray-200) 75%
+    );
+    background-size: 200% 100%;
+    animation: moga-shimmer 1.5s infinite;
+    border-radius: var(--moga-border-radius);
+}
+
+@keyframes moga-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.moga-card--placeholder .moga-card__image-wrap {
+    height: 200px;
+    border-radius: 0;
+}
+
+.moga-placeholder-line {
+    height: 16px;
+    margin-bottom: var(--moga-spacing-sm);
+}
+
+.moga-placeholder-line--short {
+    width: 60%;
+}
+
+.moga-placeholder-price {
+    height: 24px;
+    width: 80px;
+}
+
+.moga-placeholder-btn {
+    height: 36px;
+    width: 100px;
+    border-radius: var(--moga-border-radius);
+}
+
+
