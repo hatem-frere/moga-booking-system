@@ -22,6 +22,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Moga_Assets {
 
     /**
+     * intl-tel-input library version.
+     *
+     * @since 1.0.0
+     * @var   string
+     */
+    const ITI_VERSION = '29.1.0';
+
+    /**
      * Enqueue all frontend CSS and JS files.
      * Called on 'wp_enqueue_scripts' hook.
      *
@@ -30,6 +38,7 @@ class Moga_Assets {
      */
     public static function enqueue_frontend() {
 
+        self::register_vendor_assets();
         self::enqueue_frontend_styles();
         self::enqueue_frontend_scripts();
     }
@@ -43,8 +52,47 @@ class Moga_Assets {
      */
     public static function enqueue_admin() {
 
+        self::register_vendor_assets();
         self::enqueue_admin_styles();
         self::enqueue_admin_scripts();
+    }
+
+
+    // ============================================================
+    // VENDOR ASSETS — REGISTER ONLY (not enqueued yet)
+    // ============================================================
+
+    /**
+     * Register all third-party vendor libraries.
+     * Registered here but only enqueued when needed.
+     *
+     * Libraries:
+     *   - intl-tel-input v29.1.0 (local files)
+     *
+     * @since  1.0.0
+     * @return void
+     */
+    private static function register_vendor_assets() {
+
+        $vendor_css = MOGA_THEME_URL . 'assets/css/vendor/';
+        $vendor_js  = MOGA_THEME_URL . 'assets/js/vendor/';
+
+        // intl-tel-input CSS.
+        wp_register_style(
+            'intl-tel-input',
+            $vendor_css . 'intl-tel-input/intlTelInput.css',
+            array(),
+            self::ITI_VERSION
+        );
+
+        // intl-tel-input JS.
+        wp_register_script(
+            'intl-tel-input',
+            $vendor_js . 'intl-tel-input/intlTelInput.min.js',
+            array(),
+            self::ITI_VERSION,
+            true
+        );
     }
 
 
@@ -62,10 +110,11 @@ class Moga_Assets {
      *   4. header.css     — header and navigation
      *   5. footer.css     — footer
      *   6. home.css       — homepage hero, search, sections
-     *   7. booking.css    — booking-specific styles
-     *   8. dashboard.css  — owner dashboard styles
-     *   9. responsive.css — all media queries (always last)
-     *  10. rtl.css        — RTL overrides (if RTL language)
+     *   7. search.css     — search results page
+     *   8. booking.css    — booking-specific styles
+     *   9. dashboard.css  — owner dashboard styles
+     *  10. responsive.css — all media queries (always last)
+     *  11. rtl.css        — RTL overrides (if RTL language)
      *
      * @since  1.0.0
      * @return void
@@ -125,6 +174,16 @@ class Moga_Assets {
             );
         }
 
+        // Search results page styles.
+        if ( self::is_search_page() ) {
+            wp_enqueue_style(
+                'moga-search',
+                $css . 'search.css',
+                array( 'moga-main', 'moga-components' ),
+                $ver
+            );
+        }
+
         // Booking styles — only on booking-related pages.
         if ( self::is_booking_page() ) {
             wp_enqueue_style(
@@ -133,6 +192,9 @@ class Moga_Assets {
                 array( 'moga-main', 'moga-components' ),
                 $ver
             );
+
+            // intl-tel-input CSS — phone field on booking pages.
+            wp_enqueue_style( 'intl-tel-input' );
         }
 
         // Dashboard styles — only on dashboard pages.
@@ -186,8 +248,19 @@ class Moga_Assets {
             $js . 'main.js',
             array( 'jquery' ),
             $ver,
-            true // Load in footer.
+            true
         );
+
+        // Search results page script.
+        if ( self::is_search_page() ) {
+            wp_enqueue_script(
+                'moga-search',
+                $js . 'search.js',
+                array( 'jquery', 'moga-main' ),
+                $ver,
+                true
+            );
+        }
 
         // Booking script — only on booking pages.
         if ( self::is_booking_page() ) {
@@ -197,6 +270,18 @@ class Moga_Assets {
                 array( 'jquery', 'moga-main' ),
                 $ver,
                 true
+            );
+
+            // intl-tel-input JS — phone field on booking pages.
+            wp_enqueue_script( 'intl-tel-input' );
+
+            // Pass utils.js path to JavaScript for intl-tel-input init.
+            wp_localize_script(
+                'intl-tel-input',
+                'mogaItiData',
+                array(
+                    'utilsUrl' => MOGA_THEME_URL . 'assets/js/vendor/intl-tel-input/utils.js',
+                )
             );
         }
 
@@ -247,7 +332,9 @@ class Moga_Assets {
      * @return void
      */
     private static function enqueue_admin_styles() {
-        // Admin styles will be added in Phase 6 (Admin Panel).
+
+        // intl-tel-input CSS — for phone fields in meta boxes.
+        wp_enqueue_style( 'intl-tel-input' );
     }
 
     /**
@@ -257,13 +344,36 @@ class Moga_Assets {
      * @return void
      */
     private static function enqueue_admin_scripts() {
-        // Admin scripts will be added in Phase 6 (Admin Panel).
+
+        // intl-tel-input JS — for phone fields in meta boxes.
+        wp_enqueue_script( 'intl-tel-input' );
+
+        // Pass utils.js path to JavaScript for intl-tel-input init in admin.
+        wp_localize_script(
+            'intl-tel-input',
+            'mogaItiData',
+            array(
+                'utilsUrl' => MOGA_THEME_URL . 'assets/js/vendor/intl-tel-input/utils.js',
+            )
+        );
     }
 
 
     // ============================================================
     // PAGE DETECTION HELPERS
     // ============================================================
+
+    /**
+     * Check if current page is the search results page.
+     *
+     * @since  1.0.0
+     * @return bool
+     */
+    private static function is_search_page() {
+
+        return is_page_template( 'page-templates/template-search.php' )
+            || is_page( get_option( 'moga_page_search_results' ) );
+    }
 
     /**
      * Check if current page is a booking-related page.

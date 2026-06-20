@@ -233,11 +233,16 @@ function moga_image( $filename ) {
  * The theme can work standalone but full features
  * require the plugin.
  *
+ * Note: also defined in the plugin's helper-functions.php.
+ * This wrapper ensures it works even without the plugin active.
+ *
  * @since  1.0.0
  * @return bool
  */
-function moga_plugin_active() {
-    return defined( 'MOGA_CORE_VERSION' );
+if ( ! function_exists( 'moga_plugin_active' ) ) {
+    function moga_plugin_active() {
+        return defined( 'MOGA_CORE_VERSION' );
+    }
 }
 
 /**
