@@ -1,0 +1,541 @@
+/* ============================================================
+   MOGA ADMIN — META BOX STYLES
+   Professional booking system admin interface
+   ============================================================ */
+
+/* ---- Variables ---- */
+:root {
+    --moga-primary:      #003580;
+    --moga-primary-light:#0057b8;
+    --moga-success:      #1a7f37;
+    --moga-danger:       #d63638;
+    --moga-warning:      #dba617;
+    --moga-gray-100:     #f6f7f7;
+    --moga-gray-200:     #dcdcde;
+    --moga-gray-300:     #8c8f94;
+    --moga-gray-900:     #1d2327;
+    --moga-radius:       6px;
+    --moga-shadow:       0 1px 3px rgba(0,0,0,.08);
+    --moga-transition:   0.2s ease;
+}
+
+
+/* ============================================================
+   META BOX WRAPPER
+   ============================================================ */
+
+.moga-metabox {
+    padding: 4px 0 8px;
+}
+
+/* Row layout */
+.moga-metabox__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+}
+
+.moga-metabox__row:last-child {
+    margin-bottom: 0;
+}
+
+.moga-metabox__row--full .moga-metabox__field {
+    flex: 1 1 100% !important;
+}
+
+
+/* ============================================================
+   FIELD
+   ============================================================ */
+
+.moga-metabox__field {
+    flex: 1 1 200px;
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.moga-metabox__field--wide {
+    flex: 2 1 300px;
+}
+
+/* Label */
+.moga-metabox__field > label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin: 0;
+}
+
+/* Required star */
+.required {
+    color: var(--moga-danger);
+    font-size: 14px;
+    line-height: 1;
+}
+
+/* Hint text */
+.moga-metabox__hint {
+    font-size: 11px;
+    color: var(--moga-gray-300);
+    margin: 2px 0 0;
+    line-height: 1.5;
+}
+
+.moga-metabox__hint--warning {
+    color: var(--moga-danger);
+}
+
+.moga-metabox__hint a {
+    color: var(--moga-primary-light);
+    text-decoration: none;
+}
+
+.moga-metabox__hint a:hover {
+    text-decoration: underline;
+}
+
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+
+.moga-metabox__field input[type="text"],
+.moga-metabox__field input[type="number"],
+.moga-metabox__field input[type="email"],
+.moga-metabox__field input[type="tel"],
+.moga-metabox__field input[type="time"],
+.moga-metabox__field select {
+    width: 100%;
+    height: 38px;
+    padding: 0 10px;
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: var(--moga-radius);
+    background: #fff;
+    color: var(--moga-gray-900);
+    font-size: 13px;
+    transition: border-color var(--moga-transition),
+                box-shadow var(--moga-transition);
+    box-shadow: var(--moga-shadow);
+    box-sizing: border-box;
+}
+
+.moga-metabox__field input:focus,
+.moga-metabox__field select:focus {
+    border-color: var(--moga-primary);
+    box-shadow: 0 0 0 2px rgba(0, 53, 128, 0.12);
+    outline: none;
+}
+
+.moga-metabox__field input[readonly] {
+    background: var(--moga-gray-100);
+    color: var(--moga-gray-300);
+    cursor: not-allowed;
+}
+
+.moga-metabox__field select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238c8f94' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+    cursor: pointer;
+}
+
+
+/* ============================================================
+   SECTION TITLE
+   ============================================================ */
+
+.moga-metabox__section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--moga-gray-300);
+    border-bottom: 2px solid var(--moga-gray-200);
+    padding-bottom: 8px;
+    margin: 20px 0 16px;
+}
+
+.moga-metabox__section-title:first-child {
+    margin-top: 4px;
+}
+
+.moga-metabox__section-title--green {
+    color: var(--moga-success);
+    border-color: #d3f5d3;
+}
+
+.moga-metabox__section-title--red {
+    color: var(--moga-danger);
+    border-color: #fce0e0;
+}
+
+
+/* ============================================================
+   AMENITIES
+   ============================================================ */
+
+.moga-metabox--amenities {
+    padding: 8px 0;
+}
+
+.moga-amenity-group {
+    margin-bottom: 20px;
+}
+
+.moga-amenity-group:last-child {
+    margin-bottom: 0;
+}
+
+.moga-amenity-group__title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--moga-gray-300);
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--moga-gray-200);
+}
+
+.moga-amenity-group__items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.moga-amenity-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--moga-gray-100);
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: 20px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--moga-gray-900);
+    transition: all var(--moga-transition);
+    user-select: none;
+}
+
+.moga-amenity-item:hover {
+    border-color: var(--moga-primary);
+    background: #f0f4ff;
+    color: var(--moga-primary);
+}
+
+.moga-amenity-item input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--moga-primary);
+}
+
+.moga-amenity-item:has(input:checked) {
+    background: #e8f0ff;
+    border-color: var(--moga-primary);
+    color: var(--moga-primary);
+    font-weight: 600;
+}
+
+
+/* ============================================================
+   TWO COLUMN LAYOUT (Includes/Excludes)
+   ============================================================ */
+
+.moga-metabox--two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 4px 0;
+}
+
+.moga-metabox__col {
+    background: var(--moga-gray-100);
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: var(--moga-radius);
+    padding: 16px;
+}
+
+.moga-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.moga-checklist__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--moga-gray-900);
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 4px;
+    transition: background var(--moga-transition);
+}
+
+.moga-checklist__item:hover {
+    background: rgba(0,0,0,.04);
+}
+
+.moga-checklist__item input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: var(--moga-primary);
+    cursor: pointer;
+}
+
+
+/* ============================================================
+   WEEKDAYS
+   ============================================================ */
+
+.moga-weekdays {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.moga-weekday {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    background: var(--moga-gray-100);
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: var(--moga-radius);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--moga-gray-300);
+    transition: all var(--moga-transition);
+    min-width: 52px;
+    text-align: center;
+}
+
+.moga-weekday:hover {
+    border-color: var(--moga-primary);
+    color: var(--moga-primary);
+    background: #f0f4ff;
+}
+
+.moga-weekday input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    accent-color: var(--moga-primary);
+    cursor: pointer;
+}
+
+.moga-weekday:has(input:checked) {
+    background: var(--moga-primary);
+    border-color: var(--moga-primary);
+    color: #fff;
+}
+
+.moga-weekday:has(input:checked) input {
+    accent-color: #fff;
+}
+
+
+/* ============================================================
+   TOGGLE SWITCHES
+   ============================================================ */
+
+.moga-metabox__switches {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.moga-switch {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--moga-gray-200);
+    transition: background var(--moga-transition);
+}
+
+.moga-switch:last-child {
+    border-bottom: none;
+    padding-bottom: 4px;
+}
+
+.moga-switch:first-child {
+    padding-top: 4px;
+}
+
+.moga-switch input {
+    display: none;
+}
+
+/* Slider track */
+.moga-switch__slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: var(--moga-gray-200);
+    border-radius: 24px;
+    transition: background var(--moga-transition);
+    flex-shrink: 0;
+}
+
+/* Slider knob */
+.moga-switch__slider::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: left var(--moga-transition);
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+
+/* Active state */
+.moga-switch input:checked + .moga-switch__slider {
+    background: var(--moga-primary);
+}
+
+.moga-switch input:checked + .moga-switch__slider::after {
+    left: 23px;
+}
+
+.moga-switch__label {
+    font-size: 13px;
+    color: var(--moga-gray-900);
+    font-weight: 500;
+    flex: 1;
+}
+
+/* Switch label description */
+.moga-switch__desc {
+    font-size: 11px;
+    color: var(--moga-gray-300);
+    margin-top: 2px;
+}
+
+
+/* ============================================================
+   META BOX POST BOX STYLING
+   ============================================================ */
+
+/* Improve meta box header appearance */
+#moga_property_pricing .postbox-header,
+#moga_property_location .postbox-header,
+#moga_property_contact .postbox-header,
+#moga_property_details .postbox-header,
+#moga_property_amenities .postbox-header,
+#moga_property_booking .postbox-header,
+#moga_property_status .postbox-header,
+#moga_tour_pricing .postbox-header,
+#moga_tour_schedule .postbox-header,
+#moga_tour_location .postbox-header,
+#moga_tour_contact .postbox-header,
+#moga_tour_details .postbox-header,
+#moga_tour_includes .postbox-header,
+#moga_tour_bus .postbox-header,
+#moga_tour_status .postbox-header {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e2e4e7;
+}
+
+#moga_property_pricing .postbox-header h2,
+#moga_property_location .postbox-header h2,
+#moga_property_contact .postbox-header h2,
+#moga_property_details .postbox-header h2,
+#moga_property_amenities .postbox-header h2,
+#moga_property_booking .postbox-header h2,
+#moga_property_status .postbox-header h2,
+#moga_tour_pricing .postbox-header h2,
+#moga_tour_schedule .postbox-header h2,
+#moga_tour_location .postbox-header h2,
+#moga_tour_contact .postbox-header h2,
+#moga_tour_details .postbox-header h2,
+#moga_tour_includes .postbox-header h2,
+#moga_tour_bus .postbox-header h2,
+#moga_tour_status .postbox-header h2 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1d2327;
+    letter-spacing: 0.2px;
+}
+
+/* Meta box content padding */
+#moga_property_pricing .inside,
+#moga_property_location .inside,
+#moga_property_contact .inside,
+#moga_property_details .inside,
+#moga_property_amenities .inside,
+#moga_property_booking .inside,
+#moga_property_status .inside,
+#moga_tour_pricing .inside,
+#moga_tour_schedule .inside,
+#moga_tour_location .inside,
+#moga_tour_contact .inside,
+#moga_tour_details .inside,
+#moga_tour_includes .inside,
+#moga_tour_bus .inside,
+#moga_tour_status .inside {
+    padding: 16px;
+    margin: 0;
+}
+
+
+/* ============================================================
+   INTL-TEL-INPUT PHONE FIELD FIX
+   ============================================================ */
+
+.iti {
+    width: 100%;
+}
+
+.iti__tel-input {
+    width: 100% !important;
+    height: 38px;
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: var(--moga-radius);
+    font-size: 13px;
+}
+
+.iti--separate-dial-code .iti__tel-input {
+    padding-left: 90px;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media screen and ( max-width: 1200px ) {
+    .moga-metabox--two-col {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and ( max-width: 900px ) {
+    .moga-metabox__field {
+        flex: 1 1 100%;
+    }
+}

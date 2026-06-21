@@ -30,6 +30,22 @@ class Moga_Assets {
     const ITI_VERSION = '29.1.0';
 
     /**
+     * Swiper.js library version.
+     *
+     * @since 1.0.0
+     * @var   string
+     */
+    const SWIPER_VERSION = '11.0.0';
+
+    /**
+     * GLightbox library version.
+     *
+     * @since 1.0.0
+     * @var   string
+     */
+    const GLIGHTBOX_VERSION = '3.3.0';
+
+    /**
      * Enqueue all frontend CSS and JS files.
      * Called on 'wp_enqueue_scripts' hook.
      *
@@ -68,6 +84,8 @@ class Moga_Assets {
      *
      * Libraries:
      *   - intl-tel-input v29.1.0 (local files)
+     *   - Swiper.js v11.0.0     (local files)
+     *   - GLightbox v3.3.0      (local files)
      *
      * @since  1.0.0
      * @return void
@@ -77,20 +95,51 @@ class Moga_Assets {
         $vendor_css = MOGA_THEME_URL . 'assets/css/vendor/';
         $vendor_js  = MOGA_THEME_URL . 'assets/js/vendor/';
 
-        // intl-tel-input CSS.
+        // ---- intl-tel-input ----
         wp_register_style(
             'intl-tel-input',
-            $vendor_css . 'intl-tel-input/intlTelInput.css',
+            $vendor_css . 'intl-tel-input/intlTelInput.min.css',
             array(),
             self::ITI_VERSION
         );
 
-        // intl-tel-input JS.
         wp_register_script(
             'intl-tel-input',
             $vendor_js . 'intl-tel-input/intlTelInput.min.js',
             array(),
             self::ITI_VERSION,
+            true
+        );
+
+        // ---- Swiper.js ----
+        wp_register_style(
+            'swiper',
+            $vendor_css . 'swiper/swiper-bundle.min.css',
+            array(),
+            self::SWIPER_VERSION
+        );
+
+        wp_register_script(
+            'swiper',
+            $vendor_js . 'swiper/swiper-bundle.min.js',
+            array(),
+            self::SWIPER_VERSION,
+            true
+        );
+
+        // ---- GLightbox ----
+        wp_register_style(
+            'glightbox',
+            $vendor_css . 'glightbox/glightbox.min.css',
+            array(),
+            self::GLIGHTBOX_VERSION
+        );
+
+        wp_register_script(
+            'glightbox',
+            $vendor_js . 'glightbox/glightbox.min.js',
+            array(),
+            self::GLIGHTBOX_VERSION,
             true
         );
     }
@@ -184,6 +233,12 @@ class Moga_Assets {
             );
         }
 
+        // Gallery pages — property/tour/destination singles.
+        if ( self::is_gallery_page() ) {
+            wp_enqueue_style( 'swiper' );
+            wp_enqueue_style( 'glightbox' );
+        }
+
         // Booking styles — only on booking-related pages.
         if ( self::is_booking_page() ) {
             wp_enqueue_style(
@@ -262,6 +317,12 @@ class Moga_Assets {
             );
         }
 
+        // Gallery pages — Swiper + GLightbox.
+        if ( self::is_gallery_page() ) {
+            wp_enqueue_script( 'swiper' );
+            wp_enqueue_script( 'glightbox' );
+        }
+
         // Booking script — only on booking pages.
         if ( self::is_booking_page() ) {
             wp_enqueue_script(
@@ -335,6 +396,15 @@ class Moga_Assets {
 
         // intl-tel-input CSS — for phone fields in meta boxes.
         wp_enqueue_style( 'intl-tel-input' );
+
+        // Fix flags path — override CSS variable to correct absolute URL.
+        // intlTelInput.min.css uses relative ../img/ path which breaks
+        // when loaded through WordPress. We override with absolute URL.
+        $flags_url   = MOGA_THEME_URL . 'assets/css/vendor/intl-tel-input/img/';
+        $inline_css  = '.iti { --iti-path-flags-1x: url("' . esc_url( $flags_url . 'flags.webp' ) . '"); }';
+        $inline_css .= '.iti { --iti-path-flags-2x: url("' . esc_url( $flags_url . 'flags@2x.webp' ) . '"); }';
+
+        wp_add_inline_style( 'intl-tel-input', $inline_css );
     }
 
     /**
@@ -373,6 +443,20 @@ class Moga_Assets {
 
         return is_page_template( 'page-templates/template-search.php' )
             || is_page( get_option( 'moga_page_search_results' ) );
+    }
+
+    /**
+     * Check if current page needs gallery libraries (Swiper + GLightbox).
+     * Applies to property, tour, and destination single pages.
+     *
+     * @since  1.0.0
+     * @return bool
+     */
+    private static function is_gallery_page() {
+
+        return is_singular( 'moga_property' )
+            || is_singular( 'moga_tour' )
+            || is_singular( 'moga_destination' );
     }
 
     /**

@@ -49,31 +49,31 @@ class Moga_Core {
     // COMPONENT PROPERTIES
     // ============================================================
 
-    /** @var Moga_Booking */
+    /** @var object|null Booking management instance. */
     public $booking;
 
-    /** @var Moga_Availability */
+    /** @var object|null Availability management instance. */
     public $availability;
 
-    /** @var Moga_Payment */
+    /** @var object|null Payment processing instance. */
     public $payment;
 
-    /** @var Moga_Commission */
+    /** @var object|null Commission management instance. */
     public $commission;
 
-    /** @var Moga_Notification */
+    /** @var object|null Notification instance. */
     public $notification;
 
-    /** @var Moga_Seat_Map */
+    /** @var object|null Seat map instance. */
     public $seat_map;
 
-    /** @var Moga_Roles */
+    /** @var object|null User roles instance. */
     public $roles;
 
-    /** @var Moga_Admin */
+    /** @var object|null Admin instance. */
     public $admin;
 
-    /** @var Moga_Public */
+    /** @var object|null Public instance. */
     public $public;
 
 
@@ -82,12 +82,19 @@ class Moga_Core {
     // ============================================================
 
     /**
-     * Load helper files.
+     * Load all helper and data files.
+     * Classes are handled by the autoloader in the main file.
      *
      * @since  1.0.0
      * @return void
      */
     private function load_dependencies() {
+
+        // Data libraries.
+        require_once MOGA_CORE_PATH . 'data/countries.php';
+        require_once MOGA_CORE_PATH . 'data/cities.php';
+
+        // Helper functions.
         require_once MOGA_CORE_PATH . 'includes/helpers/helper-functions.php';
         require_once MOGA_CORE_PATH . 'includes/helpers/helper-date.php';
         require_once MOGA_CORE_PATH . 'includes/helpers/helper-price.php';
@@ -107,9 +114,9 @@ class Moga_Core {
     private function register_hooks() {
 
         add_action( 'init', array( $this, 'boot_components' ),     0  );
-        add_action( 'init', array( $this, 'register_post_types' ),  5  );
-        add_action( 'init', array( $this, 'register_taxonomies' ),  5  );
-        add_action( 'init', array( $this, 'register_shortcodes' ),  10 );
+        add_action( 'init', array( $this, 'register_post_types' ), 5  );
+        add_action( 'init', array( $this, 'register_taxonomies' ), 5  );
+        add_action( 'init', array( $this, 'register_shortcodes' ), 10 );
         add_action( 'rest_api_init', array( $this, 'register_rest_api' ) );
         add_action( 'wp', array( $this, 'schedule_cron_jobs' ) );
 
@@ -120,6 +127,21 @@ class Moga_Core {
         if ( ! is_admin() ) {
             add_action( 'init', array( $this, 'boot_public' ), 10 );
         }
+
+        // Disable Gutenberg for Moga CPTs.
+        add_filter(
+            'use_block_editor_for_post_type',
+            array( $this, 'disable_gutenberg_for_cpts' ),
+            10,
+            2
+        );
+
+        // Hide auto-managed taxonomy boxes from admin UI.
+        add_action(
+            'add_meta_boxes',
+            array( $this, 'remove_taxonomy_meta_boxes' ),
+            99
+        );
 
         add_filter(
             'plugin_action_links_' . MOGA_CORE_BASENAME,
@@ -170,9 +192,18 @@ class Moga_Core {
      * @return void
      */
     public function boot_admin() {
+
         if ( class_exists( 'Moga_Admin' ) ) {
             $this->admin = new Moga_Admin();
         }
+
+        // Initialize meta boxes.
+        if ( class_exists( 'Moga_Admin_Metaboxes' ) ) {
+            Moga_Admin_Metaboxes::init();
+        }
+
+        // Enqueue admin CSS only on Moga CPT screens.
+        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
     }
 
     /**
@@ -300,7 +331,7 @@ class Moga_Core {
      * Add custom cron intervals.
      *
      * @since  1.0.0
-     * @param  array $schedules
+     * @param  array $schedules Existing cron schedules.
      * @return array
      */
     public function add_cron_intervals( $schedules ) {
@@ -319,6 +350,111 @@ class Moga_Core {
 
 
     // ============================================================
+    // GUTENBERG — DISABLE FOR MOGA CPTs
+    // ============================================================
+
+    /**
+     * Disable Gutenberg block editor for all Moga custom post types.
+     * Forces Classic Editor for better meta box compatibility.
+     *
+     * @since  1.0.0
+     * @param  bool   $use_block_editor Whether to use block editor.
+     * @param  string $post_type        Post type name.
+     * @return bool
+     */
+    public function disable_gutenberg_for_cpts( $use_block_editor, $post_type ) {
+
+        $moga_post_types = array(
+            'moga_property',
+            'moga_tour',
+            'moga_bus',
+            'moga_destination',
+        );
+
+        if ( in_array( $post_type, $moga_post_types, true ) ) {
+            return false;
+        }
+
+        return $use_block_editor;
+    }
+
+
+    // ============================================================
+    // TAXONOMY META BOXES — HIDE AUTO-MANAGED ONES
+    // ============================================================
+
+    /**
+     * Remove taxonomy meta boxes that are auto-managed
+     * by our sync functions. Admins should never touch
+     * the Location taxonomy box manually — it is
+     * populated automatically when a property or tour
+     * is saved via moga_sync_city_to_taxonomy().
+     *
+     * Property Type and Tour Category boxes remain visible
+     * because admins assign these manually.
+     *
+     * @since  1.0.0
+     * @return void
+     */
+    public function remove_taxonomy_meta_boxes() {
+
+        // Hide Location taxonomy box from Properties.
+        // Auto-managed by moga_sync_city_to_taxonomy().
+        remove_meta_box(
+            'moga_locationdiv',
+            'moga_property',
+            'side'
+        );
+
+        // Hide Location taxonomy box from Tours.
+        remove_meta_box(
+            'moga_locationdiv',
+            'moga_tour',
+            'side'
+        );
+    }
+
+
+    // ============================================================
+    // ADMIN ASSETS
+    // ============================================================
+
+    /**
+     * Enqueue admin CSS for Moga CPT screens only.
+     * Loads admin-style.css which styles all meta boxes.
+     *
+     * @since  1.0.0
+     * @return void
+     */
+    public function enqueue_admin_assets() {
+
+        $screen = get_current_screen();
+
+        if ( ! $screen ) {
+            return;
+        }
+
+        $moga_post_types = array(
+            'moga_property',
+            'moga_tour',
+            'moga_bus',
+            'moga_destination',
+        );
+
+        if ( ! in_array( $screen->post_type, $moga_post_types, true ) ) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'moga-admin-style',
+            MOGA_CORE_URL . 'admin/assets/css/admin-style.css',
+            array(),
+            MOGA_CORE_VERSION
+        );
+    }
+
+
+    // ============================================================
     // PLUGIN ACTION LINKS
     // ============================================================
 
@@ -326,7 +462,7 @@ class Moga_Core {
      * Add links on the Plugins page.
      *
      * @since  1.0.0
-     * @param  array $links
+     * @param  array $links Default plugin action links.
      * @return array
      */
     public function add_action_links( $links ) {
@@ -350,8 +486,8 @@ class Moga_Core {
     public function get_version() { return MOGA_CORE_VERSION; }
 
     /** @return string */
-    public function get_path() { return MOGA_CORE_PATH; }
+    public function get_path()    { return MOGA_CORE_PATH; }
 
     /** @return string */
-    public function get_url() { return MOGA_CORE_URL; }
+    public function get_url()     { return MOGA_CORE_URL; }
 }
