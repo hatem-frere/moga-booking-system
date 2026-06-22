@@ -779,3 +779,41 @@
     border-color: var(--moga-primary) !important;
     color: var(--moga-primary) !important;
 }
+
+/* ============================================================
+   SIDEBAR META BOX ORDER
+   Force correct display order for Property / Tour / Destination
+   ============================================================ */
+
+/* Property sidebar order */
+#post-body .postbox-container .meta-box-sortables {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Publish box — always first (WordPress handles this) */
+
+/* Featured image — right after publish */
+#postimagediv {
+    order: 2;
+}
+
+/* Gallery — below featured image */
+#moga_property_gallery,
+#moga_tour_gallery,
+#moga_destination_gallery {
+    order: 3;
+}
+
+/* Videos — below gallery */
+#moga_property_videos,
+#moga_tour_videos,
+#moga_destination_videos {
+    order: 4;
+}
+
+/* Post Attributes — always last */
+#pageparentdiv,
+#page-attributes-meta-box {
+    order: 99;
+}
