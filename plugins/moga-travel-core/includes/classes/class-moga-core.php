@@ -120,6 +120,9 @@ class Moga_Core {
         add_action( 'rest_api_init', array( $this, 'register_rest_api' ) );
         add_action( 'wp', array( $this, 'schedule_cron_jobs' ) );
 
+        // AJAX handlers — runs for both frontend and admin.
+        add_action( 'init', array( $this, 'boot_ajax' ), 0 );
+
         if ( is_admin() ) {
             add_action( 'init', array( $this, 'boot_admin' ), 10 );
         }
@@ -186,6 +189,20 @@ class Moga_Core {
     }
 
     /**
+     * Boot AJAX handlers.
+     * Runs on init priority 0 — before everything else
+     * so AJAX actions are registered early enough.
+     *
+     * @since  1.0.0
+     * @return void
+     */
+    public function boot_ajax() {
+        if ( class_exists( 'Moga_Ajax' ) ) {
+            Moga_Ajax::init();
+        }
+    }
+
+    /**
      * Boot admin components.
      *
      * @since  1.0.0
@@ -213,9 +230,13 @@ class Moga_Core {
      * @return void
      */
     public function boot_public() {
+
         if ( class_exists( 'Moga_Public' ) ) {
             $this->public = new Moga_Public();
         }
+
+        // Enqueue plugin public JS with PHP data.
+        add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_public_assets' ) );
     }
 
 
@@ -399,18 +420,67 @@ class Moga_Core {
     public function remove_taxonomy_meta_boxes() {
 
         // Hide Location taxonomy box from Properties.
-        // Auto-managed by moga_sync_city_to_taxonomy().
-        remove_meta_box(
-            'moga_locationdiv',
-            'moga_property',
-            'side'
-        );
+        remove_meta_box( 'moga_locationdiv', 'moga_property', 'side' );
 
         // Hide Location taxonomy box from Tours.
-        remove_meta_box(
-            'moga_locationdiv',
-            'moga_tour',
-            'side'
+        remove_meta_box( 'moga_locationdiv', 'moga_tour', 'side' );
+    }
+
+
+    // ============================================================
+    // PUBLIC ASSETS
+    // ============================================================
+
+    /**
+     * Enqueue plugin public JS and pass PHP data to it.
+     * Loads moga-public.js on all frontend pages.
+     *
+     * @since  1.0.0
+     * @return void
+     */
+    public function enqueue_public_assets() {
+
+        wp_enqueue_script(
+            'moga-public',
+            MOGA_CORE_URL . 'public/assets/js/moga-public.js',
+            array( 'jquery' ),
+            MOGA_CORE_VERSION,
+            true
+        );
+
+        // Pass PHP data to moga-public.js.
+        wp_localize_script(
+            'moga-public',
+            'mogaCoreData',
+            array(
+                'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+                'nonce'     => wp_create_nonce( 'moga_nonce' ),
+                'siteUrl'   => home_url(),
+                'searchUrl' => get_option( 'moga_page_search_results' )
+                    ? get_permalink( get_option( 'moga_page_search_results' ) )
+                    : home_url( '/search-results/' ),
+                'currency'  => get_option( 'moga_currency', 'USD' ),
+                'i18n'      => array(
+                    'loading'              => __( 'Loading...', 'moga-travel-core' ),
+                    'error'                => __( 'Something went wrong.', 'moga-travel-core' ),
+                    'selectCity'           => __( '— Select City —', 'moga-travel-core' ),
+                    'checkingAvailability' => __( 'Checking availability...', 'moga-travel-core' ),
+                    'available'            => __( '✅ Available for your dates!', 'moga-travel-core' ),
+                    'unavailable'          => __( '❌ Not available for selected dates.', 'moga-travel-core' ),
+                    'night'                => __( 'night', 'moga-travel-core' ),
+                    'nights'               => __( 'nights', 'moga-travel-core' ),
+                    'adult'                => __( 'adult', 'moga-travel-core' ),
+                    'adults'               => __( 'adults', 'moga-travel-core' ),
+                    'child'                => __( 'child', 'moga-travel-core' ),
+                    'children'             => __( 'children', 'moga-travel-core' ),
+                    'infant'               => __( 'infant', 'moga-travel-core' ),
+                    'infants'              => __( 'infants', 'moga-travel-core' ),
+                    'discount'             => __( 'Discount', 'moga-travel-core' ),
+                    'taxes'                => __( 'Taxes & fees', 'moga-travel-core' ),
+                    'total'                => __( 'Total', 'moga-travel-core' ),
+                    'addGuests'            => __( 'Add guests', 'moga-travel-core' ),
+                ),
+            )
         );
     }
 
@@ -421,7 +491,6 @@ class Moga_Core {
 
     /**
      * Enqueue admin CSS for Moga CPT screens only.
-     * Loads admin-style.css which styles all meta boxes.
      *
      * @since  1.0.0
      * @return void
