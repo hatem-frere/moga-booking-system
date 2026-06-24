@@ -69,7 +69,18 @@ function moga_get_all_cities() {
             array( 'name' => 'Faiyum',          'lat' => '29.3084',  'lng' => '30.8428',  'popular' => false ),
             array( 'name' => 'Zagazig',         'lat' => '30.5877',  'lng' => '31.5021',  'popular' => false ),
             array( 'name' => 'Beni Suef',       'lat' => '29.0661',  'lng' => '31.0994',  'popular' => false ),
+            array( 'name' => 'Giza',             'lat' => '30.0131',  'lng' => '31.2089',  'popular' => true  ),
+            array( 'name' => 'Asyut',            'lat' => '27.1809',  'lng' => '31.1837',  'popular' => false ),
+            array( 'name' => 'Kafr El Sheikh',   'lat' => '31.1107',  'lng' => '30.9388',  'popular' => false ),
+            array( 'name' => 'Damanhur',         'lat' => '31.0341',  'lng' => '30.4685',  'popular' => false ),
+            array( 'name' => 'Wadi El Natrun',   'lat' => '30.3667',  'lng' => '30.3167',  'popular' => false ),
+            array( 'name' => 'El Alamein',       'lat' => '30.8333',  'lng' => '28.9500',  'popular' => false ),
+            array( 'name' => 'Rashid',           'lat' => '31.4000',  'lng' => '30.4167',  'popular' => false ),
+            array( 'name' => 'Baltim',           'lat' => '31.5581',  'lng' => '31.0864',  'popular' => false ),
+            array( 'name' => 'New Cairo',        'lat' => '30.0300',  'lng' => '31.4700',  'popular' => false ),
+            array( 'name' => 'New Administrative Capital', 'lat' => '30.0167', 'lng' => '31.7500', 'popular' => false ),
         ),
+        // )
 
         'SA' => array(
             array( 'name' => 'Riyadh',          'lat' => '24.7136',  'lng' => '46.6753',  'popular' => true  ),

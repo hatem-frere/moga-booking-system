@@ -367,17 +367,17 @@ class Moga_CPT_Property {
      * @param  string $type Field type (string, number, integer).
      * @return callable     Sanitize callback function.
      */
-    private static function get_sanitize_callback( $type ) {
-        switch ( $type ) {
-            case 'integer':
-                return 'absint';
-            case 'number':
-                return 'floatval';
-            case 'string':
-            default:
-                return 'sanitize_text_field';
-        }
+private static function get_sanitize_callback( $type ) {
+    switch ( $type ) {
+        case 'integer':
+            return 'absint';
+        case 'number':
+            return function( $value ) { return floatval( $value ); };
+        case 'string':
+        default:
+            return 'sanitize_text_field';
     }
+}
 
 
     /**

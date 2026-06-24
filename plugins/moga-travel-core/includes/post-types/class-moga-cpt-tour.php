@@ -420,7 +420,7 @@ class Moga_CPT_Tour {
             case 'integer':
                 return 'absint';
             case 'number':
-                return 'floatval';
+                return function( $value ) { return floatval( $value ); };
             case 'string':
             default:
                 return 'sanitize_text_field';

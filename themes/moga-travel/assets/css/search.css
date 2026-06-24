@@ -1,0 +1,650 @@
+/* ============================================================
+   MOGA TRAVEL — SEARCH & CARDS STYLESHEET
+   Description: Property cards (grid + list), Tour cards
+                (grid + list), Search results page layout,
+                Sidebar filters, Pagination.
+                Built incrementally — sections added per step.
+   Author:      Hatem Frere
+   Version:     1.0.0
+
+   TABLE OF CONTENTS:
+   01. Shared Card Base
+   02. Badges
+   03. Wishlist Button
+   04. Property Type Tag
+   05. Card Body — Location
+   06. Card Body — Title
+   07. Card Body — Details Row
+   08. Card Body — Rating
+   09. Card Footer — Price
+   10. Card Footer — Button
+   11. Grid Layout Modifier
+   12. Shared Button Styles
+   -- Step 16: List Layout Modifier (coming next)
+   -- Steps 17-18: Tour Cards (coming next)
+   -- Step 19: Search Page Layout + Filters (coming next)
+   ============================================================ */
+
+
+/* ============================================================
+   01. Shared Card Base
+   ============================================================ */
+
+.moga-card {
+    background-color: var(--moga-white);
+    border-radius: var(--moga-border-radius-lg);
+    box-shadow: var(--moga-shadow-sm);
+    overflow: hidden;
+    transition: var(--moga-transition);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.moga-card:hover {
+    box-shadow: var(--moga-shadow-lg);
+    transform: translateY(-4px);
+}
+
+/* ---- Image Wrapper ---- */
+.moga-card__image-wrap {
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.moga-card__image-link {
+    display: block;
+    text-decoration: none;
+}
+
+.moga-card__image-link:hover {
+    text-decoration: none;
+}
+
+.moga-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+}
+
+.moga-card:hover .moga-card__image {
+    transform: scale(1.05);
+}
+
+
+/* ============================================================
+   02. Badges
+   ============================================================ */
+
+.moga-card__badges {
+    position: absolute;
+    top: var(--moga-spacing-sm);
+    left: var(--moga-spacing-sm);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--moga-spacing-xs);
+    z-index: 2;
+}
+
+.moga-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    border-radius: var(--moga-border-radius);
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    font-family: var(--moga-font-primary);
+}
+
+.moga-badge--featured {
+    background-color: var(--moga-accent);
+    color: var(--moga-white);
+}
+
+.moga-badge--instant {
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+}
+
+.moga-badge--free-cancel {
+    background-color: var(--moga-success);
+    color: var(--moga-white);
+}
+
+.moga-badge--discount {
+    background-color: var(--moga-danger);
+    color: var(--moga-white);
+}
+
+
+/* ============================================================
+   03. Wishlist Button
+   ============================================================ */
+
+.moga-card__wishlist {
+    position: absolute;
+    top: var(--moga-spacing-sm);
+    right: var(--moga-spacing-sm);
+    z-index: 2;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.92);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--moga-transition-fast);
+    color: var(--moga-gray-600);
+    box-shadow: var(--moga-shadow-sm);
+}
+
+.moga-card__wishlist:hover {
+    background-color: var(--moga-white);
+    color: var(--moga-danger);
+    transform: scale(1.1);
+}
+
+.moga-card__wishlist.is-saved {
+    color: var(--moga-danger);
+    background-color: var(--moga-white);
+}
+
+.moga-card__wishlist svg {
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+
+/* ============================================================
+   04. Property Type Tag
+   ============================================================ */
+
+.moga-card__type {
+    position: absolute;
+    bottom: var(--moga-spacing-sm);
+    left: var(--moga-spacing-sm);
+    z-index: 2;
+    background-color: rgba(0, 0, 0, 0.55);
+    color: var(--moga-white);
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: var(--moga-border-radius);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   05. Card Body — Location
+   ============================================================ */
+
+.moga-card__body {
+    padding: var(--moga-spacing-md);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-xs);
+}
+
+.moga-card__location {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: var(--moga-gray-600);
+    font-weight: 400;
+}
+
+.moga-card__location svg {
+    flex-shrink: 0;
+    color: var(--moga-secondary);
+}
+
+
+/* ============================================================
+   06. Card Body — Title
+   ============================================================ */
+
+.moga-card__title {
+    font-family: var(--moga-font-heading);
+    font-size: 0.975rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--moga-gray-900);
+    margin-bottom: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.moga-card__title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.moga-card__title a:hover {
+    color: var(--moga-secondary);
+    text-decoration: none;
+}
+
+
+/* ============================================================
+   07. Card Body — Details Row
+   ============================================================ */
+
+.moga-card__details {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--moga-spacing-sm);
+    margin-top: var(--moga-spacing-xs);
+}
+
+.moga-card__detail {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.775rem;
+    color: var(--moga-gray-600);
+    white-space: nowrap;
+}
+
+.moga-card__detail svg {
+    flex-shrink: 0;
+    color: var(--moga-gray-500);
+}
+
+
+/* ============================================================
+   08. Card Body — Rating
+   ============================================================ */
+
+.moga-card__rating {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-xs);
+    margin-top: auto;
+    padding-top: var(--moga-spacing-xs);
+}
+
+.moga-card__rating-score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1.4;
+    min-width: 30px;
+}
+
+.moga-card__rating-label {
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: var(--moga-gray-800);
+}
+
+.moga-card__rating-count {
+    font-size: 0.725rem;
+    color: var(--moga-gray-500);
+}
+
+
+/* ============================================================
+   09. Card Footer — Price
+   ============================================================ */
+
+.moga-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--moga-spacing-sm);
+    padding: var(--moga-spacing-sm) var(--moga-spacing-md) var(--moga-spacing-md);
+    border-top: 1px solid var(--moga-gray-200);
+    margin-top: auto;
+}
+
+.moga-card__price-wrap {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.moga-card__price-old {
+    font-size: 0.75rem;
+    color: var(--moga-gray-500);
+    text-decoration: line-through;
+    font-weight: 400;
+}
+
+.moga-card__price {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--moga-primary);
+    font-family: var(--moga-font-heading);
+}
+
+.moga-card__price-label {
+    font-size: 0.75rem;
+    color: var(--moga-gray-500);
+    font-weight: 400;
+}
+
+
+/* ============================================================
+   10. Card Footer — Button
+   ============================================================ */
+
+.moga-card__btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   11. Grid Layout Modifier
+   ============================================================ */
+
+.moga-card--grid .moga-card__image-wrap {
+    aspect-ratio: 16 / 10;
+}
+
+.moga-card--grid .moga-card__image {
+    aspect-ratio: 16 / 10;
+}
+
+
+/* ============================================================
+   12. Shared Button Styles
+   ============================================================ */
+
+.moga-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--moga-spacing-xs);
+    font-family: var(--moga-font-primary);
+    font-weight: 600;
+    text-decoration: none;
+    border: 2px solid transparent;
+    border-radius: var(--moga-border-radius);
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.moga-btn:hover {
+    text-decoration: none;
+}
+
+/* Size — default */
+.moga-btn {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+}
+
+/* Size — small */
+.moga-btn--sm {
+    padding: 7px 14px;
+    font-size: 0.8rem;
+}
+
+/* Size — large */
+.moga-btn--lg {
+    padding: 14px 28px;
+    font-size: 1rem;
+}
+
+/* Variant — Primary */
+.moga-btn--primary {
+    background-color: var(--moga-secondary);
+    border-color: var(--moga-secondary);
+    color: var(--moga-white);
+}
+
+.moga-btn--primary:hover {
+    background-color: var(--moga-secondary-dark);
+    border-color: var(--moga-secondary-dark);
+    color: var(--moga-white);
+}
+
+/* Variant — Outline Primary */
+.moga-btn--outline {
+    background-color: transparent;
+    border-color: var(--moga-secondary);
+    color: var(--moga-secondary);
+}
+
+.moga-btn--outline:hover {
+    background-color: var(--moga-secondary);
+    color: var(--moga-white);
+}
+
+/* Variant — Ghost (no border) */
+.moga-btn--ghost {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--moga-secondary);
+}
+
+.moga-btn--ghost:hover {
+    background-color: var(--moga-primary-light);
+    color: var(--moga-primary);
+}
+
+/* State — Disabled */
+.moga-btn:disabled,
+.moga-btn.is-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* State — Loading */
+.moga-btn.is-loading {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+/* ============================================================
+   13. List Layout Modifier
+   ============================================================ */
+
+.moga-card--list {
+    flex-direction: row;
+    height: auto;
+    min-height: 200px;
+}
+
+/* Image — fixed width on left */
+.moga-card--list .moga-card__image-wrap {
+    width: 280px;
+    min-width: 280px;
+    flex-shrink: 0;
+}
+
+.moga-card--list .moga-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Content — right side fills remaining space */
+.moga-card--list .moga-card__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Body — grows to push footer down */
+.moga-card--list .moga-card__body {
+    flex: 1;
+    padding: var(--moga-spacing-md) var(--moga-spacing-md) var(--moga-spacing-sm);
+}
+
+/* Excerpt — only visible in list view */
+.moga-card__excerpt {
+    display: none;
+}
+
+.moga-card--list .moga-card__excerpt {
+    display: block;
+    font-size: 0.825rem;
+    color: var(--moga-gray-600);
+    line-height: 1.5;
+    margin-top: var(--moga-spacing-xs);
+    margin-bottom: 0;
+}
+
+/* Title — allow more lines in list view */
+.moga-card--list .moga-card__title {
+    font-size: 1.05rem;
+    -webkit-line-clamp: 1;
+}
+
+/* Footer — sits at bottom of content */
+.moga-card--list .moga-card__footer {
+    padding: var(--moga-spacing-sm) var(--moga-spacing-md) var(--moga-spacing-md);
+    margin-top: 0;
+}
+
+/* Hover — no lift on list cards, subtle shadow only */
+.moga-card--list:hover {
+    transform: none;
+    box-shadow: var(--moga-shadow-md);
+}
+
+/* Results wrapper — list mode stacks cards vertically */
+.moga-results--list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-md);
+}
+
+/* Results wrapper — grid mode */
+.moga-results--grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--moga-spacing-lg);
+}
+
+/* ============================================================
+   14. Search Results Toolbar & View Toggle
+   ============================================================ */
+
+.moga-search-results {
+    padding: var(--moga-spacing-xl) 0;
+}
+
+.moga-results-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--moga-spacing-lg);
+    padding-bottom: var(--moga-spacing-md);
+    border-bottom: 1px solid var(--moga-gray-200);
+}
+
+.moga-results-toolbar__count {
+    font-size: 0.9rem;
+    color: var(--moga-gray-600);
+    font-weight: 500;
+    margin-bottom: 0;
+}
+
+/* Toggle buttons */
+.moga-view-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background-color: var(--moga-gray-100);
+    border-radius: var(--moga-border-radius);
+    padding: 4px;
+}
+
+.moga-view-toggle__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    color: var(--moga-gray-500);
+    text-decoration: none;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-view-toggle__btn:hover {
+    color: var(--moga-primary);
+    background-color: var(--moga-white);
+    text-decoration: none;
+}
+
+.moga-view-toggle__btn.is-active {
+    background-color: var(--moga-white);
+    color: var(--moga-primary);
+    box-shadow: var(--moga-shadow-sm);
+}
+
+/* No results */
+.moga-no-results {
+    text-align: center;
+    padding: var(--moga-spacing-xxl);
+    color: var(--moga-gray-600);
+}
+
+/* ============================================================
+   15. Tour Card — Specific Styles
+   ============================================================ */
+
+/* Duration tag — bottom right of image (opposite to type tag) */
+.moga-card__duration {
+    position: absolute;
+    bottom: var(--moga-spacing-sm);
+    right: var(--moga-spacing-sm);
+    z-index: 2;
+    background-color: rgba(0, 0, 0, 0.55);
+    color: var(--moga-white);
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: var(--moga-border-radius);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.moga-card__duration svg {
+    flex-shrink: 0;
+}
+
+/* Guide included badge */
+.moga-badge--guide {
+    background-color: var(--moga-info);
+    color: var(--moga-white);
+}
+
+/* Difficulty detail — color set inline via PHP */
+.moga-card__detail--difficulty {
+    font-weight: 600;
+}

@@ -221,6 +221,14 @@ class Moga_Assets {
                 array( 'moga-main', 'moga-components' ),
                 $ver
             );
+            // Load search.css on homepage too — needed for property card styles
+            // (badges, wishlist, type tag, rating, price) used in Featured Properties section.
+            wp_enqueue_style(
+                'moga-search',
+                $css . 'search.css',
+                array( 'moga-main', 'moga-components' ),
+                $ver
+            );
         }
 
         // Search results page styles.
