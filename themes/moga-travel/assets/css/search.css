@@ -648,3 +648,526 @@
 .moga-card__detail--difficulty {
     font-weight: 600;
 }
+
+/* ============================================================
+   16. Search Page Layout
+   ============================================================ */
+
+.moga-search-page-header {
+    padding: var(--moga-spacing-lg) 0 var(--moga-spacing-md);
+}
+
+.moga-search-page-header__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+    margin-bottom: var(--moga-spacing-xs);
+}
+
+.moga-search-page-header__sub {
+    font-size: 0.9rem;
+    color: var(--moga-gray-600);
+    margin-bottom: 0;
+}
+
+/* Two column layout — sidebar left, main right */
+.moga-search-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: var(--moga-spacing-xl);
+    align-items: start;
+    padding-bottom: var(--moga-spacing-xxl);
+}
+
+
+/* ============================================================
+   17. Sidebar
+   ============================================================ */
+
+.moga-search-sidebar {
+    background-color: var(--moga-white);
+    border-radius: var(--moga-border-radius-lg);
+    box-shadow: var(--moga-shadow-sm);
+    overflow: hidden;
+    position: sticky;
+    top: calc( var(--moga-header-height) + var(--moga-spacing-md) );
+    max-height: calc( 100vh - var(--moga-header-height) - var(--moga-spacing-xl) );
+    overflow-y: auto;
+}
+
+/* Sidebar type tabs */
+.moga-sidebar-type-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--moga-gray-200);
+}
+
+.moga-sidebar-type-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: var(--moga-spacing-md) var(--moga-spacing-sm);
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: var(--moga-gray-600);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: var(--moga-transition-fast);
+    text-align: center;
+}
+
+.moga-sidebar-type-tab:hover {
+    color: var(--moga-primary);
+    text-decoration: none;
+    background-color: var(--moga-gray-100);
+}
+
+.moga-sidebar-type-tab.is-active {
+    color: var(--moga-primary);
+    border-bottom-color: var(--moga-primary);
+    background-color: var(--moga-primary-light);
+}
+
+
+/* ============================================================
+   18. Filter Groups
+   ============================================================ */
+
+.moga-filter-form {
+    padding: var(--moga-spacing-md);
+}
+
+.moga-filter-group {
+    border-bottom: 1px solid var(--moga-gray-200);
+    padding: var(--moga-spacing-md) 0;
+}
+
+.moga-filter-group:last-of-type {
+    border-bottom: none;
+}
+
+.moga-filter-group__title {
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: var(--moga-gray-800);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: var(--moga-spacing-sm);
+    font-family: var(--moga-font-primary);
+}
+
+/* Filter options list */
+.moga-filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Scrollable options list (for long city lists) */
+.moga-filter-options--scrollable {
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: var(--moga-spacing-xs);
+}
+
+.moga-filter-options--scrollable::-webkit-scrollbar {
+    width: 4px;
+}
+
+.moga-filter-options--scrollable::-webkit-scrollbar-thumb {
+    background-color: var(--moga-gray-300);
+    border-radius: 4px;
+}
+
+/* Individual filter option (checkbox or radio) */
+.moga-filter-option {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+    cursor: pointer;
+    padding: 4px 0;
+}
+
+.moga-filter-option input[type="radio"],
+.moga-filter-option input[type="checkbox"] {
+    accent-color: var(--moga-primary);
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.moga-filter-option__label {
+    font-size: 0.825rem;
+    color: var(--moga-gray-700);
+    flex: 1;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-filter-option:hover .moga-filter-option__label {
+    color: var(--moga-primary);
+}
+
+.moga-filter-option__count {
+    font-size: 0.75rem;
+    color: var(--moga-gray-500);
+    background-color: var(--moga-gray-100);
+    border-radius: 9999px;
+    padding: 1px 6px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Price range */
+.moga-price-range {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-price-range__field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.moga-price-range__field label {
+    font-size: 0.75rem;
+    color: var(--moga-gray-600);
+    font-weight: 500;
+}
+
+.moga-price-range__input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.825rem;
+    font-family: var(--moga-font-primary);
+    color: var(--moga-gray-800);
+    background-color: var(--moga-white);
+    transition: var(--moga-transition-fast);
+}
+
+.moga-price-range__input:focus {
+    outline: none;
+    border-color: var(--moga-secondary);
+    box-shadow: 0 0 0 3px rgba(0, 113, 194, 0.1);
+}
+
+.moga-price-range__sep {
+    font-size: 0.75rem;
+    color: var(--moga-gray-500);
+    padding-bottom: 8px;
+    flex-shrink: 0;
+}
+
+/* Filter actions */
+.moga-filter-actions {
+    padding-top: var(--moga-spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-filter-reset {
+    text-align: center;
+    font-size: 0.825rem;
+    color: var(--moga-gray-500);
+    text-decoration: underline;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-filter-reset:hover {
+    color: var(--moga-danger);
+    text-decoration: underline;
+}
+
+/* Mobile filter toggle button */
+.moga-filter-toggle {
+    display: none;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+    padding: 10px var(--moga-spacing-md);
+    background-color: var(--moga-white);
+    border: 1px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--moga-gray-800);
+    cursor: pointer;
+    margin-bottom: var(--moga-spacing-md);
+    width: 100%;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-filter-toggle:hover {
+    border-color: var(--moga-primary);
+    color: var(--moga-primary);
+}
+
+.moga-filter-toggle__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 9999px;
+    padding: 0 5px;
+}
+
+
+/* ============================================================
+   19. Active Filter Pills
+   ============================================================ */
+
+.moga-active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--moga-spacing-sm);
+    margin-bottom: var(--moga-spacing-md);
+}
+
+.moga-active-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background-color: var(--moga-primary-light);
+    color: var(--moga-primary);
+    border-radius: 9999px;
+    font-size: 0.775rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: var(--moga-transition-fast);
+    border: 1px solid rgba(0, 53, 128, 0.2);
+}
+
+.moga-active-filter:hover {
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    text-decoration: none;
+}
+
+.moga-active-filter svg {
+    flex-shrink: 0;
+}
+
+.moga-active-filter--clear {
+    background-color: var(--moga-gray-100);
+    color: var(--moga-gray-600);
+    border-color: var(--moga-gray-300);
+}
+
+.moga-active-filter--clear:hover {
+    background-color: var(--moga-danger);
+    color: var(--moga-white);
+    border-color: var(--moga-danger);
+}
+
+
+/* ============================================================
+   20. Sort Controls
+   ============================================================ */
+
+.moga-results-toolbar__controls {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-md);
+}
+
+.moga-sort-wrap {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-sort-label {
+    font-size: 0.825rem;
+    color: var(--moga-gray-600);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.moga-sort-select {
+    padding: 6px 28px 6px 10px;
+    border: 1px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.825rem;
+    font-family: var(--moga-font-primary);
+    color: var(--moga-gray-800);
+    background-color: var(--moga-white);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-sort-select:focus {
+    outline: none;
+    border-color: var(--moga-secondary);
+    box-shadow: 0 0 0 3px rgba(0, 113, 194, 0.1);
+}
+
+
+/* ============================================================
+   21. Pagination
+   ============================================================ */
+
+.moga-pagination {
+    margin-top: var(--moga-spacing-xl);
+}
+
+.moga-pagination__list {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--moga-spacing-xs);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.moga-pagination__item a,
+.moga-pagination__item span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    height: 38px;
+    padding: 0 var(--moga-spacing-sm);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: var(--moga-transition-fast);
+    border: 1px solid var(--moga-gray-300);
+    color: var(--moga-gray-700);
+    background-color: var(--moga-white);
+}
+
+.moga-pagination__item a:hover {
+    border-color: var(--moga-primary);
+    color: var(--moga-primary);
+    text-decoration: none;
+}
+
+.moga-pagination__item .current {
+    background-color: var(--moga-primary);
+    border-color: var(--moga-primary);
+    color: var(--moga-white);
+    font-weight: 700;
+}
+
+.moga-pagination__item .dots {
+    border-color: transparent;
+    background: none;
+}
+
+
+/* ============================================================
+   22. No Results
+   ============================================================ */
+
+.moga-no-results {
+    text-align: center;
+    padding: var(--moga-spacing-xxl) var(--moga-spacing-xl);
+    background-color: var(--moga-white);
+    border-radius: var(--moga-border-radius-lg);
+    box-shadow: var(--moga-shadow-sm);
+}
+
+.moga-no-results__icon {
+    color: var(--moga-gray-400);
+    margin: 0 auto var(--moga-spacing-lg);
+    display: block;
+}
+
+.moga-no-results__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--moga-gray-800);
+    margin-bottom: var(--moga-spacing-sm);
+}
+
+.moga-no-results__text {
+    font-size: 0.9rem;
+    color: var(--moga-gray-600);
+    margin-bottom: 0;
+}
+
+
+/* ============================================================
+   23. Search Main Area
+   ============================================================ */
+
+.moga-search-main {
+    min-width: 0;
+}
+/* ============================================================
+   24. Filter Accordion
+   ============================================================ */
+
+/* Title is now a button — override h3 defaults */
+.moga-filter-group__title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: var(--moga-gray-800);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-family: var(--moga-font-primary);
+    text-align: left;
+    margin-bottom: 0;
+    line-height: 1.4;
+}
+
+.moga-filter-group__title:hover {
+    color: var(--moga-primary);
+}
+
+/* Chevron icon — rotates when open */
+.moga-filter-group__chevron {
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+    color: var(--moga-gray-500);
+}
+
+.moga-filter-group__title[aria-expanded="true"] .moga-filter-group__chevron {
+    transform: rotate( 180deg );
+}
+
+/* Content wrapper — CSS transition for smooth open/close */
+.moga-filter-group__content {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+    max-height: 1000px;
+    opacity: 1;
+    margin-top: var(--moga-spacing-sm);
+}
+
+/* Hidden state — uses display:block so CSS transition works */
+.moga-filter-group__content[hidden] {
+    display: block !important;
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    pointer-events: none;
+}
