@@ -1,0 +1,1711 @@
+/* ============================================================
+   MOGA TRAVEL — BOOKING & SINGLE PAGE STYLESHEET
+   Description: Single property page, gallery mosaic,
+                booking form sidebar, date pickers,
+                guest counter, price breakdown,
+                mobile sticky bar, RTL support.
+   Author:      Hatem Frere
+   Version:     1.0.0
+
+   TABLE OF CONTENTS:
+   01. Single Page Layout
+   02. Breadcrumb
+   03. Property Header
+   04. Gallery Mosaic
+   05. Single Section (shared)
+   06. Property Highlights Bar
+   07. Property Description
+   08. Amenities Grid
+   09. House Rules
+   10. Reviews
+   11. Booking Form Card
+   12. Date Pickers (Flatpickr)
+   13. Guest Counter
+   14. Price Breakdown
+   15. Booking Meta Items
+   16. Rating Shared Styles
+   17. Read More Button
+   18. Mobile Sticky Bottom Bar
+   19. RTL Overrides
+   ============================================================ */
+
+
+/* ============================================================
+   01. Single Page Layout
+   ============================================================ */
+
+.moga-property-single {
+    padding-bottom: 80px; /* space for mobile sticky bar */
+    background-color: var(--moga-white);
+}
+
+/* Two-column layout: content left + booking sidebar right */
+.moga-single-layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: var(--moga-spacing-xl);
+    align-items: start;
+    margin-top: var(--moga-spacing-xl);
+}
+
+.moga-single-content {
+    min-width: 0;
+}
+
+/* Sticky sidebar */
+.moga-single-sidebar {
+    position: sticky;
+    top: calc( var(--moga-header-height) + var(--moga-spacing-md) );
+}
+
+
+/* ============================================================
+   02. Breadcrumb
+   ============================================================ */
+
+.moga-breadcrumb {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: var(--moga-spacing-md) 0 var(--moga-spacing-sm);
+    font-size: 0.825rem;
+    color: var(--moga-gray-600);
+}
+
+.moga-breadcrumb a {
+    color: var(--moga-gray-600);
+    text-decoration: none;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-breadcrumb a:hover {
+    color: var(--moga-secondary);
+    text-decoration: underline;
+}
+
+.moga-breadcrumb__sep {
+    color: var(--moga-gray-400);
+    font-size: 0.75rem;
+}
+
+.moga-breadcrumb [aria-current="page"] {
+    color: var(--moga-gray-800);
+    font-weight: 500;
+}
+
+
+/* ============================================================
+   03. Property Header
+   ============================================================ */
+
+.moga-property-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--moga-spacing-lg);
+    padding: var(--moga-spacing-md) 0 var(--moga-spacing-lg);
+    border-bottom: 1px solid var(--moga-gray-200);
+    margin-bottom: var(--moga-spacing-lg);
+}
+
+.moga-property-header__main {
+    flex: 1;
+    min-width: 0;
+}
+
+.moga-property-header__type {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--moga-secondary);
+    margin-bottom: var(--moga-spacing-xs);
+}
+
+.moga-property-header__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+    line-height: 1.25;
+    margin-bottom: var(--moga-spacing-sm);
+}
+
+.moga-property-header__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--moga-spacing-md);
+}
+
+.moga-property-header__rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.moga-property-header__location {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.875rem;
+    color: var(--moga-gray-600);
+}
+
+.moga-property-header__location svg {
+    flex-shrink: 0;
+    color: var(--moga-secondary);
+}
+
+.moga-property-header__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+    flex-shrink: 0;
+}
+
+.moga-property-header__action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 12px;
+    border: 1px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    background: none;
+    font-size: 0.825rem;
+    font-weight: 500;
+    color: var(--moga-gray-700);
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+    font-family: var(--moga-font-primary);
+}
+
+.moga-property-header__action-btn:hover {
+    border-color: var(--moga-gray-500);
+    color: var(--moga-gray-900);
+    background-color: var(--moga-gray-100);
+}
+
+.moga-wishlist-btn.is-saved {
+    color: var(--moga-danger);
+    border-color: var(--moga-danger);
+}
+
+
+/* ============================================================
+   04. Gallery Mosaic
+   ============================================================ */
+
+.moga-property-gallery {
+    position: relative;
+    margin-bottom: var(--moga-spacing-xl);
+}
+
+/* Mosaic grid — Booking.com layout */
+.moga-gallery-mosaic {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 240px 240px;
+    gap: 4px;
+    border-radius: var(--moga-border-radius-lg);
+    overflow: hidden;
+    height: 484px; /* 240 + 240 + 4px gap */
+}
+
+/* Large image always spans full height (both rows) on the left */
+.moga-gallery-mosaic__item--large {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+}
+
+/* Small images fill the right column grid */
+.moga-gallery-mosaic__item:not(.moga-gallery-mosaic__item--large) {
+    grid-column: 2;
+}
+
+/* Individual mosaic item */
+.moga-gallery-mosaic__item {
+    position: relative;
+    overflow: hidden;
+    display: block;
+    background-color: var(--moga-gray-200);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.moga-gallery-mosaic__item:hover .moga-gallery-mosaic__img {
+    transform: scale(1.04);
+}
+
+.moga-gallery-mosaic__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+}
+
+/* "See all X photos" overlay on last small image */
+.moga-gallery-mosaic__overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--moga-white);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+    padding: var(--moga-spacing-md);
+    transition: background-color 0.3s ease;
+}
+
+.moga-gallery-mosaic__item:hover .moga-gallery-mosaic__overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.moga-gallery-mosaic__overlay svg {
+    flex-shrink: 0;
+}
+
+/* Hidden links — included in GLightbox gallery but not visible */
+.moga-gallery-hidden-link {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* "View all photos" button — mobile only (hidden on desktop) */
+.moga-gallery-view-all-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: var(--moga-spacing-sm);
+    width: 100%;
+    margin-top: var(--moga-spacing-sm);
+    padding: 10px var(--moga-spacing-md);
+    border: 1px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    background-color: var(--moga-white);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--moga-gray-800);
+    cursor: pointer;
+    font-family: var(--moga-font-primary);
+    transition: var(--moga-transition-fast);
+}
+
+.moga-gallery-view-all-btn:hover {
+    border-color: var(--moga-primary);
+    color: var(--moga-primary);
+}
+
+/* Mosaic variant when fewer than 5 images */
+.moga-gallery-mosaic--1 {
+    grid-template-columns: 1fr;
+    grid-template-rows: 484px;
+}
+
+.moga-gallery-mosaic--1 .moga-gallery-mosaic__item--large {
+    grid-row: 1;
+}
+
+.moga-gallery-mosaic--2 {
+    grid-template-rows: 484px;
+}
+
+.moga-gallery-mosaic--3 .moga-gallery-mosaic__item:nth-child(2) {
+    grid-row: 1;
+}
+.moga-gallery-mosaic--3 .moga-gallery-mosaic__item:nth-child(3) {
+    grid-row: 2;
+}
+
+
+/* ============================================================
+   05. Single Section (shared)
+   ============================================================ */
+
+.moga-single-section {
+    padding: var(--moga-spacing-xl) 0;
+    border-bottom: 1px solid var(--moga-gray-200);
+}
+
+.moga-single-section:last-child {
+    border-bottom: none;
+}
+
+.moga-single-section__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+    margin-bottom: var(--moga-spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-md);
+}
+
+.moga-single-section__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+
+/* ============================================================
+   06. Property Highlights Bar
+   ============================================================ */
+
+.moga-property-highlights {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 0;
+    border: 1px solid var(--moga-gray-200);
+    border-radius: var(--moga-border-radius-lg);
+    overflow: hidden;
+    margin-bottom: var(--moga-spacing-xl);
+    background-color: var(--moga-white);
+}
+
+.moga-property-highlights__item {
+    flex: 1;
+    min-width: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: var(--moga-spacing-md) var(--moga-spacing-sm);
+    border-right: 1px solid var(--moga-gray-200);
+    text-align: center;
+}
+
+.moga-property-highlights__item:last-child {
+    border-right: none;
+}
+
+.moga-property-highlights__item svg {
+    color: var(--moga-secondary);
+    flex-shrink: 0;
+}
+
+.moga-property-highlights__value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+    font-family: var(--moga-font-heading);
+    line-height: 1.2;
+}
+
+.moga-property-highlights__value--sm {
+    font-size: 0.775rem;
+}
+
+.moga-property-highlights__label {
+    font-size: 0.725rem;
+    color: var(--moga-gray-600);
+    font-weight: 400;
+    line-height: 1.3;
+}
+
+
+/* ============================================================
+   07. Property Description
+   ============================================================ */
+
+.moga-property-description {
+    font-size: 0.95rem;
+    line-height: 1.75;
+    color: var(--moga-gray-700);
+}
+
+.moga-property-description p {
+    margin-bottom: var(--moga-spacing-md);
+}
+
+.moga-property-description p:last-child {
+    margin-bottom: 0;
+}
+
+/* Collapsed state — only first ~4 lines visible */
+.moga-property-description--collapsed {
+    max-height: 120px;
+    overflow: hidden;
+    position: relative;
+}
+
+.moga-property-description--collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient( to bottom, transparent, var(--moga-white) );
+}
+
+.moga-property-description--expanded {
+    max-height: none;
+}
+
+.moga-property-description--expanded::after {
+    display: none;
+}
+
+
+/* ============================================================
+   08. Amenities Grid
+   ============================================================ */
+
+.moga-amenities-grid {
+    display: grid;
+    grid-template-columns: repeat( 2, 1fr );
+    gap: var(--moga-spacing-sm) var(--moga-spacing-lg);
+}
+
+.moga-amenity-item {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+    font-size: 0.875rem;
+    color: var(--moga-gray-700);
+    padding: 4px 0;
+}
+
+.moga-amenity-item svg {
+    flex-shrink: 0;
+    color: var(--moga-success);
+}
+
+.moga-amenity-item--hidden {
+    display: none;
+}
+
+.moga-amenity-item--hidden.is-visible {
+    display: flex;
+}
+
+
+/* ============================================================
+   09. House Rules
+   ============================================================ */
+
+.moga-house-rules {
+    display: flex;
+    /* flex-direction: column; */
+    gap: var(--moga-spacing-md);
+    align-items: center;
+    align-content: center;
+    flex-wrap: wrap;
+}
+
+.moga-house-rule {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--moga-spacing-md);
+    padding: var(--moga-spacing-sm) 0;
+    border-bottom: 1px solid var(--moga-gray-100);
+}
+
+.moga-house-rule:last-child {
+    border-bottom: none;
+}
+
+.moga-house-rule > svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--moga-gray-500);
+}
+
+.moga-house-rule__content {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+}
+
+.moga-house-rule__label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--moga-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.moga-house-rule__value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--moga-gray-800);
+}
+
+.moga-house-rule__desc {
+    font-size: 0.8rem;
+    color: var(--moga-gray-600);
+    margin-top: 3px;
+    margin-bottom: 0;
+}
+
+
+/* ============================================================
+   10. Reviews
+   ============================================================ */
+
+.moga-reviews-count {
+    font-size: 0.9rem;
+    color: var(--moga-gray-600);
+    margin-bottom: 0;
+}
+
+.moga-no-reviews {
+    font-size: 0.9rem;
+    color: var(--moga-gray-500);
+    font-style: italic;
+    margin-bottom: 0;
+}
+
+
+/* ============================================================
+   11. Booking Form Card
+   ============================================================ */
+
+.moga-booking-form-card {
+    background-color: var(--moga-white);
+    border: 1px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius-lg);
+    box-shadow: var(--moga-shadow-lg);
+    overflow: hidden;
+    padding: var(--moga-spacing-lg);
+}
+
+/* Price header */
+.moga-booking-form-card__price {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: var(--moga-spacing-sm);
+}
+
+.moga-booking-form-card__price-old {
+    font-size: 0.875rem;
+    color: var(--moga-gray-500);
+    text-decoration: line-through;
+    font-weight: 400;
+}
+
+.moga-booking-form-card__price-current {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+    font-family: var(--moga-font-heading);
+}
+
+.moga-booking-form-card__price-label {
+    font-size: 0.875rem;
+    color: var(--moga-gray-600);
+    font-weight: 400;
+}
+
+.moga-booking-form-card__discount {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    background-color: var(--moga-danger);
+    color: var(--moga-white);
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-left: var(--moga-spacing-xs);
+}
+
+/* Rating row inside booking card */
+.moga-booking-form-card__rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: var(--moga-spacing-md);
+    padding-bottom: var(--moga-spacing-md);
+    border-bottom: 1px solid var(--moga-gray-200);
+}
+
+.moga-booking-form-card__rating-link {
+    font-size: 0.8rem;
+    color: var(--moga-gray-600);
+    text-decoration: underline;
+}
+
+.moga-booking-form-card__rating-link:hover {
+    color: var(--moga-secondary);
+}
+
+/* Booking form itself */
+.moga-booking-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-md);
+}
+
+/* Reserve button */
+.moga-booking-form__submit {
+    padding: 14px;
+    font-size: 1rem;
+    border-radius: var(--moga-border-radius);
+    margin-top: var(--moga-spacing-xs);
+}
+
+/* "You won't be charged yet" notice */
+.moga-booking-form__notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.775rem;
+    color: var(--moga-gray-500);
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.moga-booking-form__notice svg {
+    flex-shrink: 0;
+}
+
+/* Meta section below form */
+.moga-booking-form-card__meta {
+    margin-top: var(--moga-spacing-md);
+    padding-top: var(--moga-spacing-md);
+    border-top: 1px solid var(--moga-gray-200);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+
+/* ============================================================
+   12. Date Pickers (Flatpickr custom styles)
+   ============================================================ */
+
+.moga-booking-dates {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    gap: 0;
+    border: 1px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    overflow: hidden;
+    background-color: var(--moga-white);
+    transition: border-color 0.2s ease;
+}
+
+.moga-booking-dates:focus-within {
+    border-color: var(--moga-secondary);
+    box-shadow: 0 0 0 3px rgba(0, 113, 194, 0.12);
+}
+
+.moga-booking-dates__field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--moga-spacing-sm) var(--moga-spacing-md);
+    cursor: pointer;
+}
+
+.moga-booking-dates__field--checkin {
+    border-right: 1px solid var(--moga-gray-200);
+}
+
+.moga-booking-dates__label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--moga-gray-600);
+}
+
+.moga-booking-dates__input {
+    border: none;
+    outline: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--moga-gray-800);
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+    padding: 0;
+    font-family: var(--moga-font-primary);
+}
+
+.moga-booking-dates__input::placeholder {
+    color: var(--moga-gray-400);
+    font-weight: 400;
+}
+
+.moga-booking-dates__arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--moga-spacing-xs);
+    color: var(--moga-gray-400);
+    flex-shrink: 0;
+}
+
+/* Flatpickr calendar custom theme */
+.flatpickr-calendar {
+    font-family: var(--moga-font-primary) !important;
+    border-radius: var(--moga-border-radius-lg) !important;
+    box-shadow: var(--moga-shadow-xl) !important;
+    border: 1px solid var(--moga-gray-200) !important;
+    font-size: 0.875rem !important;
+}
+
+.flatpickr-months .flatpickr-month {
+    background-color: var(--moga-primary) !important;
+    color: var(--moga-white) !important;
+    border-radius: var(--moga-border-radius-lg) var(--moga-border-radius-lg) 0 0 !important;
+}
+
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+    color: var(--moga-white) !important;
+    fill: var(--moga-white) !important;
+}
+
+.flatpickr-months .flatpickr-prev-month:hover svg,
+.flatpickr-months .flatpickr-next-month:hover svg {
+    fill: var(--moga-accent) !important;
+}
+
+.flatpickr-current-month {
+    color: var(--moga-white) !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+}
+
+.flatpickr-current-month .numInputWrapper input {
+    color: var(--moga-white) !important;
+}
+
+.flatpickr-weekday {
+    color: var(--moga-gray-600) !important;
+    font-weight: 600 !important;
+    font-size: 0.75rem !important;
+}
+
+.flatpickr-day {
+    border-radius: var(--moga-border-radius) !important;
+    color: var(--moga-gray-800) !important;
+    font-size: 0.875rem !important;
+}
+
+.flatpickr-day:hover {
+    background-color: var(--moga-primary-light) !important;
+    border-color: var(--moga-primary-light) !important;
+    color: var(--moga-primary) !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+    background-color: var(--moga-primary) !important;
+    border-color: var(--moga-primary) !important;
+    color: var(--moga-white) !important;
+}
+
+.flatpickr-day.inRange {
+    background-color: var(--moga-primary-light) !important;
+    border-color: var(--moga-primary-light) !important;
+    color: var(--moga-primary) !important;
+    box-shadow: -5px 0 0 var(--moga-primary-light), 5px 0 0 var(--moga-primary-light) !important;
+}
+
+.flatpickr-day.today {
+    border-color: var(--moga-secondary) !important;
+    color: var(--moga-secondary) !important;
+    font-weight: 600 !important;
+}
+
+.flatpickr-day.today:hover {
+    background-color: var(--moga-secondary) !important;
+    color: var(--moga-white) !important;
+}
+
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.prevMonthDay,
+.flatpickr-day.nextMonthDay {
+    color: var(--moga-gray-400) !important;
+}
+
+.flatpickr-day.flatpickr-disabled {
+    text-decoration: line-through !important;
+}
+
+
+/* ============================================================
+   13. Guest Counter
+   ============================================================ */
+
+.moga-booking-guests {
+    border: 1px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    padding: var(--moga-spacing-sm) var(--moga-spacing-md);
+}
+
+.moga-booking-guests__label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--moga-gray-600);
+    margin-bottom: 4px;
+}
+
+.moga-booking-guests__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-guests-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1.5px solid var(--moga-gray-400);
+    background: none;
+    color: var(--moga-gray-700);
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+    flex-shrink: 0;
+    font-family: var(--moga-font-primary);
+}
+
+.moga-guests-btn:hover:not(:disabled) {
+    border-color: var(--moga-gray-800);
+    color: var(--moga-gray-900);
+}
+
+.moga-guests-btn:disabled {
+    border-color: var(--moga-gray-300);
+    color: var(--moga-gray-400);
+    cursor: not-allowed;
+}
+
+.moga-guests-count {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--moga-gray-800);
+    text-align: center;
+    flex: 1;
+}
+
+.moga-booking-guests__max {
+    font-size: 0.725rem;
+    color: var(--moga-gray-500);
+    margin-top: 4px;
+    margin-bottom: 0;
+}
+
+
+/* ============================================================
+   14. Price Breakdown
+   ============================================================ */
+
+.moga-price-breakdown {
+    background-color: var(--moga-gray-100);
+    border-radius: var(--moga-border-radius);
+    padding: var(--moga-spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-price-breakdown__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-price-breakdown__label {
+    font-size: 0.875rem;
+    color: var(--moga-gray-700);
+}
+
+.moga-price-breakdown__value {
+    font-size: 0.875rem;
+    color: var(--moga-gray-800);
+    font-weight: 500;
+}
+
+.moga-price-breakdown__row--discount .moga-price-breakdown__label {
+    color: var(--moga-success);
+}
+
+.moga-price-breakdown__value--discount {
+    color: var(--moga-success) !important;
+}
+
+.moga-price-breakdown__row--total {
+    padding-top: var(--moga-spacing-sm);
+    border-top: 1px solid var(--moga-gray-300);
+    margin-top: var(--moga-spacing-xs);
+}
+
+.moga-price-breakdown__label--total {
+    font-weight: 700 !important;
+    color: var(--moga-gray-900) !important;
+}
+
+.moga-price-breakdown__value--total {
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    color: var(--moga-gray-900) !important;
+}
+
+
+/* ============================================================
+   15. Booking Meta Items
+   ============================================================ */
+
+.moga-booking-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.8rem;
+    color: var(--moga-gray-600);
+}
+
+.moga-booking-meta-item svg {
+    flex-shrink: 0;
+    color: var(--moga-gray-500);
+}
+
+.moga-booking-meta-item--success {
+    color: var(--moga-success);
+}
+
+.moga-booking-meta-item--success svg {
+    color: var(--moga-success);
+}
+
+
+/* ============================================================
+   16. Rating Shared Styles
+   ============================================================ */
+
+.moga-rating-score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    line-height: 1.4;
+    min-width: 36px;
+}
+
+.moga-rating-score--sm {
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    min-width: 30px;
+}
+
+.moga-rating-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--moga-gray-800);
+}
+
+.moga-rating-count {
+    font-size: 0.825rem;
+    color: var(--moga-gray-600);
+    text-decoration: underline;
+}
+
+.moga-rating-count:hover {
+    color: var(--moga-secondary);
+}
+
+
+/* ============================================================
+   17. Read More Button
+   ============================================================ */
+
+.moga-read-more-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: var(--moga-spacing-md);
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+    cursor: pointer;
+    text-decoration: underline;
+    font-family: var(--moga-font-primary);
+    transition: var(--moga-transition-fast);
+}
+
+.moga-read-more-btn:hover {
+    color: var(--moga-secondary);
+}
+
+.moga-read-more-btn svg {
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+}
+
+.moga-read-more-btn[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+
+
+/* ============================================================
+   18. Mobile Sticky Bottom Bar
+   ============================================================ */
+
+.moga-mobile-booking-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--moga-z-sticky);
+    background-color: var(--moga-white);
+    border-top: 1px solid var(--moga-gray-200);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    display: none; /* Hidden on desktop — shown on mobile via media query */
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--moga-spacing-md);
+    padding: var(--moga-spacing-md) var(--moga-spacing-lg);
+}
+
+.moga-mobile-booking-bar__price {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.moga-mobile-booking-bar__price-old {
+    font-size: 0.75rem;
+    color: var(--moga-gray-500);
+    text-decoration: line-through;
+}
+
+.moga-mobile-booking-bar__price-current {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+    font-family: var(--moga-font-heading);
+}
+
+.moga-mobile-booking-bar__price-label {
+    font-size: 0.75rem;
+    color: var(--moga-gray-600);
+}
+
+.moga-mobile-booking-bar__btn {
+    flex-shrink: 0;
+    padding: 10px 24px;
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.moga-mobile-booking-bar__btn:hover {
+    text-decoration: none;
+}
+
+
+/* ============================================================
+   19. RTL Overrides
+   ============================================================ */
+
+[dir="rtl"] .moga-single-layout {
+    grid-template-columns: 360px 1fr;
+    direction: rtl;
+}
+
+[dir="rtl"] .moga-property-header {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .moga-property-highlights__item {
+    border-right: none;
+    border-left: 1px solid var(--moga-gray-200);
+}
+
+[dir="rtl"] .moga-property-highlights__item:last-child {
+    border-left: none;
+}
+
+[dir="rtl"] .moga-booking-dates__field--checkin {
+    border-right: none;
+    border-left: 1px solid var(--moga-gray-200);
+}
+
+[dir="rtl"] .moga-booking-dates__arrow svg {
+    transform: scaleX(-1);
+}
+
+[dir="rtl"] .moga-house-rule {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .moga-breadcrumb {
+    flex-direction: row-reverse;
+}
+
+
+/* ============================================================
+   20. Section Navigation (like Booking.com)
+   ============================================================ */
+
+.moga-section-nav {
+    border-bottom: 1px solid var(--moga-gray-200);
+    margin-bottom: var(--moga-spacing-md);
+    background-color: var(--moga-white);
+    position: sticky;
+    top: var(--moga-header-height);
+    z-index: var(--moga-z-sticky);
+}
+
+.moga-section-nav__inner {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.moga-section-nav__inner::-webkit-scrollbar {
+    display: none;
+}
+
+.moga-section-nav__link {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--moga-spacing-md) var(--moga-spacing-lg);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--moga-gray-600);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: var(--moga-transition-fast);
+    margin-bottom: -1px;
+}
+
+.moga-section-nav__link:hover {
+    color: var(--moga-primary);
+    text-decoration: none;
+    border-bottom-color: var(--moga-primary);
+}
+
+.moga-section-nav__link.is-active {
+    color: var(--moga-primary);
+    border-bottom-color: var(--moga-primary);
+    font-weight: 600;
+}
+
+
+/* ============================================================
+   21. Gallery Thumbnail Strip
+   ============================================================ */
+
+.moga-gallery-thumbs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+}
+
+.moga-gallery-thumbs::-webkit-scrollbar {
+    display: none;
+}
+
+.moga-gallery-thumbs__item {
+    position: relative;
+    flex-shrink: 0;
+    width: 185px;
+    height: 120px;
+    border-radius: var(--moga-border-radius);
+    overflow: hidden;
+    display: block;
+    text-decoration: none;
+    background-color: var(--moga-gray-200);
+    cursor: pointer;
+}
+
+.moga-gallery-thumbs__item:hover .moga-gallery-thumbs__img {
+    transform: scale(1.06);
+}
+
+.moga-gallery-thumbs__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+/* "+N more" overlay on last thumbnail */
+.moga-gallery-thumbs__overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.55);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--moga-white);
+    text-align: center;
+    gap: 2px;
+}
+
+.moga-gallery-thumbs__overlay span {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.moga-gallery-thumbs__overlay small {
+    font-size: 0.7rem;
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+.moga-gallery-thumbs__item--more:hover .moga-gallery-thumbs__overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+
+/* ============================================================
+   22. Review Categories (score bars)
+   ============================================================ */
+
+.moga-review-categories {
+    display: grid;
+    grid-template-columns: repeat( 2, 1fr );
+    gap: var(--moga-spacing-md) var(--moga-spacing-xl);
+    margin-bottom: var(--moga-spacing-lg);
+}
+
+.moga-review-category {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.moga-review-category__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-review-category__label {
+    font-size: 0.825rem;
+    color: var(--moga-gray-700);
+    font-weight: 500;
+}
+
+.moga-review-category__score {
+    font-size: 0.825rem;
+    font-weight: 700;
+    color: var(--moga-primary);
+    min-width: 28px;
+    text-align: right;
+}
+
+.moga-review-category__bar {
+    height: 6px;
+    background-color: var(--moga-gray-200);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.moga-review-category__fill {
+    height: 100%;
+    background-color: var(--moga-primary);
+    border-radius: 9999px;
+    transition: width 0.6s ease;
+}
+
+/* Amenity ratings sub-section */
+.moga-review-amenities {
+    margin-top: var(--moga-spacing-lg);
+    padding-top: var(--moga-spacing-lg);
+    border-top: 1px solid var(--moga-gray-200);
+}
+
+.moga-review-amenities__title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--moga-gray-800);
+    margin-bottom: var(--moga-spacing-md);
+}
+
+
+/* ============================================================
+   23. Review Cards
+   ============================================================ */
+
+.moga-review-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-lg);
+    margin-top: var(--moga-spacing-lg);
+}
+
+.moga-review-card {
+    background-color: var(--moga-gray-100);
+    border-radius: var(--moga-border-radius-lg);
+    padding: var(--moga-spacing-lg);
+}
+
+.moga-review-card__header {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-md);
+    margin-bottom: var(--moga-spacing-md);
+}
+
+.moga-review-card__avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.moga-review-card__avatar--placeholder {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.moga-review-card__meta {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.moga-review-card__name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+}
+
+.moga-review-card__date {
+    font-size: 0.775rem;
+    color: var(--moga-gray-500);
+}
+
+.moga-review-card__score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    min-width: 36px;
+    flex-shrink: 0;
+}
+
+.moga-review-card__title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+    margin-bottom: var(--moga-spacing-sm);
+}
+
+.moga-review-card__content {
+    font-size: 0.875rem;
+    color: var(--moga-gray-700);
+    line-height: 1.65;
+    margin-bottom: 0;
+}
+
+.moga-review-card__reply {
+    margin-top: var(--moga-spacing-md);
+    padding: var(--moga-spacing-md);
+    background-color: var(--moga-white);
+    border-radius: var(--moga-border-radius);
+    border-left: 3px solid var(--moga-secondary);
+    font-size: 0.825rem;
+    color: var(--moga-gray-700);
+}
+
+.moga-review-card__reply strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--moga-gray-900);
+}
+
+.moga-review-card__reply p {
+    margin-bottom: 0;
+}
+
+/* Reviews count */
+.moga-reviews-count {
+    font-size: 0.875rem;
+    color: var(--moga-gray-600);
+    margin-bottom: var(--moga-spacing-lg);
+}
+
+.moga-no-reviews {
+    font-size: 0.9rem;
+    color: var(--moga-gray-500);
+    font-style: italic;
+    margin-bottom: 0;
+}
+
+
+/* ============================================================
+   24. Gallery with Sidebar Layout (gallery left + rating/map right)
+   ============================================================ */
+
+.moga-gallery-with-sidebar {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: var(--moga-spacing-md);
+    margin-bottom: var(--moga-spacing-xl);
+    align-items: start;
+}
+
+.moga-gallery-main {
+    min-width: 0;
+}
+
+/* Remove the bottom margin from gallery when inside the sidebar layout */
+.moga-gallery-main .moga-property-gallery {
+    margin-bottom: 0;
+}
+
+/* Fix gallery mosaic ratio — large image 60%, small images 40% */
+.moga-gallery-mosaic {
+    grid-template-columns: 60% 40% !important;
+}
+
+
+/* ============================================================
+   25. Rating Box (beside gallery)
+   ============================================================ */
+
+.moga-gallery-rating-box {
+    background-color: var(--moga-white);
+    border: 1px solid var(--moga-gray-200);
+    border-radius: var(--moga-border-radius-lg);
+    padding: var(--moga-spacing-md);
+    margin-bottom: var(--moga-spacing-sm);
+}
+
+.moga-gallery-rating-box__score {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+    margin-bottom: var(--moga-spacing-md);
+    padding-bottom: var(--moga-spacing-md);
+    border-bottom: 1px solid var(--moga-gray-100);
+}
+
+.moga-gallery-rating-box__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    font-size: 1.25rem;
+    font-weight: 700;
+    padding: 8px 12px;
+    border-radius: 8px;
+    min-width: 52px;
+    flex-shrink: 0;
+    font-family: var(--moga-font-heading);
+}
+
+.moga-gallery-rating-box__labels {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.moga-gallery-rating-box__label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+}
+
+.moga-gallery-rating-box__count {
+    font-size: 0.775rem;
+    color: var(--moga-gray-600);
+    text-decoration: underline;
+}
+
+.moga-gallery-rating-box__count:hover {
+    color: var(--moga-secondary);
+}
+
+.moga-gallery-rating-box__no-rating {
+    font-size: 0.825rem;
+    color: var(--moga-gray-500);
+    font-style: italic;
+}
+
+/* Featured review quote */
+.moga-gallery-rating-box__quote {
+    margin-bottom: var(--moga-spacing-md);
+    padding-bottom: var(--moga-spacing-md);
+    border-bottom: 1px solid var(--moga-gray-100);
+}
+
+.moga-gallery-rating-box__quote-text {
+    font-size: 0.775rem;
+    color: var(--moga-gray-700);
+    line-height: 1.55;
+    font-style: italic;
+    margin-bottom: 6px;
+}
+
+.moga-gallery-rating-box__quote-author {
+    font-size: 0.725rem;
+    font-weight: 600;
+    color: var(--moga-gray-600);
+}
+
+/* Location score row */
+.moga-gallery-rating-box__location {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.775rem;
+    color: var(--moga-gray-700);
+}
+
+.moga-gallery-rating-box__location svg {
+    color: var(--moga-secondary);
+    flex-shrink: 0;
+}
+
+.moga-gallery-rating-box__location-label {
+    flex: 1;
+}
+
+.moga-gallery-rating-box__location-score {
+    font-weight: 700;
+    color: var(--moga-primary);
+    font-size: 0.825rem;
+}
+
+
+/* ============================================================
+   26. Map (beside gallery)
+   ============================================================ */
+
+.moga-gallery-map {
+    border-radius: var(--moga-border-radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--moga-gray-200);
+    position: relative;
+}
+
+.moga-gallery-map__iframe {
+    display: block;
+    width: 100%;
+    height: 200px;
+    border: none;
+}
+
+.moga-gallery-map__link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px;
+    background-color: var(--moga-white);
+    font-size: 0.775rem;
+    color: var(--moga-secondary);
+    text-decoration: none;
+    border-top: 1px solid var(--moga-gray-200);
+    transition: var(--moga-transition-fast);
+}
+
+.moga-gallery-map__link:hover {
+    background-color: var(--moga-gray-100);
+    text-decoration: none;
+    color: var(--moga-primary);
+}
+
+.moga-gallery-map__placeholder {
+    height: 160px;
+    background-color: var(--moga-gray-100);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--moga-spacing-sm);
+    color: var(--moga-gray-500);
+    text-align: center;
+    padding: var(--moga-spacing-md);
+}
+
+.moga-gallery-map__placeholder svg {
+    color: var(--moga-gray-400);
+}
+
+.moga-gallery-map__placeholder p {
+    font-size: 0.8rem;
+    margin-bottom: 0;
+    line-height: 1.4;
+}
+
+
+/* ============================================================
+   27. Reserve button in property header
+   ============================================================ */
+
+.moga-property-header__reserve {
+    padding: 9px 20px;
+    font-size: 0.9rem;
+    border-radius: var(--moga-border-radius);
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.moga-property-header__reserve:hover {
+    text-decoration: none;
+}

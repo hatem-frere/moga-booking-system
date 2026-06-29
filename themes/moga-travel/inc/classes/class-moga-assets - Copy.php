@@ -46,12 +46,13 @@ class Moga_Assets {
     const GLIGHTBOX_VERSION = '3.3.0';
 
     /**
-     * Flatpickr date picker library version.
-     *
-     * @since 1.0.0
-     * @var   string
-     */
-    const FLATPICKR_VERSION = '4.6.13';
+ * Flatpickr date picker library version.
+ *
+ * @since 1.0.0
+ * @var   string
+ */
+const FLATPICKR_VERSION = '4.6.13';
+
 
     /**
      * Enqueue all frontend CSS and JS files.
@@ -91,10 +92,9 @@ class Moga_Assets {
      * Registered here but only enqueued when needed.
      *
      * Libraries:
-     *   - intl-tel-input v29.1.0  (local files)
-     *   - Swiper.js v11.0.0       (local files)
-     *   - GLightbox v3.3.0        (local files)
-     *   - Flatpickr v4.6.13       (local files)
+     *   - intl-tel-input v29.1.0 (local files)
+     *   - Swiper.js v11.0.0     (local files)
+     *   - GLightbox v3.3.0      (local files)
      *
      * @since  1.0.0
      * @return void
@@ -136,7 +136,7 @@ class Moga_Assets {
             true
         );
 
-        // ---- GLightbox ----
+// ---- GLightbox ----
         wp_register_style(
             'glightbox',
             $vendor_css . 'glightbox/glightbox.min.css',
@@ -184,8 +184,8 @@ class Moga_Assets {
      *   4. header.css     — header and navigation
      *   5. footer.css     — footer
      *   6. home.css       — homepage hero, search, sections
-     *   7. search.css     — search results page + all card styles
-     *   8. booking.css    — single property/tour page styles
+     *   7. search.css     — search results page
+     *   8. booking.css    — booking-specific styles
      *   9. dashboard.css  — owner dashboard styles
      *  10. responsive.css — all media queries (always last)
      *  11. rtl.css        — RTL overrides (if RTL language)
@@ -239,8 +239,6 @@ class Moga_Assets {
         );
 
         // Home page styles — only on the homepage.
-        // Also loads search.css for property card styles used in
-        // the Featured Properties section (badges, ratings, etc.).
         if ( is_front_page() || is_page_template( 'page-templates/template-home.php' ) ) {
             wp_enqueue_style(
                 'moga-home',
@@ -248,6 +246,8 @@ class Moga_Assets {
                 array( 'moga-main', 'moga-components' ),
                 $ver
             );
+            // Load search.css on homepage too — needed for property card styles
+            // (badges, wishlist, type tag, rating, price) used in Featured Properties section.
             wp_enqueue_style(
                 'moga-search',
                 $css . 'search.css',
@@ -266,12 +266,13 @@ class Moga_Assets {
             );
         }
 
-        // Gallery pages — GLightbox CSS on property/tour/destination singles.
+        // Gallery pages — property/tour/destination singles.
         if ( self::is_gallery_page() ) {
+            wp_enqueue_style( 'swiper' );
             wp_enqueue_style( 'glightbox' );
         }
 
-        // Single property / tour pages — booking.css + Flatpickr + intl-tel-input.
+        // Booking styles — only on booking-related pages.
         if ( self::is_booking_page() ) {
             wp_enqueue_style(
                 'moga-booking',
@@ -279,8 +280,12 @@ class Moga_Assets {
                 array( 'moga-main', 'moga-components' ),
                 $ver
             );
-            wp_enqueue_style( 'flatpickr' );
+
+            // intl-tel-input CSS — phone field on booking pages.
             wp_enqueue_style( 'intl-tel-input' );
+
+                            // Flatpickr CSS — date picker on booking pages.
+            wp_enqueue_style( 'flatpickr' );
         }
 
         // Dashboard styles — only on dashboard pages.
@@ -348,24 +353,29 @@ class Moga_Assets {
             );
         }
 
-        // Gallery pages — GLightbox JS on property/tour/destination singles.
+        // Gallery pages — Swiper + GLightbox.
         if ( self::is_gallery_page() ) {
+            wp_enqueue_script( 'swiper' );
             wp_enqueue_script( 'glightbox' );
         }
 
-        // Single property / tour pages — booking.js with all dependencies.
-        // Dependencies include flatpickr and glightbox so WordPress guarantees
-        // they are loaded before booking.js runs.
+        // Booking script — only on booking pages.
         if ( self::is_booking_page() ) {
-            wp_enqueue_script( 'flatpickr' );
             wp_enqueue_script(
                 'moga-booking',
                 $js . 'booking.js',
-                array( 'jquery', 'moga-main', 'flatpickr', 'glightbox' ),
+                array( 'jquery', 'moga-main' ),
                 $ver,
                 true
             );
+
+                        // Flatpickr JS — date picker on booking pages.
+            wp_enqueue_script( 'flatpickr' );
+
+            // intl-tel-input JS — phone field on booking pages.
             wp_enqueue_script( 'intl-tel-input' );
+
+            // Pass utils.js path to JavaScript for intl-tel-input init.
             wp_localize_script(
                 'intl-tel-input',
                 'mogaItiData',
@@ -429,7 +439,7 @@ class Moga_Assets {
         // Fix flags path — override CSS variable to correct absolute URL.
         // intlTelInput.min.css uses relative ../img/ path which breaks
         // when loaded through WordPress. We override with absolute URL.
-        $flags_url  = MOGA_THEME_URL . 'assets/css/vendor/intl-tel-input/img/';
+        $flags_url   = MOGA_THEME_URL . 'assets/css/vendor/intl-tel-input/img/';
         $inline_css  = '.iti { --iti-path-flags-1x: url("' . esc_url( $flags_url . 'flags.webp' ) . '"); }';
         $inline_css .= '.iti { --iti-path-flags-2x: url("' . esc_url( $flags_url . 'flags@2x.webp' ) . '"); }';
 
@@ -475,7 +485,7 @@ class Moga_Assets {
     }
 
     /**
-     * Check if current page needs gallery libraries (GLightbox).
+     * Check if current page needs gallery libraries (Swiper + GLightbox).
      * Applies to property, tour, and destination single pages.
      *
      * @since  1.0.0
@@ -490,7 +500,6 @@ class Moga_Assets {
 
     /**
      * Check if current page is a booking-related page.
-     * Covers single property/tour pages and dedicated booking pages.
      *
      * @since  1.0.0
      * @return bool
