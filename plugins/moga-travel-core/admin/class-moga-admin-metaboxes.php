@@ -479,6 +479,14 @@ class Moga_Admin_Metaboxes {
     /**
      * Render property location meta box.
      *
+     * CHANGED in GeoNames update:
+     * - Added _moga_geoname_city_id meta field (stores GeoNames numeric ID)
+     * - City select now loads from GeoNames via get_cities_for_render() helper
+     *   with data-geoname-id on each option for district cascade
+     * - District field replaced with smart wrapper: cascade dropdown (when
+     *   GeoNames has district data) + text input fallback (always visible
+     *   for manual entry or when no district data available)
+     *
      * @since  1.0.0
      * @param  WP_Post $post Current post object.
      * @return void
@@ -486,18 +494,17 @@ class Moga_Admin_Metaboxes {
     public static function render_property_location( $post ) {
         wp_nonce_field( 'moga_property_location_nonce', 'moga_property_location_nonce' );
 
-        $country     = get_post_meta( $post->ID, '_moga_country',     true );
-        $city        = get_post_meta( $post->ID, '_moga_city',        true );
-        $district    = get_post_meta( $post->ID, '_moga_district',    true );
-        $address     = get_post_meta( $post->ID, '_moga_address',     true );
-        $postal_code = get_post_meta( $post->ID, '_moga_postal_code', true );
-        $latitude    = get_post_meta( $post->ID, '_moga_latitude',    true );
-        $longitude   = get_post_meta( $post->ID, '_moga_longitude',   true );
+        $country         = get_post_meta( $post->ID, '_moga_country',         true );
+        $city            = get_post_meta( $post->ID, '_moga_city',            true );
+        $district        = get_post_meta( $post->ID, '_moga_district',        true );
+        $geoname_city_id = get_post_meta( $post->ID, '_moga_geoname_city_id', true );
+        $address         = get_post_meta( $post->ID, '_moga_address',         true );
+        $postal_code     = get_post_meta( $post->ID, '_moga_postal_code',     true );
+        $latitude        = get_post_meta( $post->ID, '_moga_latitude',        true );
+        $longitude       = get_post_meta( $post->ID, '_moga_longitude',       true );
 
-        $countries = moga_get_countries_dropdown();
-        $cities    = $country
-            ? moga_get_cities_dropdown( $country )
-            : array( '' => __( '— Select Country First —', 'moga-travel-core' ) );
+        $countries      = moga_get_countries_dropdown();
+        $cities_options = self::get_cities_for_render( $country );
         ?>
         <div class="moga-metabox">
 
@@ -512,6 +519,7 @@ class Moga_Admin_Metaboxes {
                         name="moga_country"
                         class="moga-country-select"
                         data-target="moga_city"
+                        data-district-wrapper="moga-property-district-wrapper"
                     >
                         <?php foreach ( $countries as $code => $label ) : ?>
                             <option value="<?php echo esc_attr( $code ); ?>" <?php selected( $country, $code ); ?>>
@@ -526,30 +534,89 @@ class Moga_Admin_Metaboxes {
                         <?php esc_html_e( 'City', 'moga-travel-core' ); ?>
                         <span class="required">*</span>
                     </label>
-                    <select id="moga_city" name="moga_city" class="moga-city-select">
-                        <?php foreach ( $cities as $value => $label ) : ?>
-                            <option value="<?php echo esc_attr( $value ); ?>" <?php selected( $city, $value ); ?>>
-                                <?php echo esc_html( $label ); ?>
+                    <select
+                        id="moga_city"
+                        name="moga_city"
+                        class="moga-city-select"
+                        data-district-wrapper="moga-property-district-wrapper"
+                        data-geoname-field="moga_geoname_city_id"
+                    >
+                        <?php if ( empty( $cities_options ) ) : ?>
+                            <option value="">
+                                <?php esc_html_e( '— Select Country First —', 'moga-travel-core' ); ?>
                             </option>
-                        <?php endforeach; ?>
+                        <?php else : ?>
+                            <option value="">
+                                <?php esc_html_e( '— Select City —', 'moga-travel-core' ); ?>
+                            </option>
+                            <?php foreach ( $cities_options as $c ) : ?>
+                                <option
+                                    value="<?php echo esc_attr( $c['name'] ); ?>"
+                                    data-geoname-id="<?php echo esc_attr( $c['geoname_id'] ); ?>"
+                                    data-lat="<?php echo esc_attr( $c['lat'] ); ?>"
+                                    data-lng="<?php echo esc_attr( $c['lng'] ); ?>"
+                                    <?php selected( $city, $c['name'] ); ?>
+                                ><?php echo esc_html( $c['name'] ); ?></option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </select>
+                    <?php // Hidden field stores the GeoNames ID of the selected city. ?>
+                    <input
+                        type="hidden"
+                        id="moga_geoname_city_id"
+                        name="moga_geoname_city_id"
+                        value="<?php echo esc_attr( $geoname_city_id ); ?>"
+                    >
                 </div>
             </div>
 
-            <div class="moga-metabox__row">
+            <?php /*
+             * District + Postal Code row.
+             * The row div itself IS the district wrapper so JS can find
+             * .moga-district-select, .moga-district-text, .moga-district-loading
+             * via $wrapper.find(). Three side-by-side columns:
+             *   1. Dropdown column (.moga-district-dropdown-field) — shown only
+             *      when GeoNames returns district data; hidden otherwise.
+             *   2. Text input column — always visible; always submits the value.
+             *      Synced from dropdown selection when dropdown is active.
+             *   3. Postal Code column.
+             */ ?>
+            <div class="moga-metabox__row moga-district-wrapper" id="moga-property-district-wrapper">
+
+                <?php // Column 1: Cascade dropdown — JS shows/hides this entire column. ?>
+                <div class="moga-metabox__field moga-district-dropdown-field" style="display:none;">
+                    <label for="moga_district_select">
+                        <?php esc_html_e( 'District / Area', 'moga-travel-core' ); ?>
+                    </label>
+                    <select
+                        id="moga_district_select"
+                        class="moga-district-select"
+                    >
+                        <option value="">
+                            <?php esc_html_e( '— Select District —', 'moga-travel-core' ); ?>
+                        </option>
+                    </select>
+                    <span class="moga-district-loading" style="display:none;">
+                        <?php esc_html_e( 'Loading districts…', 'moga-travel-core' ); ?>
+                    </span>
+                </div>
+
+                <?php // Column 2: Text input — always present, always submits the value. ?>
                 <div class="moga-metabox__field">
-                    <label for="moga_district">
+                    <label for="moga_district" class="moga-district-text-label">
                         <?php esc_html_e( 'District / Area', 'moga-travel-core' ); ?>
                     </label>
                     <input
                         type="text"
                         id="moga_district"
                         name="moga_district"
+                        class="moga-district-text"
                         value="<?php echo esc_attr( $district ); ?>"
                         placeholder="<?php esc_attr_e( 'e.g. Downtown, Zamalek', 'moga-travel-core' ); ?>"
                     >
                 </div>
 
+                <?php // Column 3: Postal Code. ?>
                 <div class="moga-metabox__field">
                     <label for="moga_postal_code">
                         <?php esc_html_e( 'Postal Code', 'moga-travel-core' ); ?>
@@ -562,6 +629,7 @@ class Moga_Admin_Metaboxes {
                         placeholder="<?php esc_attr_e( 'e.g. 12345', 'moga-travel-core' ); ?>"
                     >
                 </div>
+
             </div>
 
             <div class="moga-metabox__row moga-metabox__row--full">
@@ -1107,6 +1175,13 @@ class Moga_Admin_Metaboxes {
     /**
      * Render tour location meta box.
      *
+     * CHANGED in GeoNames update:
+     * - Added _moga_departure_district and _moga_destination_district fields (NEW)
+     * - Added _moga_geoname_departure_city_id and _moga_geoname_destination_city_id (NEW)
+     * - City selects now use get_cities_for_render() with data-geoname-id on options
+     * - District fields replaced with smart wrapper (dropdown + text fallback) for both
+     *   departure and destination sections
+     *
      * @since  1.0.0
      * @param  WP_Post $post Current post object.
      * @return void
@@ -1114,22 +1189,23 @@ class Moga_Admin_Metaboxes {
     public static function render_tour_location( $post ) {
         wp_nonce_field( 'moga_tour_location_nonce', 'moga_tour_location_nonce' );
 
-        $dep_country  = get_post_meta( $post->ID, '_moga_departure_country',   true );
-        $dep_city     = get_post_meta( $post->ID, '_moga_departure_city',      true );
-        $dep_point    = get_post_meta( $post->ID, '_moga_departure_point',     true );
-        $dest_country = get_post_meta( $post->ID, '_moga_destination_country', true );
-        $dest_city    = get_post_meta( $post->ID, '_moga_destination_city',    true );
+        $dep_country          = get_post_meta( $post->ID, '_moga_departure_country',            true );
+        $dep_city             = get_post_meta( $post->ID, '_moga_departure_city',               true );
+        $dep_district         = get_post_meta( $post->ID, '_moga_departure_district',           true );
+        $dep_geoname_city_id  = get_post_meta( $post->ID, '_moga_geoname_departure_city_id',    true );
+        $dep_point            = get_post_meta( $post->ID, '_moga_departure_point',              true );
+        $dest_country         = get_post_meta( $post->ID, '_moga_destination_country',          true );
+        $dest_city            = get_post_meta( $post->ID, '_moga_destination_city',             true );
+        $dest_district        = get_post_meta( $post->ID, '_moga_destination_district',         true );
+        $dest_geoname_city_id = get_post_meta( $post->ID, '_moga_geoname_destination_city_id',  true );
 
-        $countries   = moga_get_countries_dropdown();
-        $dep_cities  = $dep_country
-            ? moga_get_cities_dropdown( $dep_country )
-            : array( '' => __( '— Select Country First —', 'moga-travel-core' ) );
-        $dest_cities = $dest_country
-            ? moga_get_cities_dropdown( $dest_country )
-            : array( '' => __( '— Select Country First —', 'moga-travel-core' ) );
+        $countries        = moga_get_countries_dropdown();
+        $dep_cities_opts  = self::get_cities_for_render( $dep_country );
+        $dest_cities_opts = self::get_cities_for_render( $dest_country );
         ?>
         <div class="moga-metabox">
 
+            <?php // ---- DEPARTURE SECTION ---- ?>
             <h4 class="moga-metabox__section-title">
                 <?php esc_html_e( 'Departure', 'moga-travel-core' ); ?>
             </h4>
@@ -1143,6 +1219,7 @@ class Moga_Admin_Metaboxes {
                         name="moga_departure_country"
                         class="moga-country-select"
                         data-target="moga_departure_city"
+                        data-district-wrapper="moga-departure-district-wrapper"
                     >
                         <?php foreach ( $countries as $code => $label ) : ?>
                             <option value="<?php echo esc_attr( $code ); ?>" <?php selected( $dep_country, $code ); ?>>
@@ -1156,13 +1233,69 @@ class Moga_Admin_Metaboxes {
                     <label for="moga_departure_city">
                         <?php esc_html_e( 'Departure City', 'moga-travel-core' ); ?>
                     </label>
-                    <select id="moga_departure_city" name="moga_departure_city" class="moga-city-select">
-                        <?php foreach ( $dep_cities as $value => $label ) : ?>
-                            <option value="<?php echo esc_attr( $value ); ?>" <?php selected( $dep_city, $value ); ?>>
-                                <?php echo esc_html( $label ); ?>
+                    <select
+                        id="moga_departure_city"
+                        name="moga_departure_city"
+                        class="moga-city-select"
+                        data-district-wrapper="moga-departure-district-wrapper"
+                        data-geoname-field="moga_geoname_departure_city_id"
+                    >
+                        <?php if ( empty( $dep_cities_opts ) ) : ?>
+                            <option value="">
+                                <?php esc_html_e( '— Select Country First —', 'moga-travel-core' ); ?>
                             </option>
-                        <?php endforeach; ?>
+                        <?php else : ?>
+                            <option value="">
+                                <?php esc_html_e( '— Select City —', 'moga-travel-core' ); ?>
+                            </option>
+                            <?php foreach ( $dep_cities_opts as $c ) : ?>
+                                <option
+                                    value="<?php echo esc_attr( $c['name'] ); ?>"
+                                    data-geoname-id="<?php echo esc_attr( $c['geoname_id'] ); ?>"
+                                    data-lat="<?php echo esc_attr( $c['lat'] ); ?>"
+                                    data-lng="<?php echo esc_attr( $c['lng'] ); ?>"
+                                    <?php selected( $dep_city, $c['name'] ); ?>
+                                ><?php echo esc_html( $c['name'] ); ?></option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </select>
+                    <input
+                        type="hidden"
+                        id="moga_geoname_departure_city_id"
+                        name="moga_geoname_departure_city_id"
+                        value="<?php echo esc_attr( $dep_geoname_city_id ); ?>"
+                    >
+                </div>
+
+                <div class="moga-metabox__field">
+                    <label for="moga_departure_district">
+                        <?php esc_html_e( 'Departure District / Area', 'moga-travel-core' ); ?>
+                    </label>
+                    <div id="moga-departure-district-wrapper" class="moga-district-wrapper">
+                        <select
+                            id="moga_departure_district_select"
+                            class="moga-district-select"
+                            style="display:none;"
+                        >
+                            <option value="">
+                                <?php esc_html_e( '— Select District —', 'moga-travel-core' ); ?>
+                            </option>
+                        </select>
+                        <label for="moga_departure_district" class="moga-district-text-label">
+                            <?php esc_html_e( 'District / Area', 'moga-travel-core' ); ?>
+                        </label>
+                        <input
+                            type="text"
+                            id="moga_departure_district"
+                            name="moga_departure_district"
+                            class="moga-district-text"
+                            value="<?php echo esc_attr( $dep_district ); ?>"
+                            placeholder="<?php esc_attr_e( 'e.g. City Centre', 'moga-travel-core' ); ?>"
+                        >
+                        <span class="moga-district-loading" style="display:none;">
+                            <?php esc_html_e( 'Loading districts…', 'moga-travel-core' ); ?>
+                        </span>
+                    </div>
                 </div>
 
                 <div class="moga-metabox__field moga-metabox__field--wide">
@@ -1179,6 +1312,7 @@ class Moga_Admin_Metaboxes {
                 </div>
             </div>
 
+            <?php // ---- DESTINATION SECTION ---- ?>
             <h4 class="moga-metabox__section-title">
                 <?php esc_html_e( 'Destination', 'moga-travel-core' ); ?>
             </h4>
@@ -1192,6 +1326,7 @@ class Moga_Admin_Metaboxes {
                         name="moga_destination_country"
                         class="moga-country-select"
                         data-target="moga_destination_city"
+                        data-district-wrapper="moga-destination-district-wrapper"
                     >
                         <?php foreach ( $countries as $code => $label ) : ?>
                             <option value="<?php echo esc_attr( $code ); ?>" <?php selected( $dest_country, $code ); ?>>
@@ -1205,13 +1340,69 @@ class Moga_Admin_Metaboxes {
                     <label for="moga_destination_city">
                         <?php esc_html_e( 'Destination City', 'moga-travel-core' ); ?>
                     </label>
-                    <select id="moga_destination_city" name="moga_destination_city" class="moga-city-select">
-                        <?php foreach ( $dest_cities as $value => $label ) : ?>
-                            <option value="<?php echo esc_attr( $value ); ?>" <?php selected( $dest_city, $value ); ?>>
-                                <?php echo esc_html( $label ); ?>
+                    <select
+                        id="moga_destination_city"
+                        name="moga_destination_city"
+                        class="moga-city-select"
+                        data-district-wrapper="moga-destination-district-wrapper"
+                        data-geoname-field="moga_geoname_destination_city_id"
+                    >
+                        <?php if ( empty( $dest_cities_opts ) ) : ?>
+                            <option value="">
+                                <?php esc_html_e( '— Select Country First —', 'moga-travel-core' ); ?>
                             </option>
-                        <?php endforeach; ?>
+                        <?php else : ?>
+                            <option value="">
+                                <?php esc_html_e( '— Select City —', 'moga-travel-core' ); ?>
+                            </option>
+                            <?php foreach ( $dest_cities_opts as $c ) : ?>
+                                <option
+                                    value="<?php echo esc_attr( $c['name'] ); ?>"
+                                    data-geoname-id="<?php echo esc_attr( $c['geoname_id'] ); ?>"
+                                    data-lat="<?php echo esc_attr( $c['lat'] ); ?>"
+                                    data-lng="<?php echo esc_attr( $c['lng'] ); ?>"
+                                    <?php selected( $dest_city, $c['name'] ); ?>
+                                ><?php echo esc_html( $c['name'] ); ?></option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </select>
+                    <input
+                        type="hidden"
+                        id="moga_geoname_destination_city_id"
+                        name="moga_geoname_destination_city_id"
+                        value="<?php echo esc_attr( $dest_geoname_city_id ); ?>"
+                    >
+                </div>
+
+                <div class="moga-metabox__field">
+                    <label for="moga_destination_district">
+                        <?php esc_html_e( 'Destination District / Area', 'moga-travel-core' ); ?>
+                    </label>
+                    <div id="moga-destination-district-wrapper" class="moga-district-wrapper">
+                        <select
+                            id="moga_destination_district_select"
+                            class="moga-district-select"
+                            style="display:none;"
+                        >
+                            <option value="">
+                                <?php esc_html_e( '— Select District —', 'moga-travel-core' ); ?>
+                            </option>
+                        </select>
+                        <label for="moga_destination_district" class="moga-district-text-label">
+                            <?php esc_html_e( 'District / Area', 'moga-travel-core' ); ?>
+                        </label>
+                        <input
+                            type="text"
+                            id="moga_destination_district"
+                            name="moga_destination_district"
+                            class="moga-district-text"
+                            value="<?php echo esc_attr( $dest_district ); ?>"
+                            placeholder="<?php esc_attr_e( 'e.g. Old Town', 'moga-travel-core' ); ?>"
+                        >
+                        <span class="moga-district-loading" style="display:none;">
+                            <?php esc_html_e( 'Loading districts…', 'moga-travel-core' ); ?>
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -1468,7 +1659,7 @@ class Moga_Admin_Metaboxes {
                                 /* translators: %s: link to add new bus */
                                 esc_html__( 'No buses available. %s first.', 'moga-travel-core' ),
                                 '<a href="' . esc_url( admin_url( 'post-new.php?post_type=moga_bus' ) ) . '">'
-                                . esc_html__( 'Add a bus', 'moga-travel-core' )
+                                    . esc_html__( 'Add a Bus', 'moga-travel-core' )
                                 . '</a>'
                             );
                             ?>
@@ -1484,7 +1675,7 @@ class Moga_Admin_Metaboxes {
                         value="<?php echo esc_attr( $seats_total ); ?>"
                         min="0" step="1" placeholder="0" readonly>
                     <p class="moga-metabox__hint">
-                        <?php esc_html_e( 'Auto-filled from bus configuration.', 'moga-travel-core' ); ?>
+                        <?php esc_html_e( 'Auto-populated from bus.', 'moga-travel-core' ); ?>
                     </p>
                 </div>
 
@@ -1677,6 +1868,12 @@ class Moga_Admin_Metaboxes {
     /**
      * Save property meta fields.
      *
+     * CHANGED in GeoNames update:
+     * - Now saves _moga_geoname_city_id (NEW)
+     * - Replaced moga_sync_city_to_taxonomy() with
+     *   Moga_Tax_Location::sync_from_selection() which also handles districts
+     *   and creates taxonomy terms at all three levels (country, city, district)
+     *
      * @since  1.0.0
      * @param  int $post_id Property post ID.
      * @return void
@@ -1707,33 +1904,56 @@ class Moga_Admin_Metaboxes {
                 'moga_property_location_nonce'
             )
         ) {
-            $country = isset( $_POST['moga_country'] )
+            $country         = isset( $_POST['moga_country'] )
                 ? sanitize_text_field( wp_unslash( $_POST['moga_country'] ) ) : '';
-            $city    = isset( $_POST['moga_city'] )
+            $city            = isset( $_POST['moga_city'] )
                 ? sanitize_text_field( wp_unslash( $_POST['moga_city'] ) ) : '';
+            $district        = isset( $_POST['moga_district'] )
+                ? sanitize_text_field( wp_unslash( $_POST['moga_district'] ) ) : '';
+            $geoname_city_id = isset( $_POST['moga_geoname_city_id'] )
+                ? absint( $_POST['moga_geoname_city_id'] ) : 0;
+            $latitude        = isset( $_POST['moga_latitude'] )
+                ? sanitize_text_field( wp_unslash( $_POST['moga_latitude'] ) ) : '';
+            $longitude       = isset( $_POST['moga_longitude'] )
+                ? sanitize_text_field( wp_unslash( $_POST['moga_longitude'] ) ) : '';
 
-            update_post_meta( $post_id, '_moga_country',     $country );
-            update_post_meta( $post_id, '_moga_city',        $city );
-            update_post_meta( $post_id, '_moga_district',
-                isset( $_POST['moga_district'] ) ? sanitize_text_field( wp_unslash( $_POST['moga_district'] ) ) : '' );
+            update_post_meta( $post_id, '_moga_country',         $country );
+            update_post_meta( $post_id, '_moga_city',            $city );
+            update_post_meta( $post_id, '_moga_district',        $district );
+            update_post_meta( $post_id, '_moga_geoname_city_id', $geoname_city_id );
             update_post_meta( $post_id, '_moga_address',
                 isset( $_POST['moga_address'] ) ? sanitize_text_field( wp_unslash( $_POST['moga_address'] ) ) : '' );
             update_post_meta( $post_id, '_moga_postal_code',
                 isset( $_POST['moga_postal_code'] ) ? sanitize_text_field( wp_unslash( $_POST['moga_postal_code'] ) ) : '' );
-            update_post_meta( $post_id, '_moga_latitude',
-                isset( $_POST['moga_latitude'] ) ? sanitize_text_field( wp_unslash( $_POST['moga_latitude'] ) ) : '' );
-            update_post_meta( $post_id, '_moga_longitude',
-                isset( $_POST['moga_longitude'] ) ? sanitize_text_field( wp_unslash( $_POST['moga_longitude'] ) ) : '' );
+            update_post_meta( $post_id, '_moga_latitude',  $latitude );
+            update_post_meta( $post_id, '_moga_longitude', $longitude );
 
+            // Resolve country display name for storage.
+            $country_name = '';
             if ( $country ) {
                 $country_data = moga_get_country( $country );
                 if ( $country_data ) {
-                    update_post_meta( $post_id, '_moga_country_name', $country_data['name'] );
+                    $country_name = $country_data['name'];
+                    update_post_meta( $post_id, '_moga_country_name', $country_name );
                 }
             }
 
+            // Auto-sync to moga_location taxonomy.
+            // Creates/reuses Country, City, and District taxonomy terms
+            // and assigns all three to this post for search filtering.
             if ( $country && $city ) {
-                moga_sync_city_to_taxonomy( $country, $city );
+                Moga_Tax_Location::sync_from_selection(
+                    $post_id,
+                    array(
+                        'country_code' => $country,
+                        'country_name' => $country_name,
+                        'city_name'    => $city,
+                        'geoname_id'   => $geoname_city_id,
+                        'district'     => $district,
+                        'lat'          => $latitude,
+                        'lng'          => $longitude,
+                    )
+                );
             }
         }
 
@@ -1826,6 +2046,13 @@ class Moga_Admin_Metaboxes {
     /**
      * Save tour meta fields.
      *
+     * CHANGED in GeoNames update:
+     * - Now saves _moga_departure_district and _moga_destination_district (NEW)
+     * - Now saves _moga_geoname_departure_city_id and _moga_geoname_destination_city_id (NEW)
+     * - Replaced moga_sync_city_to_taxonomy() with Moga_Tax_Location::sync_from_selection()
+     *   Tours have TWO locations (departure + destination). Departure syncs with replace=true,
+     *   destination syncs with append=true so both sets of terms coexist on the post.
+     *
      * @since  1.0.0
      * @param  int $post_id Tour post ID.
      * @return void
@@ -1880,27 +2107,64 @@ class Moga_Admin_Metaboxes {
                 'moga_tour_location_nonce'
             )
         ) {
-            $dep_country  = isset( $_POST['moga_departure_country'] )
+            $dep_country          = isset( $_POST['moga_departure_country'] )
                 ? sanitize_text_field( wp_unslash( $_POST['moga_departure_country'] ) ) : '';
-            $dep_city     = isset( $_POST['moga_departure_city'] )
+            $dep_city             = isset( $_POST['moga_departure_city'] )
                 ? sanitize_text_field( wp_unslash( $_POST['moga_departure_city'] ) ) : '';
-            $dest_country = isset( $_POST['moga_destination_country'] )
+            $dep_district         = isset( $_POST['moga_departure_district'] )
+                ? sanitize_text_field( wp_unslash( $_POST['moga_departure_district'] ) ) : '';
+            $dep_geoname_city_id  = isset( $_POST['moga_geoname_departure_city_id'] )
+                ? absint( $_POST['moga_geoname_departure_city_id'] ) : 0;
+            $dest_country         = isset( $_POST['moga_destination_country'] )
                 ? sanitize_text_field( wp_unslash( $_POST['moga_destination_country'] ) ) : '';
-            $dest_city    = isset( $_POST['moga_destination_city'] )
+            $dest_city            = isset( $_POST['moga_destination_city'] )
                 ? sanitize_text_field( wp_unslash( $_POST['moga_destination_city'] ) ) : '';
+            $dest_district        = isset( $_POST['moga_destination_district'] )
+                ? sanitize_text_field( wp_unslash( $_POST['moga_destination_district'] ) ) : '';
+            $dest_geoname_city_id = isset( $_POST['moga_geoname_destination_city_id'] )
+                ? absint( $_POST['moga_geoname_destination_city_id'] ) : 0;
 
-            update_post_meta( $post_id, '_moga_departure_country',   $dep_country );
-            update_post_meta( $post_id, '_moga_departure_city',      $dep_city );
-            update_post_meta( $post_id, '_moga_destination_country', $dest_country );
-            update_post_meta( $post_id, '_moga_destination_city',    $dest_city );
+            update_post_meta( $post_id, '_moga_departure_country',           $dep_country );
+            update_post_meta( $post_id, '_moga_departure_city',              $dep_city );
+            update_post_meta( $post_id, '_moga_departure_district',          $dep_district );
+            update_post_meta( $post_id, '_moga_geoname_departure_city_id',   $dep_geoname_city_id );
+            update_post_meta( $post_id, '_moga_destination_country',         $dest_country );
+            update_post_meta( $post_id, '_moga_destination_city',            $dest_city );
+            update_post_meta( $post_id, '_moga_destination_district',        $dest_district );
+            update_post_meta( $post_id, '_moga_geoname_destination_city_id', $dest_geoname_city_id );
             update_post_meta( $post_id, '_moga_departure_point',
                 isset( $_POST['moga_departure_point'] ) ? sanitize_text_field( wp_unslash( $_POST['moga_departure_point'] ) ) : '' );
 
+            // Sync departure location to taxonomy (replaces existing terms).
             if ( $dep_country && $dep_city ) {
-                moga_sync_city_to_taxonomy( $dep_country, $dep_city );
+                $dep_country_data = moga_get_country( $dep_country );
+                Moga_Tax_Location::sync_from_selection(
+                    $post_id,
+                    array(
+                        'country_code' => $dep_country,
+                        'country_name' => $dep_country_data ? $dep_country_data['name'] : '',
+                        'city_name'    => $dep_city,
+                        'geoname_id'   => $dep_geoname_city_id,
+                        'district'     => $dep_district,
+                    ),
+                    false // $append = false → replaces existing terms (clean slate for this save).
+                );
             }
+
+            // Sync destination location to taxonomy (appends to departure terms).
             if ( $dest_country && $dest_city ) {
-                moga_sync_city_to_taxonomy( $dest_country, $dest_city );
+                $dest_country_data = moga_get_country( $dest_country );
+                Moga_Tax_Location::sync_from_selection(
+                    $post_id,
+                    array(
+                        'country_code' => $dest_country,
+                        'country_name' => $dest_country_data ? $dest_country_data['name'] : '',
+                        'city_name'    => $dest_city,
+                        'geoname_id'   => $dest_geoname_city_id,
+                        'district'     => $dest_district,
+                    ),
+                    true // $append = true → adds to terms set by departure sync above.
+                );
             }
         }
 
@@ -1997,11 +2261,83 @@ class Moga_Admin_Metaboxes {
 
 
     // ============================================================
+    // HELPERS — NEW
+    // ============================================================
+
+    /**
+     * Get cities array for initial meta box render.
+     *
+     * Tries GeoNames API (via transient cache) first for worldwide
+     * coverage with geoname_id on each city. Falls back to static
+     * data/cities.php if GeoNames is not configured or returns empty.
+     *
+     * Returns array of city items, each with:
+     *   - name        (string) City display name
+     *   - geoname_id  (int)    GeoNames numeric ID (0 if from static data)
+     *   - lat         (string) GPS latitude
+     *   - lng         (string) GPS longitude
+     *
+     * @since  1.0.0
+     * @param  string $country_code ISO 3166-1 alpha-2 country code.
+     * @return array  Empty array if no country code provided.
+     */
+    private static function get_cities_for_render( $country_code ) {
+
+        if ( empty( $country_code ) ) {
+            return array();
+        }
+
+        // Try GeoNames first (uses transient cache — fast after first call).
+        if ( class_exists( 'Moga_Geonames' ) && Moga_Geonames::is_configured() ) {
+            $cities = Moga_Geonames::get_cities( $country_code );
+            if ( ! empty( $cities ) ) {
+                // Already in correct format: [name, geoname_id, lat, lng].
+                return $cities;
+            }
+        }
+
+        // Fall back to static data.
+        $static = moga_get_cities_by_country( $country_code );
+        $result = array();
+
+        foreach ( $static as $city ) {
+            if ( is_array( $city ) ) {
+                $result[] = array(
+                    'name'       => isset( $city['name'] ) ? $city['name'] : '',
+                    'geoname_id' => 0,
+                    'lat'        => isset( $city['lat'] ) ? $city['lat'] : '',
+                    'lng'        => isset( $city['lng'] ) ? $city['lng'] : '',
+                );
+            } elseif ( is_string( $city ) ) {
+                $result[] = array(
+                    'name'       => $city,
+                    'geoname_id' => 0,
+                    'lat'        => '',
+                    'lng'        => '',
+                );
+            }
+        }
+
+        return $result;
+    }
+
+
+    // ============================================================
     // ADMIN SCRIPTS
     // ============================================================
 
     /**
      * Output inline JavaScript for meta box interactions.
+     *
+     * CHANGED in GeoNames update:
+     * - Removed static mogaCities variable (no longer needed)
+     * - Country → City cascade now uses moga_get_geo_cities AJAX
+     *   instead of static PHP data, with cityCache for performance
+     * - Added City → District cascade using moga_get_geo_districts AJAX
+     *   with districtCache for performance
+     * - District field shows dropdown when GeoNames data available,
+     *   falls back to text input when no district data exists
+     * - On page load, auto-triggers district load for already-selected cities
      *
      * @since  1.0.0
      * @return void
@@ -2018,49 +2354,326 @@ class Moga_Admin_Metaboxes {
             return;
         }
 
-        $cities_data = moga_get_all_cities();
         $max_gallery = self::MAX_GALLERY_IMAGES;
         $max_uploads = self::MAX_VIDEO_UPLOADS;
+
+        // Pass PHP data to JS.
+        $admin_data = array(
+            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            'nonce'   => wp_create_nonce( 'moga_nonce' ),
+            'i18n'    => array(
+                'selectCountryFirst' => __( '— Select Country First —', 'moga-travel-core' ),
+                'selectCity'         => __( '— Select City —', 'moga-travel-core' ),
+                'selectDistrict'     => __( '— Select District —', 'moga-travel-core' ),
+                'loadingCities'      => __( 'Loading cities…', 'moga-travel-core' ),
+                'loadingDistricts'   => __( 'Loading districts…', 'moga-travel-core' ),
+                'orTypeBelow'        => __( '— or type district below —', 'moga-travel-core' ),
+                'typeDistrict'       => __( 'e.g. Downtown, Zamalek', 'moga-travel-core' ),
+                'districtLabel'      => __( 'District / Area', 'moga-travel-core' ),
+                'orTypeManually'     => __( 'Or type manually (District / Area):', 'moga-travel-core' ),
+            ),
+        );
         ?>
         <script type="text/javascript">
         ( function( $ ) {
             'use strict';
 
-            var mogaCities   = <?php echo wp_json_encode( $cities_data ); ?>;
-            var maxGallery   = <?php echo intval( $max_gallery ); ?>;
-            var maxUploads   = <?php echo intval( $max_uploads ); ?>;
+            var mogaAdmin  = <?php echo wp_json_encode( $admin_data ); ?>;
+            var maxGallery = <?php echo intval( $max_gallery ); ?>;
+            var maxUploads = <?php echo intval( $max_uploads ); ?>;
+
+            // In-memory caches to avoid duplicate AJAX calls.
+            var cityCache     = {};
+            var districtCache = {};
+
 
             // ================================================================
-            // COUNTRY → CITY DYNAMIC DROPDOWN
+            // COUNTRY → CITY (GeoNames AJAX — replaces static mogaCities)
             // ================================================================
 
             $( document ).on( 'change', '.moga-country-select', function() {
-                var countryCode = $( this ).val();
-                var targetId    = $( this ).data( 'target' );
-                var $citySelect = $( '#' + targetId );
 
-                $citySelect.empty();
+                var $country        = $( this );
+                var countryCode     = $country.val();
+                var targetId        = $country.data( 'target' );
+                var $citySelect     = $( '#' + targetId );
+                var districtWrapper = $country.data( 'district-wrapper' );
+                var $distWrapper    = districtWrapper ? $( '#' + districtWrapper ) : $();
 
-                if ( ! countryCode || ! mogaCities[ countryCode ] ) {
-                    $citySelect.append(
-                        $( '<option>' ).val( '' ).text(
-                            '— <?php echo esc_js( __( 'Select Country First', 'moga-travel-core' ) ); ?> —'
-                        )
-                    );
+                // Reset city dropdown.
+                $citySelect.empty().append(
+                    $( '<option>' ).val( '' ).text( mogaAdmin.i18n.selectCountryFirst )
+                );
+
+                // Reset district.
+                if ( $distWrapper.length ) {
+                    resetDistrict( $distWrapper );
+                }
+
+                // Reset hidden geoname_id field.
+                var geonameField = $citySelect.data( 'geoname-field' );
+                if ( geonameField ) {
+                    $( '#' + geonameField ).val( 0 );
+                }
+
+                if ( ! countryCode ) {
                     return;
                 }
 
-                $citySelect.append(
-                    $( '<option>' ).val( '' ).text(
-                        '— <?php echo esc_js( __( 'Select City', 'moga-travel-core' ) ); ?> —'
-                    )
-                );
+                // Use cache if available.
+                if ( cityCache[ countryCode ] ) {
+                    populateCities( $citySelect, cityCache[ countryCode ] );
+                    return;
+                }
 
-                $.each( mogaCities[ countryCode ], function( i, city ) {
-                    $citySelect.append(
-                        $( '<option>' ).val( city.name ).text( city.name )
+                // Show loading state.
+                $citySelect.empty().append(
+                    $( '<option>' ).val( '' ).text( mogaAdmin.i18n.loadingCities )
+                ).prop( 'disabled', true );
+
+                $.ajax( {
+                    url:  mogaAdmin.ajaxUrl,
+                    type: 'POST',
+                    data: {
+                        action:       'moga_get_geo_cities',
+                        nonce:        mogaAdmin.nonce,
+                        country_code: countryCode,
+                    },
+                    success: function( response ) {
+                        if ( response.success && response.data.cities && response.data.cities.length ) {
+                            cityCache[ countryCode ] = response.data.cities;
+                            populateCities( $citySelect, response.data.cities );
+                        } else {
+                            $citySelect.empty().append(
+                                $( '<option>' ).val( '' ).text( mogaAdmin.i18n.selectCity )
+                            ).prop( 'disabled', false );
+                        }
+                    },
+                    error: function() {
+                        $citySelect.empty().append(
+                            $( '<option>' ).val( '' ).text( mogaAdmin.i18n.selectCity )
+                        ).prop( 'disabled', false );
+                    }
+                } );
+            } );
+
+            /**
+             * Populate a city <select> with an array of city objects.
+             * Each option gets data-geoname-id, data-lat, data-lng attributes.
+             */
+            function populateCities( $select, cities ) {
+                $select.empty().append(
+                    $( '<option>' ).val( '' ).text( mogaAdmin.i18n.selectCity )
+                );
+                $.each( cities, function( i, city ) {
+                    $select.append(
+                        $( '<option>' )
+                            .val( city.name )
+                            .text( city.name )
+                            .attr( 'data-geoname-id', city.geoname_id || 0 )
+                            .attr( 'data-lat',        city.lat        || '' )
+                            .attr( 'data-lng',        city.lng        || '' )
                     );
                 } );
+                $select.prop( 'disabled', false );
+            }
+
+
+            // ================================================================
+            // CITY → DISTRICT (GeoNames AJAX — NEW)
+            // ================================================================
+
+            $( document ).on( 'change', '.moga-city-select', function() {
+
+                var $citySelect  = $( this );
+                var $selected    = $citySelect.find( ':selected' );
+                var geonameId    = parseInt( $selected.attr( 'data-geoname-id' ) || 0, 10 );
+                var wrapperSel   = $citySelect.data( 'district-wrapper' );
+                var geonameField = $citySelect.data( 'geoname-field' );
+
+                // Update the hidden geoname_id field.
+                if ( geonameField ) {
+                    $( '#' + geonameField ).val( geonameId || 0 );
+                }
+
+                if ( ! wrapperSel ) {
+                    return;
+                }
+
+                var $wrapper = $( '#' + wrapperSel );
+                if ( ! $wrapper.length ) {
+                    return;
+                }
+
+                if ( ! geonameId ) {
+                    // No GeoNames ID — show text input only.
+                    resetDistrict( $wrapper );
+                    return;
+                }
+
+                loadDistricts( $wrapper, geonameId, '' );
+            } );
+
+            /**
+             * Load districts via AJAX for a given GeoNames city ID.
+             * Shows dropdown if data available, text input if not.
+             */
+            function loadDistricts( $wrapper, geonameId, savedDistrict ) {
+
+                var $dropdownField = $wrapper.find( '.moga-district-dropdown-field' );
+                var $select        = $wrapper.find( '.moga-district-select' );
+                var $text          = $wrapper.find( '.moga-district-text' );
+                var $loading       = $wrapper.find( '.moga-district-loading' );
+
+                // Show dropdown column with loading spinner, hide select and text.
+                $dropdownField.show();
+                $select.hide();
+                $loading.show();
+
+                // Use cache if available.
+                if ( districtCache[ geonameId ] !== undefined ) {
+                    renderDistricts( $wrapper, districtCache[ geonameId ], savedDistrict );
+                    return;
+                }
+
+                $.ajax( {
+                    url:  mogaAdmin.ajaxUrl,
+                    type: 'POST',
+                    data: {
+                        action:     'moga_get_geo_districts',
+                        nonce:      mogaAdmin.nonce,
+                        geoname_id: geonameId,
+                    },
+                    success: function( response ) {
+                        var districts = ( response.success && response.data.districts )
+                            ? response.data.districts
+                            : [];
+                        districtCache[ geonameId ] = districts;
+                        renderDistricts( $wrapper, districts, savedDistrict );
+                    },
+                    error: function() {
+                        districtCache[ geonameId ] = [];
+                        renderDistricts( $wrapper, [], savedDistrict );
+                    }
+                } );
+            }
+
+            /**
+             * Render district dropdown or text input based on available data.
+             *
+             * When districts array is non-empty:
+             *   - Shows the <select> dropdown populated with districts
+             *   - Shows the text input below it (placeholder says "or type below")
+             *   - Syncs dropdown selection → text input value on change
+             *     (text input always submits the value via its name attribute)
+             *
+             * When districts array is empty:
+             *   - Hides the <select>
+             *   - Shows text input with normal placeholder for manual entry
+             */
+            function renderDistricts( $wrapper, districts, savedDistrict ) {
+
+                var $dropdownField = $wrapper.find( '.moga-district-dropdown-field' );
+                var $select        = $wrapper.find( '.moga-district-select' );
+                var $text          = $wrapper.find( '.moga-district-text' );
+                var $label         = $wrapper.find( '.moga-district-text-label' );
+                var $loading       = $wrapper.find( '.moga-district-loading' );
+
+                $loading.hide();
+
+                if ( districts.length ) {
+
+                    // Populate dropdown.
+                    $select.empty().append(
+                        $( '<option>' ).val( '' ).text( mogaAdmin.i18n.selectDistrict )
+                    );
+
+                    $.each( districts, function( i, district ) {
+                        var $opt = $( '<option>' )
+                            .val( district.name )
+                            .text( district.name );
+
+                        // Re-select the saved district if it matches.
+                        if ( savedDistrict && district.name === savedDistrict ) {
+                            $opt.prop( 'selected', true );
+                        }
+
+                        $select.append( $opt );
+                    } );
+
+                    // Sync dropdown → text input on change.
+                    // Text input always submits (name attribute stays on it).
+                    $select.off( 'change.district' ).on( 'change.district', function() {
+                        $text.val( $( this ).val() );
+                    } );
+
+                    // Pre-fill text input with saved value.
+                    if ( savedDistrict ) {
+                        $text.val( savedDistrict );
+                    }
+
+                    // Update label to clarify text input is for manual override.
+                    $label.text( mogaAdmin.i18n.orTypeManually );
+
+                    // Show dropdown column + select. Text input stays visible as manual override.
+                    $dropdownField.show();
+                    $select.show();
+                    $text.attr( 'placeholder', mogaAdmin.i18n.orTypeBelow );
+
+                } else {
+
+                    // No district data — hide dropdown column, show text input only.
+                    // Restore label to default District / Area.
+                    $label.text( mogaAdmin.i18n.districtLabel );
+                    $dropdownField.hide();
+                    $select.empty();
+                    $text.attr( 'placeholder', mogaAdmin.i18n.typeDistrict );
+                }
+            }
+
+            /**
+             * Reset district wrapper to default state (text input only, empty).
+             */
+            function resetDistrict( $wrapper ) {
+                var $dropdownField = $wrapper.find( '.moga-district-dropdown-field' );
+                var $select        = $wrapper.find( '.moga-district-select' );
+                var $text          = $wrapper.find( '.moga-district-text' );
+                var $label         = $wrapper.find( '.moga-district-text-label' );
+                var $loading       = $wrapper.find( '.moga-district-loading' );
+
+                $loading.hide();
+                $dropdownField.hide();
+                $select.empty();
+                $label.text( mogaAdmin.i18n.districtLabel );
+                $text.val( '' ).attr( 'placeholder', mogaAdmin.i18n.typeDistrict );
+            }
+
+            /**
+             * On page load: auto-trigger district loading for city selects
+             * that already have a selected city with a GeoNames ID.
+             * This restores the district dropdown when editing an existing post.
+             */
+            $( document ).ready( function() {
+
+                $( '.moga-city-select' ).each( function() {
+
+                    var $citySelect  = $( this );
+                    var $selected    = $citySelect.find( ':selected' );
+                    var geonameId    = parseInt( $selected.attr( 'data-geoname-id' ) || 0, 10 );
+                    var wrapperSel   = $citySelect.data( 'district-wrapper' );
+
+                    if ( ! geonameId || ! wrapperSel ) {
+                        return;
+                    }
+
+                    var $wrapper      = $( '#' + wrapperSel );
+                    var savedDistrict = $wrapper.find( '.moga-district-text' ).val();
+
+                    if ( $wrapper.length ) {
+                        loadDistricts( $wrapper, geonameId, savedDistrict );
+                    }
+                } );
+
             } );
 
 
@@ -2101,9 +2714,9 @@ class Moga_Admin_Metaboxes {
                 } );
 
                 galleryFrame.on( 'select', function() {
-                    var selection   = galleryFrame.state().get( 'selection' );
+                    var selection    = galleryFrame.state().get( 'selection' );
                     var currentCount = $( '#moga-gallery-list .moga-gallery-box__item' ).length;
-                    var remaining   = maxGallery - currentCount;
+                    var remaining    = maxGallery - currentCount;
 
                     selection.each( function( attachment, index ) {
                         if ( index >= remaining ) return;
@@ -2167,10 +2780,10 @@ class Moga_Admin_Metaboxes {
                 }
 
                 videoFrame = wp.media( {
-                    title:   '<?php echo esc_js( __( 'Upload or Select Video', 'moga-travel-core' ) ); ?>',
-                    button:  { text: '<?php echo esc_js( __( 'Use this video', 'moga-travel-core' ) ); ?>' },
+                    title:    '<?php echo esc_js( __( 'Upload or Select Video', 'moga-travel-core' ) ); ?>',
+                    button:   { text: '<?php echo esc_js( __( 'Use this video', 'moga-travel-core' ) ); ?>' },
                     multiple: false,
-                    library: { type: 'video' },
+                    library:  { type: 'video' },
                 } );
 
                 videoFrame.on( 'select', function() {

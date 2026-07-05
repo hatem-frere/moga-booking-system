@@ -45,6 +45,7 @@
 
         var key = first.getAttribute( 'data-gallery' );
 
+        // ---- Image gallery ----
         GLightbox( {
             selector:        '[data-gallery="' + key + '"]',
             touchNavigation: true,
@@ -53,6 +54,25 @@
             openEffect:      'fade',
             closeEffect:     'fade',
         } );
+
+        // ---- Video gallery (sidebar) ----
+        // Videos use a separate gallery key (property-{id}-videos) so they
+        // open in their own GLightbox sequence independent of the image gallery.
+        // autoplayVideos is true here so local and embedded videos play on open.
+        var videoKey = key + '-videos';
+        var videoEl  = document.querySelector( '[data-gallery="' + videoKey + '"]' );
+
+        if ( videoEl ) {
+            GLightbox( {
+                selector:        '[data-gallery="' + videoKey + '"]',
+                touchNavigation: true,
+                loop:            false,
+                autoplayVideos:  true,
+                openEffect:      'fade',
+                closeEffect:     'fade',
+                videosWidth:     '90vw',
+            } );
+        }
 
         // "View all" button — mobile.
         var btn = document.getElementById( 'moga-gallery-view-all' );

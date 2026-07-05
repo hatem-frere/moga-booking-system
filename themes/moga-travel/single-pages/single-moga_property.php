@@ -364,6 +364,13 @@ $section_nav['moga-reviews']     = __( 'Reviews', 'moga-travel' );
                 </div>
                 <?php // ---- End Map ---- ?>
 
+                <?php // ---- Videos — sidebar widget below map ---- ?>
+                <?php // Renders only when the property has saved videos (local uploads,
+                      // YouTube URLs, Vimeo URLs, or a mix of all three).
+                      // Shows 1 thumbnail. If multiple videos exist, the thumbnail
+                      // gets a "+N more" overlay. Clicking opens GLightbox. ?>
+                <?php get_template_part( 'template-parts/property/single-videos' ); ?>
+
             </div>
             <?php // ---- End Gallery Sidebar ---- ?>
 

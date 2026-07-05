@@ -1531,7 +1531,7 @@
     border: 1px solid var(--moga-gray-200);
     border-radius: var(--moga-border-radius-lg);
     padding: var(--moga-spacing-md);
-    margin-bottom: var(--moga-spacing-sm);
+    margin-bottom: calc(var(--moga-spacing-sm) + 11px);
 }
 
 .moga-gallery-rating-box__score {
@@ -1708,4 +1708,160 @@
 
 .moga-property-header__reserve:hover {
     text-decoration: none;
+}
+
+
+/* ============================================================
+   28. Video Sidebar Widget (below map in gallery sidebar)
+   ============================================================ */
+
+/*
+ * Outer card — matches .moga-gallery-map card style
+ * (border, rounded corners, white background).
+ */
+.moga-sidebar-videos {
+    margin-top: calc(var(--moga-spacing-md) + 3px);
+    /* margin-top: var(--moga-spacing-md); */
+    border: 1px solid var(--moga-gray-200);
+    border-radius: var(--moga-border-radius-lg);
+    overflow: hidden;
+    background: var(--moga-white);
+}
+
+/* Title row */
+.moga-sidebar-videos__title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+    margin: 0;
+    padding: var(--moga-spacing-md);
+    border-bottom: 1px solid var(--moga-gray-100);
+}
+
+/* "(2)" count badge beside title */
+.moga-sidebar-videos__count {
+    font-size: 0.775rem;
+    font-weight: 400;
+    color: var(--moga-gray-500);
+}
+
+/* Wrap — contains the thumbnail link */
+.moga-sidebar-videos__wrap {
+    position: relative;
+}
+
+/*
+ * Thumbnail link.
+ * position: relative is critical — it anchors the
+ * absolutely positioned play button and overlay children.
+ * Dark background shows while the image loads.
+ */
+.moga-sidebar-videos__thumb {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    text-decoration: none;
+    cursor: pointer;
+    background-color: #0f172a;
+    border-radius: 0; /* card corners handled by outer .moga-sidebar-videos */
+}
+
+.moga-sidebar-videos__thumb:focus {
+    outline: 3px solid var(--moga-primary);
+    outline-offset: -3px;
+}
+
+/* Thumbnail image */
+.moga-sidebar-videos__img {
+    display: block;
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    transition: transform 0.35s ease, opacity 0.35s ease;
+    opacity: 0.9;
+}
+
+.moga-sidebar-videos__thumb:hover .moga-sidebar-videos__img {
+    transform: scale(1.05);
+    opacity: 0.72;
+}
+
+/* Placeholder when no poster image is available */
+.moga-sidebar-videos__placeholder {
+    display: block;
+    width: 100%;
+    height: 190px;
+    background-color: #1e293b;
+}
+
+/*
+ * Play button — centered over the thumbnail.
+ * Absolutely positioned; pointer-events: none so clicks
+ * pass through to the parent <a> tag for GLightbox.
+ */
+.moga-sidebar-videos__play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    pointer-events: none;
+    transition: transform 0.25s ease;
+    filter: drop-shadow( 0 2px 8px rgba(0, 0, 0, 0.5) );
+}
+
+.moga-sidebar-videos__thumb:hover .moga-sidebar-videos__play {
+    transform: translate(-50%, -50%) scale(1.14);
+}
+
+/*
+ * "+N more" overlay — gradient fade from bottom,
+ * count and label centered at the bottom of the thumbnail.
+ * Only rendered when total videos > 1.
+ */
+.moga-sidebar-videos__more {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.80) 0%,
+        rgba(0, 0, 0, 0.20) 60%,
+        transparent 100%
+    );
+    padding: 36px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    z-index: 3;
+    pointer-events: none;
+    text-align: center;
+}
+
+/* Large bold "+N" number */
+.moga-sidebar-videos__more-count {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    letter-spacing: -0.02em;
+}
+
+/* "more video / more videos" label */
+.moga-sidebar-videos__more-label {
+    display: block;
+    font-size: 0.725rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.88);
+    margin-top: 3px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
 }

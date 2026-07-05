@@ -220,6 +220,21 @@ class Moga_Tax_Location {
                 'sanitize_callback' => 'absint',
             )
         );
+
+        // ── NEW ── GeoNames numeric ID stored on city and district terms.
+        // Used to power the district cascade dropdown lookup.
+        register_term_meta(
+            self::TAXONOMY,
+            'moga_geoname_id',
+            array(
+                'type'              => 'integer',
+                'description'       => __( 'GeoNames numeric ID for this location term.', 'moga-travel-core' ),
+                'single'            => true,
+                'default'           => 0,
+                'show_in_rest'      => true,
+                'sanitize_callback' => 'absint',
+            )
+        );
     }
 
 
@@ -428,25 +443,18 @@ class Moga_Tax_Location {
                         'order' => 1,
                     ),
                     array(
-                        'name'  => __( 'Nabq Bay', 'moga-travel-core' ),
-                        'slug'  => 'nabq-bay',
-                        'lat'   => '27.9833',
-                        'lng'   => '34.4000',
-                        'order' => 2,
-                    ),
-                    array(
-                        'name'  => __( 'Shark\'s Bay', 'moga-travel-core' ),
+                        'name'  => __( 'Sharks Bay', 'moga-travel-core' ),
                         'slug'  => 'sharks-bay',
-                        'lat'   => '27.9483',
-                        'lng'   => '34.3583',
-                        'order' => 3,
+                        'lat'   => '27.9667',
+                        'lng'   => '34.3667',
+                        'order' => 2,
                     ),
                 ),
             ),
             array(
                 'name'    => __( 'Luxor', 'moga-travel-core' ),
                 'slug'    => 'luxor',
-                'desc'    => __( 'Ancient city of Thebes — open-air museum of ancient Egypt.', 'moga-travel-core' ),
+                'desc'    => __( 'Open-air museum city on the Nile — home of Karnak and the Valley of the Kings.', 'moga-travel-core' ),
                 'lat'     => '25.6872',
                 'lng'     => '32.6396',
                 'order'   => 5,
@@ -614,6 +622,450 @@ class Moga_Tax_Location {
     }
 
 
+    // ============================================================
+    // SYNC FROM SELECTION — NEW
+    // ============================================================
+
+    /**
+     * Auto-create or reuse moga_location taxonomy terms when a
+     * property or tour is saved with location data.
+     *
+     * This replaces the old moga_sync_city_to_taxonomy() function
+     * from data/cities.php and extends it to support districts.
+     * Preserves the Phase 3 taxonomy-based search filter architecture
+     * by ensuring every saved location exists as a real taxonomy term.
+     *
+     * Term creation logic (all three levels):
+     *   1. Country: find by moga_country_code meta OR create new term.
+     *   2. City:    find by name under that country parent OR create new term.
+     *   3. District: find by name under that city parent OR create new term.
+     *      (Only if district name is provided.)
+     *
+     * All three matching taxonomy term IDs are then assigned to
+     * the post via wp_set_object_terms() so the post is queryable
+     * at country, city, AND district level simultaneously.
+     *
+     * Usage — call from save_post in class-moga-admin-metaboxes.php:
+     *
+     *   Moga_Tax_Location::sync_from_selection(
+     *       $post_id,
+     *       array(
+     *           'country_code' => 'US',
+     *           'country_name' => 'United States',
+     *           'city_name'    => 'New York',
+     *           'geoname_id'   => 5128581,
+     *           'district'     => 'Manhattan',
+     *           'lat'          => '40.7128',
+     *           'lng'          => '-74.0060',
+     *       )
+     *   );
+     *
+     * @since  1.0.0
+     *
+     * @param  int   $post_id  Post ID to assign taxonomy terms to.
+     * @param  array $data {
+     *     Location data array.
+     *
+     *     @type string $country_code ISO 3166-1 alpha-2 code (e.g. 'EG'). Required.
+     *     @type string $country_name Country display name (e.g. 'Egypt'). Required.
+     *     @type string $city_name    City display name (e.g. 'Cairo'). Required.
+     *     @type int    $geoname_id   GeoNames numeric ID of the city. Optional.
+     *     @type string $district     District/area name. Optional — pass empty string to skip.
+     *     @type string $lat          City GPS latitude. Optional.
+     *     @type string $lng          City GPS longitude. Optional.
+     *     @type string $district_lat District GPS latitude. Optional.
+     *     @type string $district_lng District GPS longitude. Optional.
+     * }
+     *
+     * @return array {
+     *     Term IDs that were created or reused.
+     *
+     *     @type int $country_term_id
+     *     @type int $city_term_id
+     *     @type int $district_term_id  0 if no district provided.
+     * }
+     */
+    public static function sync_from_selection( $post_id, $data, $append = false ) {
+
+        $post_id = absint( $post_id );
+
+        if ( ! $post_id ) {
+            return array(
+                'country_term_id'  => 0,
+                'city_term_id'     => 0,
+                'district_term_id' => 0,
+            );
+        }
+
+        // Sanitize all inputs.
+        $country_code = strtoupper( sanitize_text_field( $data['country_code'] ?? '' ) );
+        $country_name = sanitize_text_field( $data['country_name'] ?? '' );
+        $city_name    = sanitize_text_field( $data['city_name'] ?? '' );
+        $geoname_id   = absint( $data['geoname_id'] ?? 0 );
+        $district     = sanitize_text_field( $data['district'] ?? '' );
+        $lat          = sanitize_text_field( $data['lat'] ?? '' );
+        $lng          = sanitize_text_field( $data['lng'] ?? '' );
+        $district_lat = sanitize_text_field( $data['district_lat'] ?? '' );
+        $district_lng = sanitize_text_field( $data['district_lng'] ?? '' );
+
+        // Country and city are required.
+        if ( empty( $country_code ) || empty( $city_name ) ) {
+            return array(
+                'country_term_id'  => 0,
+                'city_term_id'     => 0,
+                'district_term_id' => 0,
+            );
+        }
+
+        $term_ids = array();
+
+        // --------------------------------------------------------
+        // Step 1: Find or create Country term
+        // --------------------------------------------------------
+        $country_term_id = self::find_or_create_country(
+            $country_name,
+            $country_code
+        );
+
+        $term_ids[] = $country_term_id;
+
+        // --------------------------------------------------------
+        // Step 2: Find or create City term
+        // --------------------------------------------------------
+        $city_term_id = self::find_or_create_city(
+            $city_name,
+            $country_term_id,
+            $country_code,
+            $geoname_id,
+            $lat,
+            $lng
+        );
+
+        $term_ids[] = $city_term_id;
+
+        // --------------------------------------------------------
+        // Step 3: Find or create District term (if provided)
+        // --------------------------------------------------------
+        $district_term_id = 0;
+
+        if ( ! empty( $district ) && $city_term_id ) {
+            $district_term_id = self::find_or_create_district(
+                $district,
+                $city_term_id,
+                $country_code,
+                $district_lat,
+                $district_lng
+            );
+
+            if ( $district_term_id ) {
+                $term_ids[] = $district_term_id;
+            }
+        }
+
+        // --------------------------------------------------------
+        // Step 4: Assign all term IDs to the post
+        // --------------------------------------------------------
+        // When $append is false (default): wp_set_object_terms replaces
+        // any existing moga_location terms on this post with the new set.
+        // Used for properties (single location) and tour departure (first call).
+        //
+        // When $append is true: wp_add_object_terms adds to existing terms
+        // without replacing. Used for tour destination (second call) so that
+        // both departure and destination location terms coexist on the post.
+        if ( ! empty( $term_ids ) ) {
+            $clean_ids = array_filter( array_map( 'absint', $term_ids ) );
+            if ( $append ) {
+                wp_add_object_terms(
+                    $post_id,
+                    $clean_ids,
+                    self::TAXONOMY
+                );
+            } else {
+                wp_set_object_terms(
+                    $post_id,
+                    $clean_ids,
+                    self::TAXONOMY
+                );
+            }
+        }
+
+        return array(
+            'country_term_id'  => $country_term_id,
+            'city_term_id'     => $city_term_id,
+            'district_term_id' => $district_term_id,
+        );
+    }
+
+
+    /**
+     * Find an existing country term by country code,
+     * or create a new one if it does not exist.
+     *
+     * @since  1.0.0
+     * @param  string $country_name Display name (e.g. 'United States').
+     * @param  string $country_code ISO code (e.g. 'US').
+     * @return int Term ID, or 0 on failure.
+     */
+    private static function find_or_create_country( $country_name, $country_code ) {
+
+        // Search by moga_country_code meta + level = country.
+        $existing = get_terms( array(
+            'taxonomy'   => self::TAXONOMY,
+            'hide_empty' => false,
+            'parent'     => 0,
+            'meta_query' => array(
+                array(
+                    'key'     => 'moga_country_code',
+                    'value'   => $country_code,
+                    'compare' => '=',
+                ),
+                array(
+                    'key'     => 'moga_level',
+                    'value'   => 'country',
+                    'compare' => '=',
+                ),
+            ),
+        ) );
+
+        if ( ! is_wp_error( $existing ) && ! empty( $existing ) ) {
+            return absint( $existing[0]->term_id );
+        }
+
+        // Not found — create new country term.
+        if ( empty( $country_name ) ) {
+            // Fall back to country code as display name if name not provided.
+            $country_name = $country_code;
+        }
+
+        $slug   = sanitize_title( $country_name );
+        $result = wp_insert_term(
+            $country_name,
+            self::TAXONOMY,
+            array(
+                'slug'   => $slug,
+                'parent' => 0,
+            )
+        );
+
+        if ( is_wp_error( $result ) ) {
+            // Term with this slug may already exist under a different meta config.
+            $term = get_term_by( 'slug', $slug, self::TAXONOMY );
+            if ( $term ) {
+                $term_id = absint( $term->term_id );
+            } else {
+                return 0;
+            }
+        } else {
+            $term_id = absint( $result['term_id'] );
+        }
+
+        // Set country meta.
+        update_term_meta( $term_id, 'moga_level',        'country' );
+        update_term_meta( $term_id, 'moga_country_code', $country_code );
+        update_term_meta( $term_id, 'moga_order',        99 );
+        update_term_meta( $term_id, 'moga_popular',      0 );
+
+        return $term_id;
+    }
+
+
+    /**
+     * Find an existing city term under a country parent,
+     * or create a new one if it does not exist.
+     *
+     * @since  1.0.0
+     * @param  string $city_name       City display name.
+     * @param  int    $country_term_id Parent country term ID.
+     * @param  string $country_code    ISO country code.
+     * @param  int    $geoname_id      GeoNames numeric ID (0 if unknown).
+     * @param  string $lat             GPS latitude.
+     * @param  string $lng             GPS longitude.
+     * @return int Term ID, or 0 on failure.
+     */
+    private static function find_or_create_city(
+        $city_name,
+        $country_term_id,
+        $country_code,
+        $geoname_id = 0,
+        $lat = '',
+        $lng = ''
+    ) {
+
+        if ( ! $country_term_id ) {
+            return 0;
+        }
+
+        // Search by name under the country parent.
+        $existing = get_terms( array(
+            'taxonomy'   => self::TAXONOMY,
+            'hide_empty' => false,
+            'parent'     => $country_term_id,
+            'name'       => $city_name,
+            'meta_query' => array(
+                array(
+                    'key'     => 'moga_level',
+                    'value'   => 'city',
+                    'compare' => '=',
+                ),
+            ),
+        ) );
+
+        if ( ! is_wp_error( $existing ) && ! empty( $existing ) ) {
+
+            $term_id = absint( $existing[0]->term_id );
+
+            // Update GeoNames ID if we now have one and it wasn't stored before.
+            if ( $geoname_id ) {
+                $stored = get_term_meta( $term_id, 'moga_geoname_id', true );
+                if ( ! $stored ) {
+                    update_term_meta( $term_id, 'moga_geoname_id', $geoname_id );
+                }
+            }
+
+            return $term_id;
+        }
+
+        // Not found — create new city term.
+        $slug   = sanitize_title( $city_name . '-' . strtolower( $country_code ) );
+        $result = wp_insert_term(
+            $city_name,
+            self::TAXONOMY,
+            array(
+                'slug'   => $slug,
+                'parent' => $country_term_id,
+            )
+        );
+
+        if ( is_wp_error( $result ) ) {
+            // Try without country suffix.
+            $slug   = sanitize_title( $city_name );
+            $result = wp_insert_term(
+                $city_name,
+                self::TAXONOMY,
+                array(
+                    'slug'   => $slug,
+                    'parent' => $country_term_id,
+                )
+            );
+        }
+
+        if ( is_wp_error( $result ) ) {
+            $term = get_term_by( 'slug', $slug, self::TAXONOMY );
+            if ( $term ) {
+                $term_id = absint( $term->term_id );
+            } else {
+                return 0;
+            }
+        } else {
+            $term_id = absint( $result['term_id'] );
+        }
+
+        // Set city meta.
+        update_term_meta( $term_id, 'moga_level',        'city' );
+        update_term_meta( $term_id, 'moga_country_code', $country_code );
+        update_term_meta( $term_id, 'moga_order',        99 );
+        update_term_meta( $term_id, 'moga_popular',      0 );
+
+        if ( $geoname_id ) {
+            update_term_meta( $term_id, 'moga_geoname_id', $geoname_id );
+        }
+        if ( $lat ) {
+            update_term_meta( $term_id, 'moga_latitude', $lat );
+        }
+        if ( $lng ) {
+            update_term_meta( $term_id, 'moga_longitude', $lng );
+        }
+
+        return $term_id;
+    }
+
+
+    /**
+     * Find an existing district term under a city parent,
+     * or create a new one if it does not exist.
+     *
+     * @since  1.0.0
+     * @param  string $district_name District display name.
+     * @param  int    $city_term_id  Parent city term ID.
+     * @param  string $country_code  ISO country code.
+     * @param  string $lat           GPS latitude.
+     * @param  string $lng           GPS longitude.
+     * @return int Term ID, or 0 on failure.
+     */
+    private static function find_or_create_district(
+        $district_name,
+        $city_term_id,
+        $country_code,
+        $lat = '',
+        $lng = ''
+    ) {
+
+        if ( ! $city_term_id ) {
+            return 0;
+        }
+
+        // Search by name under the city parent.
+        $existing = get_terms( array(
+            'taxonomy'   => self::TAXONOMY,
+            'hide_empty' => false,
+            'parent'     => $city_term_id,
+            'name'       => $district_name,
+        ) );
+
+        if ( ! is_wp_error( $existing ) && ! empty( $existing ) ) {
+            return absint( $existing[0]->term_id );
+        }
+
+        // Not found — create new district term.
+        $slug   = sanitize_title( $district_name );
+        $result = wp_insert_term(
+            $district_name,
+            self::TAXONOMY,
+            array(
+                'slug'   => $slug,
+                'parent' => $city_term_id,
+            )
+        );
+
+        if ( is_wp_error( $result ) ) {
+            // Append city ID to slug to avoid conflicts.
+            $slug   = sanitize_title( $district_name ) . '-' . $city_term_id;
+            $result = wp_insert_term(
+                $district_name,
+                self::TAXONOMY,
+                array(
+                    'slug'   => $slug,
+                    'parent' => $city_term_id,
+                )
+            );
+        }
+
+        if ( is_wp_error( $result ) ) {
+            return 0;
+        }
+
+        $term_id = absint( $result['term_id'] );
+
+        // Set district meta.
+        update_term_meta( $term_id, 'moga_level',        'district' );
+        update_term_meta( $term_id, 'moga_country_code', $country_code );
+        update_term_meta( $term_id, 'moga_order',        99 );
+
+        if ( $lat ) {
+            update_term_meta( $term_id, 'moga_latitude', $lat );
+        }
+        if ( $lng ) {
+            update_term_meta( $term_id, 'moga_longitude', $lng );
+        }
+
+        return $term_id;
+    }
+
+
+    // ============================================================
+    // GETTERS (original — unchanged)
+    // ============================================================
+
     /**
      * Get all countries from the location taxonomy.
      *
@@ -690,13 +1142,14 @@ class Moga_Tax_Location {
 
         foreach ( $terms as $term ) {
             $result[] = array(
-                'id'      => $term->term_id,
-                'name'    => $term->name,
-                'slug'    => $term->slug,
-                'popular' => get_term_meta( $term->term_id, 'moga_popular', true ),
-                'lat'     => get_term_meta( $term->term_id, 'moga_latitude', true ),
-                'lng'     => get_term_meta( $term->term_id, 'moga_longitude', true ),
-                'link'    => get_term_link( $term ),
+                'id'         => $term->term_id,
+                'name'       => $term->name,
+                'slug'       => $term->slug,
+                'popular'    => get_term_meta( $term->term_id, 'moga_popular', true ),
+                'lat'        => get_term_meta( $term->term_id, 'moga_latitude', true ),
+                'lng'        => get_term_meta( $term->term_id, 'moga_longitude', true ),
+                'geoname_id' => get_term_meta( $term->term_id, 'moga_geoname_id', true ),
+                'link'       => get_term_link( $term ),
             );
         }
 

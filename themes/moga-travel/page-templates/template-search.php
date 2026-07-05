@@ -44,6 +44,8 @@ $filter_property_type = isset( $_GET['property_type'] )
     ? sanitize_text_field( wp_unslash( $_GET['property_type'] ) ) : '';
 $filter_location      = isset( $_GET['location'] )
     ? sanitize_text_field( wp_unslash( $_GET['location'] ) ) : '';
+$filter_district      = isset( $_GET['district'] )
+    ? sanitize_text_field( wp_unslash( $_GET['district'] ) ) : '';
 $filter_amenities     = isset( $_GET['amenities'] ) && is_array( $_GET['amenities'] )
     ? array_map( 'sanitize_text_field', wp_unslash( $_GET['amenities'] ) ) : array();
 
@@ -160,10 +162,30 @@ if ( 'property' === $search_type ) {
     if ( $filter_property_type ) {
         $tax_query[] = array( 'taxonomy' => 'moga_property_type', 'field' => 'slug', 'terms' => $filter_property_type );
     }
-    if ( $filter_location ) {
-        $tax_query[] = array( 'taxonomy' => 'moga_location', 'field' => 'name', 'terms' => $filter_location );
+    // District is more specific than city — use it when available.
+    // include_children=true on city means posts assigned to any
+    // district within that city are included.
+    if ( $filter_district ) {
+        $tax_query[] = array(
+            'taxonomy'         => 'moga_location',
+            'field'            => 'name',
+            'terms'            => $filter_district,
+            'include_children' => false,
+        );
+    } elseif ( $filter_location ) {
+        $tax_query[] = array(
+            'taxonomy'         => 'moga_location',
+            'field'            => 'name',
+            'terms'            => $filter_location,
+            'include_children' => true,
+        );
     } elseif ( $filter_destination ) {
-        $tax_query[] = array( 'taxonomy' => 'moga_location', 'field' => 'name', 'terms' => $filter_destination );
+        $tax_query[] = array(
+            'taxonomy'         => 'moga_location',
+            'field'            => 'name',
+            'terms'            => $filter_destination,
+            'include_children' => true,
+        );
     }
 } elseif ( 'tour' === $search_type ) {
     if ( $filter_tour_category ) {
@@ -211,10 +233,37 @@ $total_pages    = $search_results->max_num_pages;
 $property_types = get_terms( array( 'taxonomy' => 'moga_property_type', 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC' ) );
 $property_types = ! is_wp_error( $property_types ) ? $property_types : array();
 
-$all_location_terms = get_terms( array( 'taxonomy' => 'moga_location', 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC' ) );
-$city_terms = ! is_wp_error( $all_location_terms )
-    ? array_values( array_filter( $all_location_terms, function( $term ) { return $term->parent > 0; } ) )
-    : array();
+// City terms — only city-level (moga_level = city), not districts.
+$city_terms = get_terms( array(
+    'taxonomy'   => 'moga_location',
+    'hide_empty' => false,
+    'orderby'    => 'name',
+    'order'      => 'ASC',
+    'meta_query' => array(
+        array(
+            'key'   => 'moga_level',
+            'value' => 'city',
+        ),
+    ),
+) );
+$city_terms = ! is_wp_error( $city_terms ) ? $city_terms : array();
+
+// District terms — only loaded when a city is already selected.
+// Queries children of the selected city term in the moga_location taxonomy.
+$district_terms = array();
+if ( $filter_location ) {
+    $selected_city_term = get_term_by( 'name', $filter_location, 'moga_location' );
+    if ( $selected_city_term && ! is_wp_error( $selected_city_term ) ) {
+        $district_terms = get_terms( array(
+            'taxonomy'   => 'moga_location',
+            'hide_empty' => false,
+            'parent'     => $selected_city_term->term_id,
+            'orderby'    => 'name',
+            'order'      => 'ASC',
+        ) );
+        $district_terms = ! is_wp_error( $district_terms ) ? $district_terms : array();
+    }
+}
 
 $tour_categories = get_terms( array( 'taxonomy' => 'moga_tour_category', 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC' ) );
 $tour_categories = ! is_wp_error( $tour_categories ) ? $tour_categories : array();
@@ -265,6 +314,12 @@ if ( $filter_property_type ) {
 }
 if ( $filter_location ) {
     $active_filters['location'] = array( 'label' => $filter_location, 'remove' => esc_url( remove_query_arg( 'location' ) ) );
+}
+if ( $filter_district ) {
+    $active_filters['district'] = array(
+        'label'  => $filter_district,
+        'remove' => esc_url( remove_query_arg( 'district' ) ),
+    );
 }
 if ( '' !== $filter_price_min ) {
     $active_filters['price_min'] = array( 'label' => sprintf( __( 'From %s', 'moga-travel' ), number_format_i18n( $filter_price_min ) ), 'remove' => esc_url( remove_query_arg( 'price_min' ) ) );
@@ -389,6 +444,11 @@ function moga_accordion_chevron() {
                     <?php if ( $filter_destination ) : ?>
                         <input type="hidden" name="destination" value="<?php echo esc_attr( $filter_destination ); ?>">
                     <?php endif; ?>
+                    <?php if ( $filter_district && ! empty( $district_terms ) ) : ?>
+                        <?php // Keep district param while user adjusts other filters.
+                              // Gets cleared automatically when city changes. ?>
+                        <input type="hidden" name="district" value="<?php echo esc_attr( $filter_district ); ?>">
+                    <?php endif; ?>
 
                     <?php // ---- Search Type Tabs ---- ?>
                     <div class="moga-sidebar-type-tabs">
@@ -472,6 +532,43 @@ function moga_accordion_chevron() {
                                                 <input type="radio" name="location" value="<?php echo esc_attr( $city->name ); ?>" <?php checked( $filter_location, $city->name ); ?>>
                                                 <span class="moga-filter-option__label"><?php echo esc_html( $city->name ); ?></span>
                                                 <span class="moga-filter-option__count"><?php echo esc_html( $city->count ); ?></span>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php // ---- District / Area (shown only when a city is selected and has districts) ---- ?>
+                        <?php if ( ! empty( $district_terms ) ) : ?>
+                            <div class="moga-filter-group" data-group="district">
+                                <button
+                                    type="button"
+                                    class="moga-filter-group__title"
+                                    aria-expanded="<?php echo $filter_district ? 'true' : 'false'; ?>"
+                                >
+                                    <?php esc_html_e( 'District / Area', 'moga-travel' ); ?>
+                                    <?php moga_accordion_chevron(); ?>
+                                </button>
+                                <div
+                                    class="moga-filter-group__content"
+                                    <?php echo $filter_district ? '' : 'hidden'; ?>
+                                >
+                                    <div class="moga-filter-options moga-filter-options--scrollable">
+                                        <?php foreach ( $district_terms as $district ) : ?>
+                                            <label class="moga-filter-option">
+                                                <input
+                                                    type="radio"
+                                                    name="district"
+                                                    value="<?php echo esc_attr( $district->name ); ?>"
+                                                    <?php checked( $filter_district, $district->name ); ?>
+                                                >
+                                                <span class="moga-filter-option__label">
+                                                    <?php echo esc_html( $district->name ); ?>
+                                                </span>
+                                                <span class="moga-filter-option__count">
+                                                    <?php echo esc_html( $district->count ); ?>
+                                                </span>
                                             </label>
                                         <?php endforeach; ?>
                                     </div>
