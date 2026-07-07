@@ -44,6 +44,8 @@ $filter_property_type = isset( $_GET['property_type'] )
     ? sanitize_text_field( wp_unslash( $_GET['property_type'] ) ) : '';
 $filter_location      = isset( $_GET['location'] )
     ? sanitize_text_field( wp_unslash( $_GET['location'] ) ) : '';
+$filter_province      = isset( $_GET['province'] )
+    ? sanitize_text_field( wp_unslash( $_GET['province'] ) ) : '';
 $filter_district      = isset( $_GET['district'] )
     ? sanitize_text_field( wp_unslash( $_GET['district'] ) ) : '';
 $filter_amenities     = isset( $_GET['amenities'] ) && is_array( $_GET['amenities'] )
@@ -162,9 +164,9 @@ if ( 'property' === $search_type ) {
     if ( $filter_property_type ) {
         $tax_query[] = array( 'taxonomy' => 'moga_property_type', 'field' => 'slug', 'terms' => $filter_property_type );
     }
-    // District is more specific than city — use it when available.
-    // include_children=true on city means posts assigned to any
-    // district within that city are included.
+    // District is most specific — use when set.
+    // City includes all its child districts via include_children=true.
+    // Province includes all its child cities and their districts.
     if ( $filter_district ) {
         $tax_query[] = array(
             'taxonomy'         => 'moga_location',
@@ -177,6 +179,13 @@ if ( 'property' === $search_type ) {
             'taxonomy'         => 'moga_location',
             'field'            => 'name',
             'terms'            => $filter_location,
+            'include_children' => true,
+        );
+    } elseif ( $filter_province ) {
+        $tax_query[] = array(
+            'taxonomy'         => 'moga_location',
+            'field'            => 'name',
+            'terms'            => $filter_province,
             'include_children' => true,
         );
     } elseif ( $filter_destination ) {
@@ -233,8 +242,9 @@ $total_pages    = $search_results->max_num_pages;
 $property_types = get_terms( array( 'taxonomy' => 'moga_property_type', 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC' ) );
 $property_types = ! is_wp_error( $property_types ) ? $property_types : array();
 
-// City terms — only city-level (moga_level = city), not districts.
-$city_terms = get_terms( array(
+// Province terms — all province-level terms in the location taxonomy.
+// Shown in the Province / State / Governorate filter group.
+$province_terms = get_terms( array(
     'taxonomy'   => 'moga_location',
     'hide_empty' => false,
     'orderby'    => 'name',
@@ -242,14 +252,31 @@ $city_terms = get_terms( array(
     'meta_query' => array(
         array(
             'key'   => 'moga_level',
-            'value' => 'city',
+            'value' => 'province',
         ),
     ),
 ) );
-$city_terms = ! is_wp_error( $city_terms ) ? $city_terms : array();
+$province_terms = ! is_wp_error( $province_terms ) ? $province_terms : array();
+
+// City terms — only loaded when a province is already selected.
+// Queries children of the selected province term.
+$city_terms = array();
+if ( $filter_province ) {
+    $selected_province_term = get_term_by( 'name', $filter_province, 'moga_location' );
+    if ( $selected_province_term && ! is_wp_error( $selected_province_term ) ) {
+        $city_terms = get_terms( array(
+            'taxonomy'   => 'moga_location',
+            'hide_empty' => false,
+            'parent'     => $selected_province_term->term_id,
+            'orderby'    => 'name',
+            'order'      => 'ASC',
+        ) );
+        $city_terms = ! is_wp_error( $city_terms ) ? $city_terms : array();
+    }
+}
 
 // District terms — only loaded when a city is already selected.
-// Queries children of the selected city term in the moga_location taxonomy.
+// Queries children of the selected city term.
 $district_terms = array();
 if ( $filter_location ) {
     $selected_city_term = get_term_by( 'name', $filter_location, 'moga_location' );
@@ -312,8 +339,19 @@ if ( $filter_property_type ) {
         $active_filters['property_type'] = array( 'label' => $pt->name, 'remove' => esc_url( remove_query_arg( 'property_type' ) ) );
     }
 }
+if ( $filter_province ) {
+    $active_filters['province'] = array(
+        'label'  => $filter_province,
+        // Removing province also clears city and district since they depend on it.
+        'remove' => esc_url( remove_query_arg( array( 'province', 'location', 'district' ) ) ),
+    );
+}
 if ( $filter_location ) {
-    $active_filters['location'] = array( 'label' => $filter_location, 'remove' => esc_url( remove_query_arg( 'location' ) ) );
+    $active_filters['location'] = array(
+        'label'  => $filter_location,
+        // Removing city also clears district.
+        'remove' => esc_url( remove_query_arg( array( 'location', 'district' ) ) ),
+    );
 }
 if ( $filter_district ) {
     $active_filters['district'] = array(
@@ -444,9 +482,11 @@ function moga_accordion_chevron() {
                     <?php if ( $filter_destination ) : ?>
                         <input type="hidden" name="destination" value="<?php echo esc_attr( $filter_destination ); ?>">
                     <?php endif; ?>
+                    <?php if ( $filter_province ) : ?>
+                        <input type="hidden" name="province" value="<?php echo esc_attr( $filter_province ); ?>">
+                    <?php endif; ?>
                     <?php if ( $filter_district && ! empty( $district_terms ) ) : ?>
-                        <?php // Keep district param while user adjusts other filters.
-                              // Gets cleared automatically when city changes. ?>
+                        <?php // Keep district param while user adjusts other filters. ?>
                         <input type="hidden" name="district" value="<?php echo esc_attr( $filter_district ); ?>">
                     <?php endif; ?>
 
@@ -518,14 +558,43 @@ function moga_accordion_chevron() {
                             </div>
                         <?php endif; ?>
 
-                        <?php // ---- City / Location (closed by default) ---- ?>
+                        <?php // ---- Province / State / Governorate (closed by default) ---- ?>
+                        <?php if ( ! empty( $province_terms ) ) : ?>
+                            <div class="moga-filter-group" data-group="province">
+                                <button
+                                    type="button"
+                                    class="moga-filter-group__title"
+                                    aria-expanded="<?php echo $filter_province ? 'true' : 'false'; ?>"
+                                >
+                                    <?php esc_html_e( 'Province / State', 'moga-travel' ); ?>
+                                    <?php moga_accordion_chevron(); ?>
+                                </button>
+                                <div class="moga-filter-group__content" <?php echo $filter_province ? '' : 'hidden'; ?>>
+                                    <div class="moga-filter-options moga-filter-options--scrollable">
+                                        <?php foreach ( $province_terms as $province ) : ?>
+                                            <label class="moga-filter-option">
+                                                <input type="radio" name="province" value="<?php echo esc_attr( $province->name ); ?>" <?php checked( $filter_province, $province->name ); ?>>
+                                                <span class="moga-filter-option__label"><?php echo esc_html( $province->name ); ?></span>
+                                                <span class="moga-filter-option__count"><?php echo esc_html( $province->count ); ?></span>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php // ---- City (shown only when a province is selected and has cities) ---- ?>
                         <?php if ( ! empty( $city_terms ) ) : ?>
                             <div class="moga-filter-group" data-group="location">
-                                <button type="button" class="moga-filter-group__title" aria-expanded="false">
+                                <button
+                                    type="button"
+                                    class="moga-filter-group__title"
+                                    aria-expanded="<?php echo $filter_location ? 'true' : 'false'; ?>"
+                                >
                                     <?php esc_html_e( 'City', 'moga-travel' ); ?>
                                     <?php moga_accordion_chevron(); ?>
                                 </button>
-                                <div class="moga-filter-group__content" hidden>
+                                <div class="moga-filter-group__content" <?php echo $filter_location ? '' : 'hidden'; ?>>
                                     <div class="moga-filter-options moga-filter-options--scrollable">
                                         <?php foreach ( $city_terms as $city ) : ?>
                                             <label class="moga-filter-option">

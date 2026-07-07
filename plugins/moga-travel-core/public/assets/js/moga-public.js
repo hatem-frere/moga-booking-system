@@ -2,8 +2,9 @@
  * Moga Public JavaScript
  *
  * Handles all frontend plugin interactions:
- *   - AJAX city loader (country → city dropdown) via GeoNames
- *   - AJAX district loader (city → district dropdown) via GeoNames (NEW)
+ *   - AJAX province loader (country → province dropdown) — DB-powered
+ *   - AJAX city loader (province → city dropdown) — DB-powered
+ *   - AJAX district loader (city → district dropdown) — DB-powered
  *   - Availability checker
  *   - Search form interactions
  *   - Guest counter
@@ -24,15 +25,23 @@
     var MogaPublic = {
 
         /**
-         * Cache of loaded cities per country code.
+         * Cache of loaded provinces per country ISO code.
          * Avoids duplicate AJAX calls for the same country.
+         *
+         * @type {Object}
+         */
+        provinceCache: {},
+
+        /**
+         * Cache of loaded cities per province DB id.
+         * Avoids duplicate AJAX calls for the same province.
          *
          * @type {Object}
          */
         cityCache: {},
 
         /**
-         * Cache of loaded districts per GeoNames city ID.
+         * Cache of loaded districts per city DB id.
          * Avoids duplicate AJAX calls for the same city.
          *
          * @type {Object}
@@ -54,6 +63,7 @@
          * @return {void}
          */
         init: function () {
+            this.initProvinceLoader();
             this.initCityLoader();
             this.initDistrictLoader();
             this.initGuestCounter();
@@ -66,15 +76,162 @@
 
 
         // ============================================================
-        // AJAX CITY LOADER — updated to use GeoNames with geoname_id
+        // AJAX PROVINCE LOADER — country → province (DB-powered)
         // ============================================================
 
         /**
-         * Initialize country → city dynamic dropdown.
-         * Uses moga_get_geo_cities AJAX action which tries GeoNames first
-         * and falls back to static data if GeoNames is not configured.
-         * Each city option gets a data-geoname-id attribute used by
-         * the district cascade loader below.
+         * Initialize country → province cascade dropdown.
+         * Fires on .moga-country-select change.
+         * Uses moga_get_provinces AJAX action (queries mg_moga_loc_provinces).
+         *
+         * Province select is found via:
+         *   1. data-province-target="[id]" attribute on the country select
+         *   2. Proximity: .moga-province-select within the same form/group
+         *
+         * @return {void}
+         */
+        initProvinceLoader: function () {
+            var self = this;
+
+            $( document ).on(
+                'change',
+                '.moga-country-select, [data-moga="country-select"]',
+                function () {
+                    var $country        = $( this );
+                    var countryCode     = $country.val();
+                    var $provinceSelect = self.findProvinceSelect( $country );
+                    var $citySelect     = self.findCitySelectFromCountry( $country );
+                    var $districtField  = $citySelect.length
+                        ? self.findDistrictField( $citySelect )
+                        : $();
+
+                    // Reset province, city, and district.
+                    self.resetProvinceDropdown( $provinceSelect );
+                    if ( $citySelect.length ) self.resetCityDropdown( $citySelect );
+                    if ( $districtField.length ) self.resetDistrictField( $districtField );
+
+                    if ( ! countryCode ) return;
+
+                    // Use cache if available.
+                    if ( self.provinceCache[ countryCode ] ) {
+                        self.populateProvinceDropdown( $provinceSelect, self.provinceCache[ countryCode ] );
+                        return;
+                    }
+
+                    // Show loading.
+                    $provinceSelect.empty().append(
+                        $( '<option>' ).val( '' ).text( mogaCoreData.i18n.loadingProvinces || 'Loading…' )
+                    ).prop( 'disabled', true );
+
+                    $.ajax( {
+                        url:  mogaCoreData.ajaxUrl,
+                        type: 'POST',
+                        data: {
+                            action:       'moga_get_provinces',
+                            country_code: countryCode,
+                            nonce:        mogaCoreData.nonce,
+                        },
+                        success: function ( r ) {
+                            if ( r.success && r.data && r.data.provinces && r.data.provinces.length ) {
+                                self.provinceCache[ countryCode ] = r.data.provinces;
+                                self.populateProvinceDropdown( $provinceSelect, r.data.provinces );
+                            } else {
+                                self.resetProvinceDropdown( $provinceSelect );
+                            }
+                        },
+                        error: function () {
+                            self.resetProvinceDropdown( $provinceSelect );
+                        },
+                    } );
+                }
+            );
+        },
+
+        /**
+         * Find the province select associated with a country select.
+         *
+         * @param  {jQuery} $countrySelect Country <select>.
+         * @return {jQuery}
+         */
+        findProvinceSelect: function ( $countrySelect ) {
+            var targetId = $countrySelect.data( 'province-target' );
+            if ( targetId ) {
+                var $t = $( '#' + targetId );
+                if ( $t.length ) return $t;
+            }
+            var $group = $countrySelect.closest(
+                '.moga-search-group, .moga-filter-row, .moga-filter-group, .moga-search-form'
+            );
+            if ( $group.length ) {
+                var $s = $group.find( '.moga-province-select' );
+                if ( $s.length ) return $s;
+            }
+            return $();
+        },
+
+        /**
+         * Find the city select reachable from a country select.
+         * Used to reset it when country changes.
+         *
+         * @param  {jQuery} $countrySelect Country <select>.
+         * @return {jQuery}
+         */
+        findCitySelectFromCountry: function ( $countrySelect ) {
+            var cityTargetId = $countrySelect.data( 'city-target' );
+            if ( cityTargetId ) {
+                var $t = $( '#' + cityTargetId );
+                if ( $t.length ) return $t;
+            }
+            var $group = $countrySelect.closest(
+                '.moga-search-group, .moga-filter-row, .moga-filter-group, .moga-search-form'
+            );
+            if ( $group.length ) {
+                var $s = $group.find( '.moga-city-select' );
+                if ( $s.length ) return $s;
+            }
+            return $();
+        },
+
+        /**
+         * Reset province dropdown to default empty state.
+         *
+         * @param  {jQuery} $select Province select.
+         * @return {void}
+         */
+        resetProvinceDropdown: function ( $select ) {
+            if ( ! $select || ! $select.length ) return;
+            $select.empty().append(
+                $( '<option>' ).val( '' ).text( mogaCoreData.i18n.selectCountryFirst || '— Select Country First —' )
+            ).prop( 'disabled', false );
+        },
+
+        /**
+         * Populate province dropdown.
+         *
+         * @param  {jQuery} $select   Province select element.
+         * @param  {Array}  provinces Array of {id, name} objects.
+         * @return {void}
+         */
+        populateProvinceDropdown: function ( $select, provinces ) {
+            if ( ! $select || ! $select.length ) return;
+            $select.empty().append(
+                $( '<option>' ).val( '' ).text( mogaCoreData.i18n.selectProvince || '— Select Province —' )
+            );
+            $.each( provinces, function ( i, p ) {
+                $select.append( $( '<option>' ).val( p.id ).text( p.name ) );
+            } );
+            $select.prop( 'disabled', false );
+        },
+
+
+        // ============================================================
+        // AJAX CITY LOADER — province → city (DB-powered)
+        // ============================================================
+
+        /**
+         * Initialize province → city cascade dropdown.
+         * Fires on .moga-province-select change.
+         * Uses moga_get_cities AJAX action (queries mg_moga_loc_cities).
          *
          * @return {void}
          */
@@ -83,60 +240,54 @@
 
             $( document ).on(
                 'change',
-                '.moga-country-select, [data-moga="country-select"]',
+                '.moga-province-select, [data-moga="province-select"]',
                 function () {
-                    var $select     = $( this );
-                    var countryCode = $select.val();
-                    var targetId    = $select.data( 'target' ) || $select.data( 'city-target' );
-                    var $citySelect = targetId
-                        ? $( '#' + targetId )
-                        : $select.closest(
-                            '.moga-search-group, .moga-filter-row, .moga-filter-group'
+                    var $province   = $( this );
+                    var provinceId  = parseInt( $province.val(), 10 ) || 0;
+                    var cityTargetId = $province.data( 'city-target' );
+                    var $citySelect = cityTargetId
+                        ? $( '#' + cityTargetId )
+                        : $province.closest(
+                            '.moga-search-group, .moga-filter-row, .moga-filter-group, .moga-search-form'
                           ).find( '.moga-city-select' );
 
                     if ( ! $citySelect.length ) return;
 
-                    // Reset city dropdown.
+                    // Reset city and district.
                     self.resetCityDropdown( $citySelect );
-
-                    // Reset any district field whenever country changes.
                     var $districtField = self.findDistrictField( $citySelect );
-                    if ( $districtField.length ) {
-                        self.resetDistrictField( $districtField );
-                    }
+                    if ( $districtField.length ) self.resetDistrictField( $districtField );
 
-                    if ( ! countryCode ) return;
+                    if ( ! provinceId ) return;
 
                     // Use cache if available.
-                    if ( self.cityCache[ countryCode ] ) {
-                        self.populateCityDropdown( $citySelect, self.cityCache[ countryCode ] );
+                    if ( self.cityCache[ provinceId ] ) {
+                        self.populateCityDropdown( $citySelect, self.cityCache[ provinceId ] );
                         return;
                     }
 
-                    // Show loading state.
-                    self.setCityLoading( $citySelect, true );
+                    // Show loading.
+                    $citySelect.empty().append(
+                        $( '<option>' ).val( '' ).text( mogaCoreData.i18n.loading || 'Loading…' )
+                    ).prop( 'disabled', true );
 
-                    // AJAX call via GeoNames (falls back to static data server-side).
                     $.ajax( {
-                        url:     mogaCoreData.ajaxUrl,
-                        type:    'POST',
-                        data:    {
-                            action:       'moga_get_geo_cities',
-                            country_code: countryCode,
-                            nonce:        mogaCoreData.nonce,
+                        url:  mogaCoreData.ajaxUrl,
+                        type: 'POST',
+                        data: {
+                            action:      'moga_get_cities',
+                            province_id: provinceId,
+                            nonce:       mogaCoreData.nonce,
                         },
-                        success: function ( response ) {
-                            self.setCityLoading( $citySelect, false );
-
-                            if ( response.success && response.data && response.data.cities ) {
-                                self.cityCache[ countryCode ] = response.data.cities;
-                                self.populateCityDropdown( $citySelect, response.data.cities );
+                        success: function ( r ) {
+                            if ( r.success && r.data && r.data.cities && r.data.cities.length ) {
+                                self.cityCache[ provinceId ] = r.data.cities;
+                                self.populateCityDropdown( $citySelect, r.data.cities );
                             } else {
                                 self.resetCityDropdown( $citySelect );
                             }
                         },
                         error: function () {
-                            self.setCityLoading( $citySelect, false );
                             self.resetCityDropdown( $citySelect );
                         },
                     } );
@@ -151,84 +302,46 @@
          * @return {void}
          */
         resetCityDropdown: function ( $select ) {
+            if ( ! $select || ! $select.length ) return;
             $select.empty().append(
-                $( '<option>' )
-                    .val( '' )
-                    .text( mogaCoreData.i18n.selectCity || '— Select City —' )
-            );
+                $( '<option>' ).val( '' ).text( mogaCoreData.i18n.selectProvinceFirst || '— Select Province First —' )
+            ).prop( 'disabled', false );
         },
 
         /**
-         * Set city dropdown loading state.
-         *
-         * @param  {jQuery}  $select  City select element.
-         * @param  {boolean} loading  Whether loading is active.
-         * @return {void}
-         */
-        setCityLoading: function ( $select, loading ) {
-            if ( loading ) {
-                $select.empty().append(
-                    $( '<option>' )
-                        .val( '' )
-                        .text( mogaCoreData.i18n.loading || 'Loading...' )
-                );
-                $select.prop( 'disabled', true );
-            } else {
-                $select.prop( 'disabled', false );
-            }
-        },
-
-        /**
-         * Populate city dropdown with cities array.
-         * Each option includes data-geoname-id for district cascade.
+         * Populate city dropdown.
+         * City option value = city DB id (used for district lookup).
          *
          * @param  {jQuery} $select City select element.
-         * @param  {Array}  cities  Array of city objects {name, geoname_id, lat, lng}.
+         * @param  {Array}  cities  Array of {id, name} objects from mg_moga_loc_cities.
          * @return {void}
          */
         populateCityDropdown: function ( $select, cities ) {
             $select.empty().append(
-                $( '<option>' )
-                    .val( '' )
-                    .text( mogaCoreData.i18n.selectCity || '— Select City —' )
+                $( '<option>' ).val( '' ).text( mogaCoreData.i18n.selectCity || '— Select City —' )
             );
-
             $.each( cities, function ( i, city ) {
-                $select.append(
-                    $( '<option>' )
-                        .val( city.name )
-                        .text( city.name )
-                        .attr( 'data-geoname-id', city.geoname_id || 0 )
-                        .attr( 'data-lat',        city.lat        || '' )
-                        .attr( 'data-lng',        city.lng        || '' )
-                );
+                $select.append( $( '<option>' ).val( city.id ).text( city.name ) );
             } );
-
             $select.prop( 'disabled', false );
         },
 
 
         // ============================================================
-        // AJAX DISTRICT LOADER — NEW
+        // AJAX DISTRICT LOADER — city → district (DB-powered)
         // ============================================================
 
         /**
          * Initialize city → district cascade dropdown.
+         * Fires on .moga-city-select change.
+         * Uses moga_get_districts AJAX action (queries mg_moga_loc_districts).
          *
-         * When a city is selected from .moga-city-select, the district
-         * field is populated via moga_get_geo_districts AJAX action
-         * which calls the GeoNames childrenJSON API with caching.
-         *
-         * District field resolution order:
-         *   1. data-district-target="[id]" on the city select
-         *      → targets that element directly by ID
-         *   2. Proximity: nearest .moga-district-select or
-         *      .moga-district-text within the same form/group wrapper
+         * City option value = city DB id — used directly as city_id parameter.
          *
          * Behavior:
-         *   - Districts found  → populate and show <select.moga-district-select>
-         *   - No districts     → show <input.moga-district-text> for manual entry
-         *   - No geoname_id    → city is from static data; show text input
+         *   - Districts found  → populate and show .moga-district-select
+         *   - No districts     → show .moga-district-text for manual entry
+         *   - No city selected → reset district field
          *
          * @return {void}
          */
@@ -239,62 +352,42 @@
                 'change',
                 '.moga-city-select, [data-moga="city-select"]',
                 function () {
-                    var $citySelect = $( this );
-                    var $selected   = $citySelect.find( ':selected' );
-                    var geonameId   = parseInt( $selected.attr( 'data-geoname-id' ) || 0, 10 );
-
-                    // Find the associated district field.
+                    var $citySelect    = $( this );
+                    var cityId         = parseInt( $citySelect.val(), 10 ) || 0;
                     var $districtField = self.findDistrictField( $citySelect );
+
                     if ( ! $districtField.length ) return;
 
-                    // Reset district field on every city change.
                     self.resetDistrictField( $districtField );
 
-                    // No city selected.
-                    if ( ! $citySelect.val() ) return;
-
-                    // No GeoNames ID — city from static data, show text input.
-                    if ( ! geonameId ) {
-                        self.showDistrictTextInput( $districtField );
-                        return;
-                    }
+                    if ( ! cityId ) return;
 
                     // Use cache if available.
-                    if ( self.districtCache[ geonameId ] !== undefined ) {
-                        self.renderDistrictField(
-                            $districtField,
-                            self.districtCache[ geonameId ],
-                            ''
-                        );
+                    if ( self.districtCache[ cityId ] !== undefined ) {
+                        self.renderDistrictField( $districtField, self.districtCache[ cityId ], '' );
                         return;
                     }
 
-                    // Show loading state.
                     self.setDistrictLoading( $districtField, true );
 
                     $.ajax( {
-                        url:     mogaCoreData.ajaxUrl,
-                        type:    'POST',
-                        data:    {
-                            action:     'moga_get_geo_districts',
-                            geoname_id: geonameId,
-                            nonce:      mogaCoreData.nonce,
+                        url:  mogaCoreData.ajaxUrl,
+                        type: 'POST',
+                        data: {
+                            action:  'moga_get_districts',
+                            city_id: cityId,
+                            nonce:   mogaCoreData.nonce,
                         },
-                        success: function ( response ) {
+                        success: function ( r ) {
                             self.setDistrictLoading( $districtField, false );
-
-                            var districts = ( response.success &&
-                                              response.data &&
-                                              response.data.districts )
-                                ? response.data.districts
-                                : [];
-
-                            self.districtCache[ geonameId ] = districts;
+                            var districts = ( r.success && r.data && r.data.districts )
+                                ? r.data.districts : [];
+                            self.districtCache[ cityId ] = districts;
                             self.renderDistrictField( $districtField, districts, '' );
                         },
                         error: function () {
                             self.setDistrictLoading( $districtField, false );
-                            self.districtCache[ geonameId ] = [];
+                            self.districtCache[ cityId ] = [];
                             self.showDistrictTextInput( $districtField );
                         },
                     } );
@@ -309,137 +402,80 @@
          * @return {jQuery} The district field, or empty jQuery object if not found.
          */
         findDistrictField: function ( $citySelect ) {
-
-            // 1. Explicit data-district-target attribute.
             var targetId = $citySelect.data( 'district-target' );
             if ( targetId ) {
                 var $target = $( '#' + targetId );
                 if ( $target.length ) return $target;
             }
-
-            // 2. Proximity: look in the same search/filter group.
             var $group = $citySelect.closest(
                 '.moga-search-group, .moga-filter-row, .moga-filter-group, ' +
                 '.moga-search-form, .moga-district-wrapper'
             );
-
             if ( $group.length ) {
-                var $select = $group.find( '.moga-district-select' );
-                if ( $select.length ) return $select;
-
-                var $text = $group.find( '.moga-district-text' );
-                if ( $text.length ) return $text;
+                var $sel = $group.find( '.moga-district-select' );
+                if ( $sel.length ) return $sel;
+                var $txt = $group.find( '.moga-district-text' );
+                if ( $txt.length ) return $txt;
             }
-
             return $();
         },
 
         /**
          * Render the district field with available data.
-         *
-         * When districts are available: populate and show the <select>.
-         * When empty:                   show the text input fallback.
+         * Districts found → populate select. Empty → show text input.
          *
          * @param  {jQuery} $field        District field element.
-         * @param  {Array}  districts     Array of {name, geoname_id} objects.
+         * @param  {Array}  districts     Array of {id, name} objects.
          * @param  {string} savedDistrict Previously saved value to pre-select.
          * @return {void}
          */
         renderDistrictField: function ( $field, districts, savedDistrict ) {
-
             var $wrapper = $field.closest( '.moga-district-wrapper' );
 
             if ( districts.length ) {
-
                 var $select = $field.is( 'select' )
                     ? $field
-                    : ( $wrapper.length
-                        ? $wrapper.find( '.moga-district-select' )
-                        : $() );
-
+                    : ( $wrapper.length ? $wrapper.find( '.moga-district-select' ) : $() );
                 var $text = $field.is( 'input' )
                     ? $field
-                    : ( $wrapper.length
-                        ? $wrapper.find( '.moga-district-text' )
-                        : $() );
+                    : ( $wrapper.length ? $wrapper.find( '.moga-district-text' ) : $() );
 
                 if ( $select.length ) {
-
                     $select.empty().append(
-                        $( '<option>' )
-                            .val( '' )
-                            .text(
-                                mogaCoreData.i18n.selectDistrict ||
-                                '— Select District —'
-                            )
+                        $( '<option>' ).val( '' ).text( mogaCoreData.i18n.selectDistrict || '— Select District —' )
                     );
-
-                    $.each( districts, function ( i, district ) {
-                        var $opt = $( '<option>' )
-                            .val( district.name )
-                            .text( district.name );
-
-                        if ( savedDistrict && district.name === savedDistrict ) {
-                            $opt.prop( 'selected', true );
-                        }
-
+                    $.each( districts, function ( i, d ) {
+                        var $opt = $( '<option>' ).val( d.name ).text( d.name );
+                        if ( savedDistrict && d.name === savedDistrict ) $opt.prop( 'selected', true );
                         $select.append( $opt );
                     } );
-
-                    // Sync select → text input on change so the
-                    // text input value (used in URL params) stays updated.
                     if ( $text.length ) {
                         $select.off( 'change.district' ).on( 'change.district', function () {
                             $text.val( $( this ).val() );
                         } );
-                        if ( savedDistrict ) {
-                            $text.val( savedDistrict );
-                        }
+                        if ( savedDistrict ) $text.val( savedDistrict );
                     }
-
                     $select.prop( 'disabled', false ).show();
                     if ( $wrapper.length ) $wrapper.show();
-
                 } else {
-                    // No <select> element found — use text input.
                     this.showDistrictTextInput( $field );
                 }
-
             } else {
-                // No district data — show text input for manual entry.
                 this.showDistrictTextInput( $field );
             }
         },
 
         /**
          * Show the district text input as manual entry fallback.
-         * Hides the cascade select if present.
          *
          * @param  {jQuery} $field District field element.
          * @return {void}
          */
         showDistrictTextInput: function ( $field ) {
-
             var $wrapper = $field.closest( '.moga-district-wrapper' );
-
-            // Hide select dropdown if present.
-            var $select = $field.is( 'select' )
-                ? $field
-                : ( $wrapper.length
-                    ? $wrapper.find( '.moga-district-select' )
-                    : $() );
-
-            if ( $select.length ) {
-                $select.hide();
-            }
-
-            // Show text input.
-            var $text = $field.is( 'input' )
-                ? $field
-                : ( $wrapper.length
-                    ? $wrapper.find( '.moga-district-text' )
-                    : $() );
-
+            var $select  = $field.is( 'select' ) ? $field : ( $wrapper.length ? $wrapper.find( '.moga-district-select' ) : $() );
+            if ( $select.length ) $select.hide();
+            var $text = $field.is( 'input' ) ? $field : ( $wrapper.length ? $wrapper.find( '.moga-district-text' ) : $() );
             if ( $text.length ) {
                 $text.show();
                 if ( $wrapper.length ) $wrapper.show();
@@ -450,42 +486,21 @@
 
         /**
          * Reset district field to default empty/hidden state.
-         * Called on country change or city reset.
          *
          * @param  {jQuery} $field District select or text input.
          * @return {void}
          */
         resetDistrictField: function ( $field ) {
-
             if ( ! $field || ! $field.length ) return;
-
             var $wrapper = $field.closest( '.moga-district-wrapper' );
-
             if ( $field.is( 'select' ) ) {
-                $field.empty().append(
-                    $( '<option>' )
-                        .val( '' )
-                        .text(
-                            mogaCoreData.i18n.selectDistrict ||
-                            '— Select District —'
-                        )
-                ).hide();
+                $field.empty().append( $( '<option>' ).val( '' ).text( mogaCoreData.i18n.selectDistrict || '— Select District —' ) ).hide();
             } else if ( $field.is( 'input' ) ) {
                 $field.val( '' );
             }
-
             if ( $wrapper.length ) {
                 $wrapper.find( '.moga-district-select' )
-                    .empty()
-                    .append(
-                        $( '<option>' )
-                            .val( '' )
-                            .text(
-                                mogaCoreData.i18n.selectDistrict ||
-                                '— Select District —'
-                            )
-                    ).hide();
-
+                    .empty().append( $( '<option>' ).val( '' ).text( mogaCoreData.i18n.selectDistrict || '— Select District —' ) ).hide();
                 $wrapper.find( '.moga-district-text' ).val( '' );
             }
         },
@@ -498,12 +513,8 @@
          * @return {void}
          */
         setDistrictLoading: function ( $field, loading ) {
-
             var $wrapper = $field.closest( '.moga-district-wrapper' );
-            var $loading = $wrapper.length
-                ? $wrapper.find( '.moga-district-loading' )
-                : $();
-
+            var $loading = $wrapper.length ? $wrapper.find( '.moga-district-loading' ) : $();
             if ( loading ) {
                 $field.prop( 'disabled', true );
                 if ( $loading.length ) $loading.show();
@@ -514,7 +525,6 @@
         },
 
 
-        // ============================================================
         // GUEST COUNTER
         // ============================================================
 

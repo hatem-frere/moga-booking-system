@@ -1,0 +1,488 @@
+/**
+ * Moga Admin — Location Settings CSS
+ *
+ * Path: admin/assets/css/admin-locations.css
+ * Loaded only on the Location Settings admin page.
+ *
+ * @package MogaTravelCore
+ * @since   1.0.0
+ */
+
+
+/* ============================================================
+   PAGE WRAPPER
+   ============================================================ */
+
+.moga-loc-wrap {
+    max-width: 1200px;
+}
+
+.moga-loc-page-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.4rem;
+    margin-bottom: 0;
+}
+
+
+/* ============================================================
+   TABS
+   ============================================================ */
+
+.moga-loc-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #c3c4c7;
+    margin-top: 16px;
+}
+
+.moga-loc-tab {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #555;
+    text-decoration: none;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    background: transparent;
+    position: relative;
+    bottom: -1px;
+}
+
+.moga-loc-tab:hover {
+    color: #0073aa;
+    background: #f9f9f9;
+}
+
+.moga-loc-tab--active {
+    color: #1d2327;
+    background: #fff;
+    border-color: #c3c4c7;
+}
+
+.moga-loc-tab-body {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-top: none;
+    padding: 28px;
+    border-radius: 0 4px 4px 4px;
+}
+
+
+/* ============================================================
+   IMPORT TAB
+   ============================================================ */
+
+.moga-loc-import__intro {
+    color: #555;
+    max-width: 760px;
+    margin-top: 0;
+}
+
+/* Status cards */
+.moga-loc-stats {
+    display: grid;
+    grid-template-columns: repeat( auto-fit, minmax( 180px, 1fr ) );
+    gap: 16px;
+    margin: 20px 0 24px;
+}
+
+.moga-loc-stat-card {
+    background: #f6f7f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px 16px;
+    text-align: center;
+    position: relative;
+    transition: border-color 0.2s;
+}
+
+.moga-loc-stat-card--done {
+    border-color: #00a651;
+    background: #f0faf4;
+}
+
+.moga-loc-stat-card__count {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1d2327;
+    line-height: 1;
+}
+
+.moga-loc-stat-card__label {
+    font-size: 0.85rem;
+    color: #555;
+    margin-top: 6px;
+}
+
+.moga-loc-stat-card__available {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 4px;
+}
+
+.moga-loc-stat-card__badge {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 1rem;
+    color: #00a651;
+    font-weight: 700;
+}
+
+/* Import action buttons */
+.moga-loc-import-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.moga-loc-btn-reset {
+    color: #b32d2e !important;
+    border-color: #b32d2e !important;
+}
+
+.moga-loc-btn-reset:hover {
+    background: #b32d2e !important;
+    color: #fff !important;
+}
+
+/* Progress bar */
+.moga-loc-progress {
+    background: #f6f7f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.moga-loc-progress__bar-wrap {
+    background: #e0e0e0;
+    border-radius: 100px;
+    height: 16px;
+    overflow: hidden;
+}
+
+.moga-loc-progress__fill {
+    height: 100%;
+    background: linear-gradient( 90deg, #0073aa 0%, #00a0d2 100% );
+    border-radius: 100px;
+    transition: width 0.3s ease;
+}
+
+.moga-loc-progress__text {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1d2327;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.moga-loc-progress__step {
+    font-size: 0.8rem;
+    color: #555;
+    text-align: center;
+    margin-top: 4px;
+    min-height: 1.4em;
+}
+
+/* Import log */
+.moga-loc-log {
+    background: #1d2327;
+    color: #a7aaad;
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 12px;
+    display: none;
+}
+
+.moga-loc-log:not(:empty) {
+    display: block;
+}
+
+.moga-loc-log__line {
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.moga-loc-log__line:last-child {
+    border-bottom: none;
+}
+
+/* Data quality note */
+.moga-loc-note {
+    background: #fff8e5;
+    border-left: 4px solid #f0b849;
+    padding: 12px 16px;
+    border-radius: 0 4px 4px 0;
+    font-size: 0.85rem;
+    color: #555;
+    margin-top: 20px;
+}
+
+.moga-loc-note strong {
+    color: #1d2327;
+}
+
+
+/* ============================================================
+   EDITOR TAB
+   ============================================================ */
+
+.moga-loc-editor__intro {
+    color: #555;
+    max-width: 760px;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.moga-loc-editor__empty {
+    text-align: center;
+    padding: 40px;
+    color: #888;
+}
+
+/* Four-panel layout */
+.moga-loc-panels {
+    display: grid;
+    grid-template-columns: repeat( auto-fit, minmax( 240px, 1fr ) );
+    gap: 16px;
+    align-items: start;
+}
+
+/* Single panel */
+.moga-loc-panel {
+    border: 1px solid #c3c4c7;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.moga-loc-panel__header {
+    background: #f6f7f7;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.moga-loc-panel__title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1d2327;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.moga-loc-panel__num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #0073aa;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.moga-loc-panel__spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #e0e0e0;
+    border-top-color: #0073aa;
+    border-radius: 50%;
+    animation: moga-spin 0.6s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes moga-spin {
+    to { transform: rotate( 360deg ); }
+}
+
+.moga-loc-panel__body {
+    padding: 14px 16px;
+}
+
+/* Country select inside panel */
+.moga-loc-select {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 10px;
+}
+
+/* Panel action buttons row */
+.moga-loc-panel__actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.moga-loc-panel__actions .button {
+    font-size: 0.8rem;
+    padding: 3px 10px;
+    height: auto;
+    line-height: 1.6;
+}
+
+/* Inline add/edit form */
+.moga-loc-inline-form {
+    background: #f0f6fc;
+    border: 1px solid #c3d4e3;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 8px;
+}
+
+.moga-loc-inline-form__row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.moga-loc-inline-form__row:last-child {
+    margin-bottom: 0;
+}
+
+.moga-loc-inline-form .regular-text {
+    flex: 1;
+    min-width: 140px;
+}
+
+.moga-loc-inline-form .small-text {
+    width: 90px;
+}
+
+
+/* ============================================================
+   LOCATION LIST (provinces / cities / districts)
+   ============================================================ */
+
+.moga-loc-list {
+    max-height: 340px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    background: #fafafa;
+}
+
+.moga-loc-list__empty {
+    color: #888;
+    font-style: italic;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+}
+
+.moga-loc-list-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-bottom: 1px solid #e8e8e8;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.moga-loc-list-row:last-child {
+    border-bottom: none;
+}
+
+.moga-loc-list-row:hover {
+    background: #f0f6fc;
+}
+
+.moga-loc-list-row.is-selected {
+    background: #e8f0fe;
+    border-left: 3px solid #0073aa;
+    padding-left: 7px;
+}
+
+.moga-loc-list-row__name {
+    flex: 1;
+    font-size: 0.85rem;
+    color: #1d2327;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.moga-loc-list-row__coords {
+    font-size: 0.72rem;
+    color: #888;
+    flex-shrink: 0;
+    font-family: monospace;
+}
+
+.moga-loc-list-row__actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.moga-loc-list-row:hover .moga-loc-list-row__actions,
+.moga-loc-list-row.is-selected .moga-loc-list-row__actions {
+    opacity: 1;
+}
+
+.moga-loc-list-row__actions .button {
+    font-size: 0.75rem;
+    padding: 1px 8px;
+    height: auto;
+    line-height: 1.6;
+}
+
+.moga-loc-row-delete {
+    color: #b32d2e !important;
+    border-color: #b32d2e !important;
+}
+
+.moga-loc-row-delete:hover {
+    background: #b32d2e !important;
+    color: #fff !important;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media ( max-width: 960px ) {
+    .moga-loc-panels {
+        grid-template-columns: 1fr;
+    }
+    .moga-loc-stats {
+        grid-template-columns: repeat( 2, 1fr );
+    }
+}
+
+@media ( max-width: 600px ) {
+    .moga-loc-stats {
+        grid-template-columns: 1fr;
+    }
+    .moga-loc-import-actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

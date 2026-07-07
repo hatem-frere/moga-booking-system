@@ -228,6 +228,101 @@ class Moga_Activator {
             KEY idx_status (status)
         ) $charset_collate;";
 
+        // --------------------------------------------------------
+        // Table 8: moga_loc_countries
+        //
+        // Master list of all world countries.
+        // Populated once via the Location Settings import wizard.
+        // Source: data/locations/countries.json (249 countries).
+        //
+        // Columns:
+        //   id       — auto-increment primary key
+        //   name     — country display name (e.g. "Egypt")
+        //   iso_code — ISO 3166-1 alpha-2 code (e.g. "EG")
+        // --------------------------------------------------------
+        $sql_loc_countries = "CREATE TABLE {$prefix}loc_countries (
+            id SMALLINT(5) UNSIGNED NOT NULL AUTO_INCREMENT,
+            name VARCHAR(100) NOT NULL,
+            iso_code VARCHAR(3) NOT NULL DEFAULT '',
+            PRIMARY KEY (id),
+            UNIQUE KEY idx_iso_code (iso_code),
+            KEY idx_name (name)
+        ) $charset_collate;";
+
+        // --------------------------------------------------------
+        // Table 9: moga_loc_provinces
+        //
+        // States, Provinces, and Governorates — the first
+        // administrative level below a country.
+        // Populated via the Location Settings import wizard.
+        // Source: data/locations/provinces.json.
+        //
+        // Columns:
+        //   id         — auto-increment primary key
+        //   name       — province display name (e.g. "Cairo Governorate")
+        //   country_id — FK → moga_loc_countries.id
+        // --------------------------------------------------------
+        $sql_loc_provinces = "CREATE TABLE {$prefix}loc_provinces (
+            id MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,
+            name VARCHAR(150) NOT NULL,
+            country_id SMALLINT(5) UNSIGNED NOT NULL,
+            PRIMARY KEY (id),
+            KEY idx_country_id (country_id),
+            KEY idx_name (name)
+        ) $charset_collate;";
+
+        // --------------------------------------------------------
+        // Table 10: moga_loc_cities
+        //
+        // Cities within a province/state/governorate.
+        // Populated via the Location Settings import wizard.
+        // Source: data/locations/cities.json (140,000+ cities).
+        //
+        // Columns:
+        //   id          — auto-increment primary key
+        //   name        — city display name (e.g. "Cairo")
+        //   province_id — FK → moga_loc_provinces.id
+        //   country_id  — denormalized for fast country→city queries
+        //   lat         — GPS latitude (nullable — admin can fill via editor)
+        //   lng         — GPS longitude (nullable — admin can fill via editor)
+        // --------------------------------------------------------
+        $sql_loc_cities = "CREATE TABLE {$prefix}loc_cities (
+            id MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,
+            name VARCHAR(150) NOT NULL,
+            province_id MEDIUMINT(8) UNSIGNED NOT NULL,
+            country_id SMALLINT(5) UNSIGNED NOT NULL,
+            lat DECIMAL(10,7) DEFAULT NULL,
+            lng DECIMAL(10,7) DEFAULT NULL,
+            PRIMARY KEY (id),
+            KEY idx_province_id (province_id),
+            KEY idx_country_id (country_id),
+            KEY idx_name (name)
+        ) $charset_collate;";
+
+        // --------------------------------------------------------
+        // Table 11: moga_loc_districts
+        //
+        // Districts, neighborhoods, and sub-areas within a city.
+        // This is the fourth and deepest location level, unique to
+        // Moga (Careerfy only has three levels). Districts are added
+        // manually by the admin via the Location Editor — they are
+        // NOT imported from the JSON files since no global district
+        // dataset is bundled.
+        //
+        // Columns:
+        //   id      — auto-increment primary key
+        //   name    — district display name (e.g. "Zamalek")
+        //   city_id — FK → moga_loc_cities.id
+        // --------------------------------------------------------
+        $sql_loc_districts = "CREATE TABLE {$prefix}loc_districts (
+            id MEDIUMINT(8) UNSIGNED NOT NULL AUTO_INCREMENT,
+            name VARCHAR(150) NOT NULL,
+            city_id MEDIUMINT(8) UNSIGNED NOT NULL,
+            PRIMARY KEY (id),
+            KEY idx_city_id (city_id),
+            KEY idx_name (name)
+        ) $charset_collate;";
+
         dbDelta( $sql_bookings );
         dbDelta( $sql_booking_meta );
         dbDelta( $sql_availability );
@@ -235,6 +330,10 @@ class Moga_Activator {
         dbDelta( $sql_payments );
         dbDelta( $sql_reviews );
         dbDelta( $sql_commissions );
+        dbDelta( $sql_loc_countries );
+        dbDelta( $sql_loc_provinces );
+        dbDelta( $sql_loc_cities );
+        dbDelta( $sql_loc_districts );
     }
 
 
@@ -256,7 +355,7 @@ class Moga_Activator {
             'moga_currency_position'  => 'before',
             'moga_date_format'        => 'Y-m-d',
             'moga_time_format'        => 'H:i',
-            'moga_timezone'           => 'Africa/Cairo',
+            'moga_timezone'           => 'UTC',
             'moga_commission_rate'    => '10',
             'moga_commission_type'    => 'percentage',
             'moga_booking_expiry'     => '30',
@@ -270,10 +369,12 @@ class Moga_Activator {
             'moga_notify_sms'         => '0',
             'moga_notify_whatsapp'    => '0',
             'moga_admin_email'        => get_option( 'admin_email' ),
-            'moga_maps_provider'      => 'google',
-            'moga_google_maps_key'    => '',
+            'moga_maps_provider'      => 'openstreetmap',
             'moga_default_language'   => 'en',
             'moga_rtl_support'        => '1',
+            // Location system — tracks whether admin has run the import wizard.
+            // 0 = not imported, 1 = import complete.
+            'moga_locations_imported' => '0',
         );
 
         foreach ( $defaults as $key => $value ) {

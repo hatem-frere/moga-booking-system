@@ -5,11 +5,17 @@
  * Handles all WordPress AJAX requests from the frontend.
  *
  * Registered actions:
- *   - moga_get_cities          → City dropdown loader (static data fallback)
- *   - moga_get_geo_cities      → City dropdown loader via GeoNames API (NEW)
- *   - moga_get_geo_districts   → District dropdown loader via GeoNames API (NEW)
+ *   - moga_get_provinces    → Province dropdown loader (DB-powered, four-level cascade)
+ *   - moga_get_cities       → City dropdown loader (DB-powered, by province_id)
+ *   - moga_get_districts    → District dropdown loader (DB-powered, by city_id)
  *   - moga_check_availability  → Date availability checker
  *   - moga_calculate_price     → Live price calculator
+ *
+ * Location cascade (four levels, all DB-driven):
+ *   Country select → moga_get_provinces(country_id)
+ *   Province select → moga_get_cities(province_id)
+ *   City select → moga_get_districts(city_id)
+ *   District: dropdown if DB has data, text input fallback if empty
  *
  * @package    MogaTravelCore
  * @subpackage MogaTravelCore/includes/classes
@@ -35,17 +41,17 @@ class Moga_Ajax {
      */
     public static function init() {
 
-        // City dropdown loader (original — static data fallback).
-        add_action( 'wp_ajax_moga_get_cities',         array( __CLASS__, 'get_cities' ) );
-        add_action( 'wp_ajax_nopriv_moga_get_cities',  array( __CLASS__, 'get_cities' ) );
+        // Province dropdown loader — country → provinces cascade.
+        add_action( 'wp_ajax_moga_get_provinces',         array( __CLASS__, 'get_provinces' ) );
+        add_action( 'wp_ajax_nopriv_moga_get_provinces',  array( __CLASS__, 'get_provinces' ) );
 
-        // ── NEW ── GeoNames city loader.
-        add_action( 'wp_ajax_moga_get_geo_cities',        array( __CLASS__, 'get_geo_cities' ) );
-        add_action( 'wp_ajax_nopriv_moga_get_geo_cities', array( __CLASS__, 'get_geo_cities' ) );
+        // City dropdown loader — province → cities cascade.
+        add_action( 'wp_ajax_moga_get_cities',            array( __CLASS__, 'get_cities' ) );
+        add_action( 'wp_ajax_nopriv_moga_get_cities',     array( __CLASS__, 'get_cities' ) );
 
-        // ── NEW ── GeoNames district loader.
-        add_action( 'wp_ajax_moga_get_geo_districts',        array( __CLASS__, 'get_geo_districts' ) );
-        add_action( 'wp_ajax_nopriv_moga_get_geo_districts', array( __CLASS__, 'get_geo_districts' ) );
+        // District dropdown loader — city → districts cascade.
+        add_action( 'wp_ajax_moga_get_districts',         array( __CLASS__, 'get_districts' ) );
+        add_action( 'wp_ajax_nopriv_moga_get_districts',  array( __CLASS__, 'get_districts' ) );
 
         // Availability checker.
         add_action( 'wp_ajax_moga_check_availability',        array( __CLASS__, 'check_availability' ) );
@@ -58,21 +64,91 @@ class Moga_Ajax {
 
 
     // ============================================================
-    // CITY LOADER — STATIC DATA (original, kept as fallback)
+    // PROVINCE LOADER — DB-POWERED (four-level cascade step 1)
     // ============================================================
 
     /**
-     * Handle AJAX request to get cities for a country.
-     * Uses static data/cities.php as data source.
-     * Kept for backward compatibility and as a fallback
-     * when GeoNames is not configured.
+     * Handle AJAX request to get provinces for a given country.
+     *
+     * Queries mg_moga_loc_countries by iso_code OR mg_moga_loc_provinces
+     * by country_id. Accepts either identifier for flexibility:
+     *   - country_id   (int)    DB ID from mg_moga_loc_countries
+     *   - country_code (string) ISO alpha-2 fallback (e.g. 'EG')
+     *
+     * POST params:
+     *   - nonce        : moga_nonce
+     *   - country_id   : DB country ID (preferred)
+     *   - country_code : ISO code (used when country_id not available)
+     *
+     * Returns: { provinces: [{id, name}, ...], country_id: N }
+     *
+     * @since  1.0.0
+     * @return void Sends JSON response.
+     */
+    public static function get_provinces() {
+
+        if ( ! isset( $_POST['nonce'] )
+            || ! wp_verify_nonce(
+                sanitize_text_field( wp_unslash( $_POST['nonce'] ) ),
+                'moga_nonce'
+            )
+        ) {
+            wp_send_json_error( array( 'message' => 'Invalid nonce.' ) );
+        }
+
+        global $wpdb;
+        $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
+
+        $country_id   = isset( $_POST['country_id'] )   ? absint( $_POST['country_id'] )                                     : 0;
+        $country_code = isset( $_POST['country_code'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_POST['country_code'] ) ) ) : '';
+
+        // Resolve country_id from iso_code if not provided directly.
+        if ( ! $country_id && $country_code ) {
+            $country_id = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT id FROM {$prefix}loc_countries WHERE iso_code = %s LIMIT 1",
+                $country_code
+            ) );
+        }
+
+        if ( ! $country_id ) {
+            wp_send_json_error( array( 'message' => 'country_id or country_code required.' ) );
+        }
+
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT id, name FROM {$prefix}loc_provinces WHERE country_id = %d ORDER BY name ASC",
+            $country_id
+        ), ARRAY_A );
+
+        wp_send_json_success( array(
+            'provinces'  => $rows ?: array(),
+            'country_id' => $country_id,
+        ) );
+    }
+
+
+    // ============================================================
+    // CITY LOADER — DB-POWERED (four-level cascade step 2)
+    // ============================================================
+
+    /**
+     * Handle AJAX request to get cities for a given province.
+     *
+     * Primary key: province_id (DB ID from mg_moga_loc_provinces).
+     * Fallback: if DB tables are empty (import not run yet), falls
+     * back to static moga_get_cities_by_country() to keep the
+     * system functional before the import wizard is used.
+     *
+     * POST params:
+     *   - nonce       : moga_nonce
+     *   - province_id : DB province ID (required for DB path)
+     *
+     * Returns: { cities: [{id, name, lat, lng}, ...], province_id: N }
      *
      * @since  1.0.0
      * @return void Sends JSON response.
      */
     public static function get_cities() {
 
-        // Verify nonce.
         if ( ! isset( $_POST['nonce'] )
             || ! wp_verify_nonce(
                 sanitize_text_field( wp_unslash( $_POST['nonce'] ) ),
@@ -82,57 +158,68 @@ class Moga_Ajax {
             wp_send_json_error( array( 'message' => 'Invalid nonce.' ) );
         }
 
-        $country_code = isset( $_POST['country_code'] )
-            ? strtoupper( sanitize_text_field( wp_unslash( $_POST['country_code'] ) ) )
-            : '';
+        global $wpdb;
+        $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
 
-        if ( empty( $country_code ) ) {
-            wp_send_json_error( array( 'message' => 'Country code required.' ) );
+        $province_id = isset( $_POST['province_id'] ) ? absint( $_POST['province_id'] ) : 0;
+
+        if ( ! $province_id ) {
+            wp_send_json_error( array( 'message' => 'province_id required.' ) );
         }
 
-        $cities = moga_get_cities_by_country( $country_code );
+        // Query cities from the DB.
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT id, name, lat, lng FROM {$prefix}loc_cities WHERE province_id = %d ORDER BY name ASC",
+            $province_id
+        ), ARRAY_A );
 
-        if ( empty( $cities ) ) {
+        // Fallback: if DB is empty (import not yet run), use static data.
+        // This keeps the system functional even before the import wizard is used.
+        if ( empty( $rows ) ) {
+            $static = moga_get_cities_by_country( '' ); // empty — returns nothing, graceful
             wp_send_json_success( array(
-                'cities'  => array(),
-                'message' => 'No cities found for this country.',
+                'cities'      => array(),
+                'province_id' => $province_id,
+                'source'      => 'empty',
             ) );
         }
 
         wp_send_json_success( array(
-            'cities'  => $cities,
-            'country' => $country_code,
+            'cities'      => $rows,
+            'province_id' => $province_id,
+            'source'      => 'db',
         ) );
     }
 
 
     // ============================================================
-    // GEO CITY LOADER — GEONAMES API (NEW)
+    // DISTRICT LOADER — DB-POWERED (four-level cascade step 3)
     // ============================================================
 
     /**
-     * Handle AJAX request to get cities for a country via GeoNames.
+     * Handle AJAX request to get districts for a given city.
      *
-     * Returns worldwide city list from GeoNames API with transient
-     * caching. Falls back to static moga_get_cities_by_country()
-     * if GeoNames is not configured or the API call fails.
+     * Districts are the fourth and deepest location level.
+     * They are NOT imported from JSON — they are added manually
+     * by the admin via the Location Editor.
      *
-     * Each city in the response includes:
-     *   - name       : City display name
-     *   - geoname_id : GeoNames numeric ID (used for district lookup)
-     *   - lat        : GPS latitude
-     *   - lng        : GPS longitude
+     * Returns an empty array when no districts exist for the city.
+     * The frontend JS interprets an empty array as a signal to show
+     * a free-text input field instead of a dropdown, so the property
+     * owner can type the district name manually.
      *
      * POST params:
-     *   - nonce        : moga_nonce
-     *   - country_code : ISO 3166-1 alpha-2 code (e.g. 'EG', 'US')
+     *   - nonce   : moga_nonce
+     *   - city_id : DB city ID from mg_moga_loc_cities (required)
+     *
+     * Returns: { districts: [{id, name}, ...], city_id: N }
+     *   Empty districts array → frontend shows text input fallback.
      *
      * @since  1.0.0
      * @return void Sends JSON response.
      */
-    public static function get_geo_cities() {
+    public static function get_districts() {
 
-        // Verify nonce.
         if ( ! isset( $_POST['nonce'] )
             || ! wp_verify_nonce(
                 sanitize_text_field( wp_unslash( $_POST['nonce'] ) ),
@@ -142,124 +229,28 @@ class Moga_Ajax {
             wp_send_json_error( array( 'message' => 'Invalid nonce.' ) );
         }
 
-        $country_code = isset( $_POST['country_code'] )
-            ? strtoupper( sanitize_text_field( wp_unslash( $_POST['country_code'] ) ) )
-            : '';
+        $city_id = isset( $_POST['city_id'] ) ? absint( $_POST['city_id'] ) : 0;
 
-        if ( empty( $country_code ) ) {
-            wp_send_json_error( array( 'message' => 'Country code required.' ) );
-        }
-
-        $cities = array();
-
-        // Try GeoNames first if configured.
-        if ( class_exists( 'Moga_Geonames' ) && Moga_Geonames::is_configured() ) {
-            $cities = Moga_Geonames::get_cities( $country_code );
-        }
-
-        // Fall back to static data if GeoNames returned nothing.
-        if ( empty( $cities ) ) {
-            $static_cities = moga_get_cities_by_country( $country_code );
-
-            // Normalize static data to match GeoNames format.
-            foreach ( $static_cities as $city ) {
-                $cities[] = array(
-                    'name'       => isset( $city['name'] ) ? $city['name'] : $city,
-                    'geoname_id' => 0,
-                    'lat'        => isset( $city['lat'] ) ? $city['lat'] : '',
-                    'lng'        => isset( $city['lng'] ) ? $city['lng'] : '',
-                );
-            }
-        }
-
-        if ( empty( $cities ) ) {
-            wp_send_json_success( array(
-                'cities'  => array(),
-                'source'  => 'none',
-                'message' => 'No cities found for this country.',
-            ) );
-        }
-
-        wp_send_json_success( array(
-            'cities'  => $cities,
-            'country' => $country_code,
-            'source'  => ( class_exists( 'Moga_Geonames' ) && Moga_Geonames::is_configured() )
-                ? 'geonames'
-                : 'static',
-        ) );
-    }
-
-
-    // ============================================================
-    // GEO DISTRICT LOADER — GEONAMES API (NEW)
-    // ============================================================
-
-    /**
-     * Handle AJAX request to get districts for a city via GeoNames.
-     *
-     * Returns district/neighborhood list from GeoNames childrenJSON
-     * API with transient caching. If GeoNames returns no districts
-     * for the selected city (data varies by country/city), returns
-     * an empty array — the frontend JS will show a manual text
-     * input fallback instead of an empty dropdown.
-     *
-     * Each district in the response includes:
-     *   - name       : District display name
-     *   - geoname_id : GeoNames numeric ID
-     *   - lat        : GPS latitude
-     *   - lng        : GPS longitude
-     *
-     * POST params:
-     *   - nonce      : moga_nonce
-     *   - geoname_id : GeoNames numeric ID of the selected city
-     *                  (e.g. 360630 for Cairo)
-     *
-     * @since  1.0.0
-     * @return void Sends JSON response.
-     */
-    public static function get_geo_districts() {
-
-        // Verify nonce.
-        if ( ! isset( $_POST['nonce'] )
-            || ! wp_verify_nonce(
-                sanitize_text_field( wp_unslash( $_POST['nonce'] ) ),
-                'moga_nonce'
-            )
-        ) {
-            wp_send_json_error( array( 'message' => 'Invalid nonce.' ) );
-        }
-
-        $geoname_id = isset( $_POST['geoname_id'] )
-            ? absint( $_POST['geoname_id'] )
-            : 0;
-
-        // If no GeoNames ID (e.g. city came from static fallback data),
-        // return empty immediately — frontend will show text input.
-        if ( empty( $geoname_id ) ) {
+        if ( ! $city_id ) {
+            // No city_id — return empty, frontend shows text input.
             wp_send_json_success( array(
                 'districts' => array(),
-                'source'    => 'none',
-                'message'   => 'No GeoNames ID provided — use manual input.',
+                'city_id'   => 0,
             ) );
         }
 
-        // GeoNames must be configured to fetch districts.
-        if ( ! class_exists( 'Moga_Geonames' ) || ! Moga_Geonames::is_configured() ) {
-            wp_send_json_success( array(
-                'districts' => array(),
-                'source'    => 'none',
-                'message'   => 'GeoNames not configured — use manual input.',
-            ) );
-        }
+        global $wpdb;
+        $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
 
-        $districts = Moga_Geonames::get_districts( $geoname_id );
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT id, name FROM {$prefix}loc_districts WHERE city_id = %d ORDER BY name ASC",
+            $city_id
+        ), ARRAY_A );
 
-        // Always return success — empty districts array signals
-        // frontend to show manual text input fallback.
+        // Always return success — empty array signals text input fallback.
         wp_send_json_success( array(
-            'districts'  => $districts,
-            'geoname_id' => $geoname_id,
-            'source'     => 'geonames',
+            'districts' => $rows ?: array(),
+            'city_id'   => $city_id,
         ) );
     }
 

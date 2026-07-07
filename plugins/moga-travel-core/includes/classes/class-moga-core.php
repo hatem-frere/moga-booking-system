@@ -125,12 +125,6 @@ class Moga_Core {
 
         if ( is_admin() ) {
             add_action( 'init', array( $this, 'boot_admin' ), 10 );
-
-            // ── NEW ── Show admin notice if GeoNames username is not configured.
-            add_action(
-                'admin_notices',
-                array( $this, 'maybe_show_geonames_notice' )
-            );
         }
 
         if ( ! is_admin() ) {
@@ -415,7 +409,7 @@ class Moga_Core {
      * by our sync functions. Admins should never touch
      * the Location taxonomy box manually — it is
      * populated automatically when a property or tour
-     * is saved via Moga_Tax_Location::sync_from_selection().
+     * is saved via moga_sync_city_to_taxonomy().
      *
      * Property Type and Tour Category boxes remain visible
      * because admins assign these manually.
@@ -434,41 +428,12 @@ class Moga_Core {
 
 
     // ============================================================
-    // GEONAMES ADMIN NOTICE — NEW
-    // ============================================================
-
-    /**
-     * Show an admin notice if the GeoNames username is not configured.
-     * Only shown on Moga CPT edit screens and the Moga settings page.
-     * Delegates to Moga_Geonames::maybe_show_config_notice() which
-     * handles the screen check and notice output.
-     *
-     * Buyers who have not yet entered their GeoNames username in
-     * Moga Settings will see this notice explaining what to do.
-     * The notice disappears automatically once the username is saved.
-     *
-     * @since  1.0.0
-     * @return void
-     */
-    public function maybe_show_geonames_notice() {
-
-        if ( class_exists( 'Moga_Geonames' ) ) {
-            Moga_Geonames::maybe_show_config_notice();
-        }
-    }
-
-
-    // ============================================================
     // PUBLIC ASSETS
     // ============================================================
 
     /**
      * Enqueue plugin public JS and pass PHP data to it.
      * Loads moga-public.js on all frontend pages.
-     *
-     * CHANGED in GeoNames update:
-     * - Added three new i18n strings for the district cascade:
-     *   selectDistrict, orTypeDistrict, typeDistrict
      *
      * @since  1.0.0
      * @return void
@@ -498,12 +463,12 @@ class Moga_Core {
                 'i18n'      => array(
                     'loading'              => __( 'Loading...', 'moga-travel-core' ),
                     'error'                => __( 'Something went wrong.', 'moga-travel-core' ),
+                    'selectCountryFirst'   => __( '— Select Country First —', 'moga-travel-core' ),
+                    'selectProvince'       => __( '— Select Province —', 'moga-travel-core' ),
+                    'selectProvinceFirst'  => __( '— Select Province First —', 'moga-travel-core' ),
+                    'loadingProvinces'     => __( 'Loading provinces…', 'moga-travel-core' ),
                     'selectCity'           => __( '— Select City —', 'moga-travel-core' ),
-                    // ── NEW ── District cascade strings.
                     'selectDistrict'       => __( '— Select District —', 'moga-travel-core' ),
-                    'orTypeDistrict'       => __( '— or type district below —', 'moga-travel-core' ),
-                    'typeDistrict'         => __( 'e.g. Downtown, Zamalek', 'moga-travel-core' ),
-                    // ── END NEW ──
                     'checkingAvailability' => __( 'Checking availability...', 'moga-travel-core' ),
                     'available'            => __( '✅ Available for your dates!', 'moga-travel-core' ),
                     'unavailable'          => __( '❌ Not available for selected dates.', 'moga-travel-core' ),
