@@ -36,7 +36,7 @@ wp-config-sample.php
 /plugins/akismet/
 /plugins/hello.php
 /plugins/hello-dolly/
-
+/plugins/duplicate-post/
 
 # ============================================================
 # Cache & Optimization Plugins Output
