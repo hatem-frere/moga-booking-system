@@ -1,18 +1,21 @@
 /**
- * Moga Travel — Booking & Single Property Page JS
+ * Moga Travel — Booking & Single Property/Tour Page JS
  *
  * Path: themes/moga-travel/assets/js/booking.js
  *
  * Handles:
- *   01. GLightbox init — property gallery + thumbnail strip
- *   02. Flatpickr date pickers — linked check-in / check-out
- *   03. Price breakdown — shows immediately on load, updates live
- *   04. Guest counter — +/- buttons
+ *   01. GLightbox init — gallery + thumbnail strip (property & tour)
+ *   02. Flatpickr date pickers — linked check-in / check-out (property)
+ *   03. Price breakdown — property — shows immediately, updates live
+ *   04. Guest counter — property — +/- buttons
  *   05. Description read-more toggle
  *   06. Amenities show-all toggle
  *   07. Mobile sticky bar — show/hide on scroll
  *   08. Section nav — highlight active section on scroll
  *   09. Share button — Web Share API + clipboard fallback
+ *   10. Tour date picker — single date, restricted to available days/dates
+ *   11. Tour participant counters — adults / children / infants
+ *   12. Tour price breakdown — shows immediately, updates live
  *
  * @package MogaTravel
  * @since   1.0.0
@@ -28,6 +31,15 @@
 
     function getConfig() {
         var el = document.getElementById( 'moga-booking-config' );
+        if ( ! el ) return null;
+        try { return JSON.parse( el.textContent ); } catch ( e ) { return null; }
+    }
+
+    // Tour booking config — separate JSON block, separate ID.
+    // Property and tour singles never load on the same page, but this
+    // keeps the two config objects (and their shapes) fully independent.
+    function getTourConfig() {
+        var el = document.getElementById( 'moga-tour-booking-config' );
         if ( ! el ) return null;
         try { return JSON.parse( el.textContent ); } catch ( e ) { return null; }
     }
@@ -376,6 +388,166 @@
 
 
     // ============================================================
+    // 10. TOUR DATE PICKER
+    // ============================================================
+
+    // Restricts the tour date field to bookable days only:
+    //   - If startDates is non-empty, ONLY those exact dates are enabled
+    //     (specific scheduled departures take priority).
+    //   - Otherwise, dates are enabled by weekday according to availableDays
+    //     (0=Sun .. 6=Sat). An empty availableDays array means "no
+    //     restriction" — every day from today onward is enabled.
+    function initTourDatePicker( config ) {
+        if ( typeof flatpickr === 'undefined' || ! config ) return;
+
+        var dateEl = document.getElementById( 'moga-tour-date' );
+        if ( ! dateEl ) return;
+
+        var today = new Date();
+        today.setHours( 0, 0, 0, 0 );
+
+        var opts = {
+            dateFormat:    'Y-m-d',
+            altInput:      true,
+            altFormat:     'D, M j, Y',
+            minDate:       today,
+            disableMobile: false,
+        };
+
+        var startDates = ( config.startDates || [] ).filter( Boolean );
+
+        if ( startDates.length > 0 ) {
+            // Specific scheduled departure dates only.
+            opts.enable = startDates;
+        } else if ( config.availableDays && config.availableDays.length > 0 ) {
+            // Weekday whitelist.
+            var allowedDays = config.availableDays;
+            opts.disable = [
+                function ( date ) {
+                    return allowedDays.indexOf( date.getDay() ) === -1;
+                },
+            ];
+        }
+        // If neither is set, every future date is bookable — no restriction.
+
+        flatpickr( dateEl, opts );
+    }
+
+
+    // ============================================================
+    // 11. TOUR PARTICIPANT COUNTERS
+    // ============================================================
+
+    function initParticipantCounters( config ) {
+        var maxTotal = config ? ( config.maxParticipants || 20 ) : 20;
+
+        var groups = [
+            { key: 'adults',   min: 1 },
+            { key: 'children', min: 0 },
+            { key: 'infants',  min: 0 },
+        ];
+
+        function getCount( key ) {
+            var input = document.getElementById( 'moga-' + key + '-input' );
+            return input ? ( parseInt( input.value, 10 ) || 0 ) : 0;
+        }
+
+        function totalCount() {
+            return groups.reduce( function ( sum, g ) { return sum + getCount( g.key ); }, 0 );
+        }
+
+        function render( key, min ) {
+            var display = document.getElementById( 'moga-' + key + '-display' );
+            var input   = document.getElementById( 'moga-' + key + '-input' );
+            var minus   = document.getElementById( 'moga-' + key + '-minus' );
+            var plus    = document.getElementById( 'moga-' + key + '-plus' );
+            if ( ! display || ! input || ! minus || ! plus ) return;
+
+            var count = getCount( key );
+            display.textContent = count;
+            minus.disabled = ( count <= min );
+            plus.disabled  = ( totalCount() >= maxTotal );
+        }
+
+        groups.forEach( function ( g ) {
+            var input = document.getElementById( 'moga-' + g.key + '-input' );
+            var minus = document.getElementById( 'moga-' + g.key + '-minus' );
+            var plus  = document.getElementById( 'moga-' + g.key + '-plus' );
+            if ( ! input || ! minus || ! plus ) return;
+
+            minus.addEventListener( 'click', function () {
+                var count = getCount( g.key );
+                if ( count > g.min ) {
+                    input.value = count - 1;
+                    groups.forEach( function ( gg ) { render( gg.key, gg.min ); } );
+                    updateTourPriceBreakdown( config );
+                }
+            } );
+
+            plus.addEventListener( 'click', function () {
+                if ( totalCount() < maxTotal ) {
+                    input.value = getCount( g.key ) + 1;
+                    groups.forEach( function ( gg ) { render( gg.key, gg.min ); } );
+                    updateTourPriceBreakdown( config );
+                }
+            } );
+
+            render( g.key, g.min );
+        } );
+    }
+
+
+    // ============================================================
+    // 12. TOUR PRICE BREAKDOWN
+    // ============================================================
+
+    function updateTourPriceBreakdown( config ) {
+        if ( ! config ) return;
+
+        var adultsEl   = document.getElementById( 'moga-adults-input' );
+        var childrenEl = document.getElementById( 'moga-children-input' );
+        var infantsEl  = document.getElementById( 'moga-infants-input' );
+
+        var adults   = adultsEl   ? ( parseInt( adultsEl.value, 10 )   || 1 ) : 1;
+        var children = childrenEl ? ( parseInt( childrenEl.value, 10 ) || 0 ) : 0;
+        var infants  = infantsEl  ? ( parseInt( infantsEl.value, 10 )  || 0 ) : 0;
+
+        var priceAdult   = config.pricePerPerson || 0;
+        var priceChild   = config.priceChild     || 0;
+        var priceInfant  = config.priceInfant    || 0;
+        var groupDiscount = config.groupDiscount || 0;
+        var currency      = config.currency      || '';
+
+        var subtotal = ( priceAdult * adults ) + ( priceChild * children ) + ( priceInfant * infants );
+        var disc     = groupDiscount > 0 ? subtotal * ( groupDiscount / 100 ) : 0;
+        var total    = subtotal - disc;
+
+        var totalParticipants = adults + children + infants;
+
+        var label = document.getElementById( 'moga-participants-label' );
+        if ( label ) {
+            var parts = [];
+            if ( adults   > 0 ) parts.push( adults   + ( adults   === 1 ? ' adult'   : ' adults' ) );
+            if ( children > 0 ) parts.push( children + ( children === 1 ? ' child'   : ' children' ) );
+            if ( infants  > 0 ) parts.push( infants  + ( infants  === 1 ? ' infant'  : ' infants' ) );
+            label.textContent = fmt( priceAdult, currency ) + ' \u00d7 ' + ( parts.join( ', ' ) || ( totalParticipants + ' participants' ) );
+        }
+
+        var subEl = document.getElementById( 'moga-breakdown-subtotal' );
+        if ( subEl ) subEl.textContent = fmt( subtotal, currency );
+
+        var discEl = document.getElementById( 'moga-breakdown-discount' );
+        if ( discEl ) discEl.textContent = '\u2212' + fmt( disc, currency );
+
+        var totEl = document.getElementById( 'moga-breakdown-total' );
+        if ( totEl ) totEl.textContent = fmt( total, currency );
+
+        var bd = document.getElementById( 'moga-price-breakdown' );
+        if ( bd ) bd.removeAttribute( 'hidden' );
+    }
+
+
+    // ============================================================
     // BOOT
     // ============================================================
 
@@ -391,6 +563,13 @@
         initMobileStickyBar();
         initSectionNav();
         initShareButton();
+
+        // Tour page — elements are absent on property pages, so each
+        // function below early-returns harmlessly if its DOM isn't found.
+        var tourConfig = getTourConfig();
+        initTourDatePicker( tourConfig );
+        initParticipantCounters( tourConfig );
+        updateTourPriceBreakdown( tourConfig ); // Show default 1-adult price on load.
     } );
 
 } )();

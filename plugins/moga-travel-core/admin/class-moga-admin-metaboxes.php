@@ -116,8 +116,9 @@ class Moga_Admin_Metaboxes {
             array( 'moga_tour_schedule', __( '🗓️ Schedule',            'moga-travel-core' ), 'render_tour_schedule' ),
             array( 'moga_tour_location', __( '📍 Location & Route',    'moga-travel-core' ), 'render_tour_location' ),
             array( 'moga_tour_contact',  __( '📞 Organizer Contact',   'moga-travel-core' ), 'render_tour_contact'  ),
-            array( 'moga_tour_details',  __( '🗺️ Tour Details',        'moga-travel-core' ), 'render_tour_details'  ),
-            array( 'moga_tour_includes', __( '✅ Includes & Excludes', 'moga-travel-core' ), 'render_tour_includes' ),
+            array( 'moga_tour_details',   __( '🗺️ Tour Details',        'moga-travel-core' ), 'render_tour_details'   ),
+            array( 'moga_tour_itinerary', __( '🧭 Itinerary',           'moga-travel-core' ), 'render_tour_itinerary' ),
+            array( 'moga_tour_includes',  __( '✅ Includes & Excludes', 'moga-travel-core' ), 'render_tour_includes'  ),
             array( 'moga_tour_bus',      __( '🚌 Bus & Seats',         'moga-travel-core' ), 'render_tour_bus'      ),
             array( 'moga_tour_status',   __( '⚙️ Status & Visibility', 'moga-travel-core' ), 'render_tour_status'   ),
         );
@@ -671,7 +672,7 @@ class Moga_Admin_Metaboxes {
 
                 <div class="moga-metabox__field">
                     <label for="moga_phone">
-                        <?php esc_html_e( 'Phone Number', 'moga-travel-core' ); ?>
+                        <?php esc_html_e( 'Phone Number (optional override)', 'moga-travel-core' ); ?>
                     </label>
                     <input
                         type="tel"
@@ -679,13 +680,13 @@ class Moga_Admin_Metaboxes {
                         name="moga_phone"
                         value="<?php echo esc_attr( $phone ); ?>"
                         class="moga-phone-field"
-                        placeholder="<?php esc_attr_e( 'Phone number', 'moga-travel-core' ); ?>"
+                        placeholder="<?php esc_attr_e( 'Leave blank to use your account number', 'moga-travel-core' ); ?>"
                     >
                 </div>
 
                 <div class="moga-metabox__field">
                     <label for="moga_whatsapp">
-                        <?php esc_html_e( 'WhatsApp Number', 'moga-travel-core' ); ?>
+                        <?php esc_html_e( 'WhatsApp Number (optional override)', 'moga-travel-core' ); ?>
                     </label>
                     <input
                         type="tel"
@@ -693,7 +694,7 @@ class Moga_Admin_Metaboxes {
                         name="moga_whatsapp"
                         value="<?php echo esc_attr( $whatsapp ); ?>"
                         class="moga-phone-field"
-                        placeholder="<?php esc_attr_e( 'WhatsApp number', 'moga-travel-core' ); ?>"
+                        placeholder="<?php esc_attr_e( 'Leave blank to use your account number', 'moga-travel-core' ); ?>"
                     >
                 </div>
 
@@ -1344,49 +1345,72 @@ class Moga_Admin_Metaboxes {
         wp_nonce_field( 'moga_tour_contact_nonce', 'moga_tour_contact_nonce' );
 
         $organizer = get_post_meta( $post->ID, '_moga_organizer_name', true );
+        $photo_id  = (int) get_post_meta( $post->ID, '_moga_organizer_photo', true );
+        $photo_url = $photo_id ? wp_get_attachment_image_url( $photo_id, 'thumbnail' ) : '';
         $phone     = get_post_meta( $post->ID, '_moga_phone',          true );
         $whatsapp  = get_post_meta( $post->ID, '_moga_whatsapp',       true );
         $email     = get_post_meta( $post->ID, '_moga_email',          true );
         ?>
         <div class="moga-metabox">
+
+            <?php // ---- Organizer Photo / Logo ---- ?>
+            <div class="moga-metabox__row">
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e( 'Organizer Photo / Logo (optional override)', 'moga-travel-core' ); ?></label>
+                    <div class="moga-organizer-photo" id="moga-organizer-photo">
+                        <div class="moga-organizer-photo__preview" id="moga-organizer-photo-preview" <?php echo $photo_url ? '' : 'style="display:none;"'; ?>>
+                            <img src="<?php echo esc_url( $photo_url ); ?>" alt="">
+                            <button type="button" class="moga-organizer-photo__remove" title="<?php esc_attr_e( 'Remove', 'moga-travel-core' ); ?>">✕</button>
+                        </div>
+                        <button type="button" class="button" id="moga-organizer-photo-select" <?php echo $photo_url ? 'style="display:none;"' : ''; ?>>
+                            <?php esc_html_e( 'Select Photo or Logo', 'moga-travel-core' ); ?>
+                        </button>
+                        <input type="hidden" id="moga_organizer_photo" name="moga_organizer_photo" value="<?php echo esc_attr( $photo_id ); ?>">
+                    </div>
+                    <p class="moga-metabox__hint">
+                        <?php esc_html_e( 'Leave blank to use the photo/logo from your account profile. Only set this if this specific listing needs a different one.', 'moga-travel-core' ); ?>
+                    </p>
+                </div>
+            </div>
+
             <div class="moga-metabox__row">
 
                 <div class="moga-metabox__field">
                     <label for="moga_organizer_name">
-                        <?php esc_html_e( 'Organizer Name', 'moga-travel-core' ); ?>
+                        <?php esc_html_e( 'Organizer Name (optional override)', 'moga-travel-core' ); ?>
                     </label>
                     <input type="text" id="moga_organizer_name" name="moga_organizer_name"
                         value="<?php echo esc_attr( $organizer ); ?>"
-                        placeholder="<?php esc_attr_e( 'Tour organizer or company name', 'moga-travel-core' ); ?>">
+                        placeholder="<?php esc_attr_e( 'Leave blank to use your account name / company name', 'moga-travel-core' ); ?>">
                 </div>
 
                 <div class="moga-metabox__field">
                     <label for="moga_tour_phone">
-                        <?php esc_html_e( 'Phone Number', 'moga-travel-core' ); ?>
+                        <?php esc_html_e( 'Phone Number (optional override)', 'moga-travel-core' ); ?>
                     </label>
                     <input type="tel" id="moga_tour_phone" name="moga_phone"
                         value="<?php echo esc_attr( $phone ); ?>"
                         class="moga-phone-field"
-                        placeholder="<?php esc_attr_e( 'Phone number', 'moga-travel-core' ); ?>">
+                        placeholder="<?php esc_attr_e( 'Leave blank to use your account phone number', 'moga-travel-core' ); ?>">
                 </div>
 
                 <div class="moga-metabox__field">
                     <label for="moga_tour_whatsapp">
-                        <?php esc_html_e( 'WhatsApp Number', 'moga-travel-core' ); ?>
+                        <?php esc_html_e( 'WhatsApp Number (optional override)', 'moga-travel-core' ); ?>
                     </label>
                     <input type="tel" id="moga_tour_whatsapp" name="moga_whatsapp"
                         value="<?php echo esc_attr( $whatsapp ); ?>"
                         class="moga-phone-field"
-                        placeholder="<?php esc_attr_e( 'WhatsApp number', 'moga-travel-core' ); ?>">
+                        placeholder="<?php esc_attr_e( 'Leave blank to use your account WhatsApp number', 'moga-travel-core' ); ?>">
                 </div>
 
                 <div class="moga-metabox__field">
                     <label for="moga_tour_email">
-                        <?php esc_html_e( 'Email Address', 'moga-travel-core' ); ?>
+                        <?php esc_html_e( 'Email Address (optional override)', 'moga-travel-core' ); ?>
                     </label>
                     <input type="email" id="moga_tour_email" name="moga_email"
                         value="<?php echo esc_attr( $email ); ?>"
-                        placeholder="<?php esc_attr_e( 'contact@example.com', 'moga-travel-core' ); ?>">
+                        placeholder="<?php esc_attr_e( 'Leave blank to use your account contact email', 'moga-travel-core' ); ?>">
                 </div>
 
             </div>
@@ -1490,6 +1514,175 @@ class Moga_Admin_Metaboxes {
     }
 
     /**
+     * Render tour itinerary meta box.
+     *
+     * Day-by-day repeater. Day numbers are NOT stored per-row —
+     * they are derived from row position on save, so reordering
+     * rows (drag handle) automatically renumbers the days and
+     * there is no way for the admin to create duplicate/gapped
+     * day numbers by hand.
+     *
+     * JSON schema written to '_moga_itinerary' (matches the schema
+     * documented in template-parts/tour/itinerary.php):
+     * [
+     *   {
+     *     "day":           1,
+     *     "title":         "Cairo Pyramids & Sphinx",
+     *     "location":      "Giza, Cairo",
+     *     "duration":      "Full day",
+     *     "description":   "...",
+     *     "meals":         ["breakfast","lunch"],
+     *     "accommodation": "4-star hotel in Cairo (or similar)",
+     *     "activities":    ["Great Pyramid of Giza","Sphinx"]
+     *   }
+     * ]
+     *
+     * @since  1.0.0
+     * @param  WP_Post $post Current post object.
+     * @return void
+     */
+    public static function render_tour_itinerary( $post ) {
+        wp_nonce_field( 'moga_tour_itinerary_nonce', 'moga_tour_itinerary_nonce' );
+
+        $itinerary_json = get_post_meta( $post->ID, '_moga_itinerary', true );
+        $days           = $itinerary_json ? json_decode( $itinerary_json, true ) : array();
+        $days           = is_array( $days ) ? $days : array();
+
+        $meal_options = array(
+            'breakfast' => __( 'Breakfast', 'moga-travel-core' ),
+            'lunch'     => __( 'Lunch',     'moga-travel-core' ),
+            'dinner'    => __( 'Dinner',    'moga-travel-core' ),
+        );
+        ?>
+        <div class="moga-itinerary-builder">
+
+            <ul id="moga-itinerary-days" class="moga-itinerary-builder__list">
+                <?php foreach ( $days as $index => $day ) : ?>
+                    <?php echo self::render_itinerary_day_row( $index, $day, $meal_options ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                <?php endforeach; ?>
+            </ul>
+
+            <button type="button" id="moga-itinerary-add-day" class="moga-itinerary-builder__btn button">
+                + <?php esc_html_e( 'Add Day', 'moga-travel-core' ); ?>
+            </button>
+
+            <p class="moga-metabox__hint">
+                <?php esc_html_e( 'Drag the ⠿ handle to reorder days — day numbers on the front end follow this order automatically.', 'moga-travel-core' ); ?>
+            </p>
+
+            <?php // Hidden template for new rows — JS replaces __INDEX__ with the real index on insert. ?>
+            <script type="text/template" id="moga-itinerary-day-template"><?php echo self::render_itinerary_day_row( '__INDEX__', array(), $meal_options ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></script>
+
+        </div>
+        <?php
+    }
+
+    /**
+     * Render a single itinerary day row (used for both initial
+     * render and as the markup the JS clones for new rows —
+     * see moga-itinerary-day-template in meta_box_scripts()).
+     *
+     * @since  1.0.0
+     * @param  int|string $index        Row index (numeric on render, '__INDEX__' placeholder for the JS template).
+     * @param  array      $day          Day data — empty array for a blank row.
+     * @param  array      $meal_options Meal key => label pairs.
+     * @return string HTML for the row.
+     */
+    private static function render_itinerary_day_row( $index, $day, $meal_options ) {
+
+        $title         = isset( $day['title'] )         ? $day['title']         : '';
+        $location      = isset( $day['location'] )      ? $day['location']      : '';
+        $duration      = isset( $day['duration'] )       ? $day['duration']       : '';
+        $description   = isset( $day['description'] )   ? $day['description']   : '';
+        $accommodation = isset( $day['accommodation'] )  ? $day['accommodation'] : '';
+        $meals         = ! empty( $day['meals'] ) && is_array( $day['meals'] ) ? $day['meals'] : array();
+        $activities    = ! empty( $day['activities'] ) && is_array( $day['activities'] ) ? implode( "\n", $day['activities'] ) : '';
+
+        ob_start();
+        ?>
+        <li class="moga-itinerary-builder__row" data-index="<?php echo esc_attr( $index ); ?>">
+
+            <div class="moga-itinerary-builder__row-header">
+                <span class="moga-itinerary-builder__handle" title="<?php esc_attr_e( 'Drag to reorder', 'moga-travel-core' ); ?>">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/>
+                        <circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/>
+                        <circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/>
+                    </svg>
+                </span>
+                <span class="moga-itinerary-builder__day-badge">
+                    <?php esc_html_e( 'Day', 'moga-travel-core' ); ?>
+                    <span class="moga-itinerary-builder__day-number"><?php echo esc_html( is_int( $index ) ? $index + 1 : '' ); ?></span>
+                </span>
+                <button type="button" class="moga-itinerary-builder__remove" title="<?php esc_attr_e( 'Remove day', 'moga-travel-core' ); ?>">✕</button>
+            </div>
+
+            <div class="moga-metabox__row">
+                <div class="moga-metabox__field moga-metabox__field--wide">
+                    <label><?php esc_html_e( 'Title', 'moga-travel-core' ); ?> <span class="required">*</span></label>
+                    <input type="text" name="moga_itinerary[<?php echo esc_attr( $index ); ?>][title]"
+                        value="<?php echo esc_attr( $title ); ?>"
+                        placeholder="<?php esc_attr_e( 'e.g. Cairo Pyramids & Sphinx', 'moga-travel-core' ); ?>">
+                </div>
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e( 'Location', 'moga-travel-core' ); ?></label>
+                    <input type="text" name="moga_itinerary[<?php echo esc_attr( $index ); ?>][location]"
+                        value="<?php echo esc_attr( $location ); ?>"
+                        placeholder="<?php esc_attr_e( 'e.g. Giza, Cairo', 'moga-travel-core' ); ?>">
+                </div>
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e( 'Duration', 'moga-travel-core' ); ?></label>
+                    <input type="text" name="moga_itinerary[<?php echo esc_attr( $index ); ?>][duration]"
+                        value="<?php echo esc_attr( $duration ); ?>"
+                        placeholder="<?php esc_attr_e( 'e.g. Full day, 3 hours', 'moga-travel-core' ); ?>">
+                </div>
+            </div>
+
+            <div class="moga-metabox__row moga-metabox__row--full">
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e( 'Description', 'moga-travel-core' ); ?></label>
+                    <textarea name="moga_itinerary[<?php echo esc_attr( $index ); ?>][description]" rows="3"
+                        placeholder="<?php esc_attr_e( 'What happens this day…', 'moga-travel-core' ); ?>"><?php echo esc_textarea( $description ); ?></textarea>
+                </div>
+            </div>
+
+            <div class="moga-metabox__row">
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e( 'Meals Included', 'moga-travel-core' ); ?></label>
+                    <div class="moga-itinerary-builder__meals">
+                        <?php foreach ( $meal_options as $key => $label ) : ?>
+                            <label class="moga-checklist__item moga-checklist__item--inline">
+                                <input type="checkbox" name="moga_itinerary[<?php echo esc_attr( $index ); ?>][meals][]"
+                                    value="<?php echo esc_attr( $key ); ?>"
+                                    <?php checked( in_array( $key, $meals, true ) ); ?>>
+                                <?php echo esc_html( $label ); ?>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div class="moga-metabox__field moga-metabox__field--wide">
+                    <label><?php esc_html_e( 'Accommodation', 'moga-travel-core' ); ?></label>
+                    <input type="text" name="moga_itinerary[<?php echo esc_attr( $index ); ?>][accommodation]"
+                        value="<?php echo esc_attr( $accommodation ); ?>"
+                        placeholder="<?php esc_attr_e( 'e.g. 4-star hotel in Cairo (or similar) — leave blank for day trips', 'moga-travel-core' ); ?>">
+                </div>
+            </div>
+
+            <div class="moga-metabox__row moga-metabox__row--full">
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e( 'Activities / Highlights', 'moga-travel-core' ); ?></label>
+                    <textarea name="moga_itinerary[<?php echo esc_attr( $index ); ?>][activities]" rows="3"
+                        placeholder="<?php esc_attr_e( "One per line, e.g.\nGreat Pyramid of Giza\nSphinx\nEgyptian Museum", 'moga-travel-core' ); ?>"><?php echo esc_textarea( $activities ); ?></textarea>
+                    <p class="moga-metabox__hint"><?php esc_html_e( 'One activity per line.', 'moga-travel-core' ); ?></p>
+                </div>
+            </div>
+
+        </li>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
      * Render tour includes / excludes meta box.
      *
      * @since  1.0.0
@@ -1503,6 +1696,13 @@ class Moga_Admin_Metaboxes {
         $saved_excludes = get_post_meta( $post->ID, '_moga_excludes', true );
         $saved_includes = $saved_includes ? json_decode( $saved_includes, true ) : array();
         $saved_excludes = $saved_excludes ? json_decode( $saved_excludes, true ) : array();
+
+        $custom_includes = get_post_meta( $post->ID, '_moga_includes_custom', true );
+        $custom_excludes = get_post_meta( $post->ID, '_moga_excludes_custom', true );
+        $custom_includes = $custom_includes ? json_decode( $custom_includes, true ) : array();
+        $custom_excludes = $custom_excludes ? json_decode( $custom_excludes, true ) : array();
+        $custom_includes = is_array( $custom_includes ) ? $custom_includes : array();
+        $custom_excludes = is_array( $custom_excludes ) ? $custom_excludes : array();
 
         $includes_options = Moga_CPT_Tour::get_includes_options();
         $excludes_options = Moga_CPT_Tour::get_excludes_options();
@@ -1522,6 +1722,19 @@ class Moga_Admin_Metaboxes {
                         </label>
                     <?php endforeach; ?>
                 </div>
+
+                <?php // ---- Custom included items ---- ?>
+                <ul class="moga-custom-items" id="moga-includes-custom-list">
+                    <?php foreach ( $custom_includes as $i => $item ) : ?>
+                        <li class="moga-custom-items__row">
+                            <input type="text" name="moga_includes_custom[]" value="<?php echo esc_attr( $item ); ?>">
+                            <button type="button" class="moga-custom-items__remove" title="<?php esc_attr_e( 'Remove', 'moga-travel-core' ); ?>">✕</button>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <button type="button" class="moga-custom-items__add button" data-target="moga-includes-custom-list" data-name="moga_includes_custom[]">
+                    + <?php esc_html_e( 'Add Custom Item', 'moga-travel-core' ); ?>
+                </button>
             </div>
 
             <div class="moga-metabox__col">
@@ -1537,6 +1750,19 @@ class Moga_Admin_Metaboxes {
                         </label>
                     <?php endforeach; ?>
                 </div>
+
+                <?php // ---- Custom excluded items ---- ?>
+                <ul class="moga-custom-items" id="moga-excludes-custom-list">
+                    <?php foreach ( $custom_excludes as $i => $item ) : ?>
+                        <li class="moga-custom-items__row">
+                            <input type="text" name="moga_excludes_custom[]" value="<?php echo esc_attr( $item ); ?>">
+                            <button type="button" class="moga-custom-items__remove" title="<?php esc_attr_e( 'Remove', 'moga-travel-core' ); ?>">✕</button>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <button type="button" class="moga-custom-items__add button" data-target="moga-excludes-custom-list" data-name="moga_excludes_custom[]">
+                    + <?php esc_html_e( 'Add Custom Item', 'moga-travel-core' ); ?>
+                </button>
             </div>
 
         </div>
@@ -2094,6 +2320,8 @@ class Moga_Admin_Metaboxes {
         ) {
             update_post_meta( $post_id, '_moga_organizer_name',
                 isset( $_POST['moga_organizer_name'] ) ? sanitize_text_field( wp_unslash( $_POST['moga_organizer_name'] ) ) : '' );
+            update_post_meta( $post_id, '_moga_organizer_photo',
+                isset( $_POST['moga_organizer_photo'] ) ? absint( $_POST['moga_organizer_photo'] ) : 0 );
             update_post_meta( $post_id, '_moga_phone',
                 isset( $_POST['moga_phone'] ) ? moga_sanitize_phone( wp_unslash( $_POST['moga_phone'] ) ) : '' );
             update_post_meta( $post_id, '_moga_whatsapp',
@@ -2123,6 +2351,63 @@ class Moga_Admin_Metaboxes {
                 isset( $_POST['moga_guide_included'] ) ? '1' : '0' );
         }
 
+        // ---- Itinerary ----
+        // Day numbers are derived from array position, not stored per-row,
+        // so re-ordering rows in the admin always produces clean 1..N days
+        // with no possibility of duplicate or gapped day numbers.
+        if ( isset( $_POST['moga_tour_itinerary_nonce'] )
+            && wp_verify_nonce(
+                sanitize_text_field( wp_unslash( $_POST['moga_tour_itinerary_nonce'] ) ),
+                'moga_tour_itinerary_nonce'
+            )
+        ) {
+            $itinerary_input = isset( $_POST['moga_itinerary'] ) && is_array( $_POST['moga_itinerary'] )
+                ? wp_unslash( $_POST['moga_itinerary'] )
+                : array();
+
+            $valid_meals = array( 'breakfast', 'lunch', 'dinner' );
+            $itinerary   = array();
+            $day_number  = 0;
+
+            foreach ( $itinerary_input as $row ) {
+
+                $title = isset( $row['title'] ) ? sanitize_text_field( $row['title'] ) : '';
+
+                // Skip rows with no title — an empty row added and left blank.
+                if ( '' === $title ) {
+                    continue;
+                }
+
+                $day_number++;
+
+                $meals = array();
+                if ( ! empty( $row['meals'] ) && is_array( $row['meals'] ) ) {
+                    $meals = array_values( array_intersect( array_map( 'sanitize_text_field', $row['meals'] ), $valid_meals ) );
+                }
+
+                $activities = array();
+                if ( ! empty( $row['activities'] ) ) {
+                    $lines      = preg_split( '/\r\n|\r|\n/', $row['activities'] );
+                    $activities = array_values( array_filter( array_map( function( $line ) {
+                        return sanitize_text_field( trim( $line ) );
+                    }, $lines ) ) );
+                }
+
+                $itinerary[] = array(
+                    'day'           => $day_number,
+                    'title'         => $title,
+                    'location'      => isset( $row['location'] )      ? sanitize_text_field( $row['location'] )      : '',
+                    'duration'      => isset( $row['duration'] )      ? sanitize_text_field( $row['duration'] )      : '',
+                    'description'   => isset( $row['description'] )   ? sanitize_textarea_field( $row['description'] ) : '',
+                    'meals'         => $meals,
+                    'accommodation' => isset( $row['accommodation'] ) ? sanitize_text_field( $row['accommodation'] ) : '',
+                    'activities'    => $activities,
+                );
+            }
+
+            update_post_meta( $post_id, '_moga_itinerary', wp_json_encode( $itinerary ) );
+        }
+
         // ---- Includes / Excludes ----
         if ( isset( $_POST['moga_tour_includes_nonce'] )
             && wp_verify_nonce(
@@ -2138,6 +2423,18 @@ class Moga_Admin_Metaboxes {
                 : array();
             update_post_meta( $post_id, '_moga_includes', wp_json_encode( $includes ) );
             update_post_meta( $post_id, '_moga_excludes', wp_json_encode( $excludes ) );
+
+            // Custom (free-text) items — beyond the predefined checkbox list.
+            $includes_custom = isset( $_POST['moga_includes_custom'] ) && is_array( $_POST['moga_includes_custom'] )
+                ? array_map( 'sanitize_text_field', wp_unslash( $_POST['moga_includes_custom'] ) )
+                : array();
+            $excludes_custom = isset( $_POST['moga_excludes_custom'] ) && is_array( $_POST['moga_excludes_custom'] )
+                ? array_map( 'sanitize_text_field', wp_unslash( $_POST['moga_excludes_custom'] ) )
+                : array();
+            $includes_custom = array_values( array_filter( $includes_custom ) );
+            $excludes_custom = array_values( array_filter( $excludes_custom ) );
+            update_post_meta( $post_id, '_moga_includes_custom', wp_json_encode( $includes_custom ) );
+            update_post_meta( $post_id, '_moga_excludes_custom', wp_json_encode( $excludes_custom ) );
         }
 
         // ---- Bus & Seats ----
@@ -2597,6 +2894,112 @@ class Moga_Admin_Metaboxes {
                     tolerance:   'pointer',
                 } );
             }
+
+
+            // ================================================================
+            // TOUR ITINERARY BUILDER
+            // ================================================================
+
+            var itineraryTemplate = $( '#moga-itinerary-day-template' ).length
+                ? $( '#moga-itinerary-day-template' ).html()
+                : '';
+
+            function renumberItineraryDays() {
+                $( '#moga-itinerary-days > .moga-itinerary-builder__row' ).each( function( i ) {
+                    $( this ).find( '.moga-itinerary-builder__day-number' ).text( i + 1 );
+                } );
+            }
+
+            $( '#moga-itinerary-add-day' ).on( 'click', function() {
+                if ( ! itineraryTemplate ) return;
+
+                var index    = Date.now(); // Unique placeholder index — server re-numbers on save anyway.
+                var rowHtml  = itineraryTemplate.split( '__INDEX__' ).join( index );
+                $( '#moga-itinerary-days' ).append( rowHtml );
+                renumberItineraryDays();
+
+                // Newly appended rows are picked up automatically by the
+                // 'items' selector, but refresh() forces jQuery UI to
+                // re-scan immediately rather than at the next drag start.
+                if ( $.fn.sortable && $( '#moga-itinerary-days' ).data( 'ui-sortable' ) ) {
+                    $( '#moga-itinerary-days' ).sortable( 'refresh' );
+                }
+            } );
+
+            $( '#moga-itinerary-days' ).on( 'click', '.moga-itinerary-builder__remove', function() {
+                $( this ).closest( '.moga-itinerary-builder__row' ).remove();
+                renumberItineraryDays();
+            } );
+
+            if ( $.fn.sortable ) {
+                $( '#moga-itinerary-days' ).sortable( {
+                    items:       '.moga-itinerary-builder__row',
+                    handle:      '.moga-itinerary-builder__handle',
+                    cursor:      'grab',
+                    opacity:     0.7,
+                    placeholder: 'moga-itinerary-builder__placeholder',
+                    tolerance:   'pointer',
+                    update:      renumberItineraryDays,
+                } );
+            }
+
+
+            // ================================================================
+            // ORGANIZER PHOTO / LOGO
+            // ================================================================
+
+            var organizerPhotoFrame;
+
+            $( '#moga-organizer-photo-select' ).on( 'click', function() {
+                if ( organizerPhotoFrame ) { organizerPhotoFrame.open(); return; }
+
+                organizerPhotoFrame = wp.media( {
+                    title:    '<?php echo esc_js( __( 'Select Organizer Photo or Logo', 'moga-travel-core' ) ); ?>',
+                    button:   { text: '<?php echo esc_js( __( 'Use this image', 'moga-travel-core' ) ); ?>' },
+                    multiple: false,
+                    library:  { type: 'image' },
+                } );
+
+                organizerPhotoFrame.on( 'select', function() {
+                    var attachment = organizerPhotoFrame.state().get( 'selection' ).first().toJSON();
+                    var url = attachment.sizes && attachment.sizes.thumbnail
+                        ? attachment.sizes.thumbnail.url
+                        : attachment.url;
+                    $( '#moga_organizer_photo' ).val( attachment.id );
+                    $( '#moga-organizer-photo-preview img' ).attr( 'src', url );
+                    $( '#moga-organizer-photo-preview' ).show();
+                    $( '#moga-organizer-photo-select' ).hide();
+                } );
+
+                organizerPhotoFrame.open();
+            } );
+
+            $( '#moga-organizer-photo' ).on( 'click', '.moga-organizer-photo__remove', function() {
+                $( '#moga_organizer_photo' ).val( '' );
+                $( '#moga-organizer-photo-preview' ).hide();
+                $( '#moga-organizer-photo-select' ).show();
+            } );
+
+
+            // ================================================================
+            // CUSTOM INCLUDES / EXCLUDES ITEMS
+            // ================================================================
+
+            $( '.moga-custom-items__add' ).on( 'click', function() {
+                var targetId = $( this ).data( 'target' );
+                var name     = $( this ).data( 'name' );
+                $( '#' + targetId ).append(
+                    '<li class="moga-custom-items__row">' +
+                    '<input type="text" name="' + name + '" value="" placeholder="<?php echo esc_js( __( 'e.g. Airport pickup', 'moga-travel-core' ) ); ?>">' +
+                    '<button type="button" class="moga-custom-items__remove" title="<?php echo esc_js( __( 'Remove', 'moga-travel-core' ) ); ?>">✕</button>' +
+                    '</li>'
+                );
+                $( '#' + targetId + ' .moga-custom-items__row:last-child input' ).trigger( 'focus' );
+            } );
+
+            $( '.moga-custom-items' ).on( 'click', '.moga-custom-items__remove', function() {
+                $( this ).closest( '.moga-custom-items__row' ).remove();
+            } );
 
 
             // ================================================================

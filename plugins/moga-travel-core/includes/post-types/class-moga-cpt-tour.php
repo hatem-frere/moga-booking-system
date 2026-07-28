@@ -198,29 +198,73 @@ class Moga_CPT_Tour {
             ),
 
             // ---- Location ----
-            '_moga_departure_country'    => array(
+            // Kept in sync with Moga_Admin_Metaboxes::save_tour_meta() —
+            // both departure and destination write the full four-level
+            // hierarchy (country → province → city → district), matching
+            // the same location system used by Moga_CPT_Property.
+            '_moga_departure_country'      => array(
                 'type'        => 'string',
                 'description' => __( 'Departure country ISO code.', 'moga-travel-core' ),
                 'default'     => '',
             ),
-            '_moga_departure_city'       => array(
+            '_moga_departure_province'     => array(
+                'type'        => 'string',
+                'description' => __( 'Departure province/state/governorate name.', 'moga-travel-core' ),
+                'default'     => '',
+            ),
+            '_moga_departure_province_id'  => array(
+                'type'        => 'integer',
+                'description' => __( 'Departure province ID (mg_moga_loc_provinces).', 'moga-travel-core' ),
+                'default'     => 0,
+            ),
+            '_moga_departure_city'         => array(
                 'type'        => 'string',
                 'description' => __( 'Departure city name.', 'moga-travel-core' ),
                 'default'     => '',
             ),
-            '_moga_departure_point'      => array(
+            '_moga_departure_city_id'      => array(
+                'type'        => 'integer',
+                'description' => __( 'Departure city ID (mg_moga_loc_cities).', 'moga-travel-core' ),
+                'default'     => 0,
+            ),
+            '_moga_departure_district'     => array(
                 'type'        => 'string',
-                'description' => __( 'Exact departure point address.', 'moga-travel-core' ),
+                'description' => __( 'Departure district/area name.', 'moga-travel-core' ),
                 'default'     => '',
             ),
-            '_moga_destination_country'  => array(
+            '_moga_departure_point'        => array(
+                'type'        => 'string',
+                'description' => __( 'Exact departure point address (meeting point).', 'moga-travel-core' ),
+                'default'     => '',
+            ),
+            '_moga_destination_country'    => array(
                 'type'        => 'string',
                 'description' => __( 'Destination country ISO code.', 'moga-travel-core' ),
                 'default'     => '',
             ),
-            '_moga_destination_city'     => array(
+            '_moga_destination_province'   => array(
+                'type'        => 'string',
+                'description' => __( 'Destination province/state/governorate name.', 'moga-travel-core' ),
+                'default'     => '',
+            ),
+            '_moga_destination_province_id' => array(
+                'type'        => 'integer',
+                'description' => __( 'Destination province ID (mg_moga_loc_provinces).', 'moga-travel-core' ),
+                'default'     => 0,
+            ),
+            '_moga_destination_city'       => array(
                 'type'        => 'string',
                 'description' => __( 'Destination city name.', 'moga-travel-core' ),
+                'default'     => '',
+            ),
+            '_moga_destination_city_id'    => array(
+                'type'        => 'integer',
+                'description' => __( 'Destination city ID (mg_moga_loc_cities).', 'moga-travel-core' ),
+                'default'     => 0,
+            ),
+            '_moga_destination_district'   => array(
+                'type'        => 'string',
+                'description' => __( 'Destination district/area name.', 'moga-travel-core' ),
                 'default'     => '',
             ),
             '_moga_route_stops'          => array(
@@ -384,6 +428,13 @@ class Moga_CPT_Tour {
             '_moga_gallery'              => array(
                 'type'        => 'string',
                 'description' => __( 'JSON array of attachment IDs for gallery.', 'moga-travel-core' ),
+                'default'     => '',
+            ),
+
+            // ---- Videos ----
+            '_moga_videos'                => array(
+                'type'        => 'string',
+                'description' => __( 'JSON array of video items — local uploads, YouTube, or Vimeo URLs.', 'moga-travel-core' ),
                 'default'     => '',
             ),
         );
@@ -550,6 +601,41 @@ class Moga_CPT_Tour {
             4 => __( 'Thursday', 'moga-travel-core' ),
             5 => __( 'Friday', 'moga-travel-core' ),
             6 => __( 'Saturday', 'moga-travel-core' ),
+        );
+    }
+
+
+    /**
+     * Get tour cancellation policy options.
+     *
+     * Tours have their own policy set — distinct from
+     * Moga_CPT_Property::get_cancellation_policies() — because
+     * tour cancellation terms are phrased around the tour's
+     * departure time rather than a check-in date, and often
+     * carry a no-show / minimum-participant clause that does
+     * not apply to property stays.
+     *
+     * @since  1.0.0
+     * @return array
+     */
+    public static function get_cancellation_policies() {
+        return array(
+            'flexible' => array(
+                'label' => __( 'Flexible', 'moga-travel-core' ),
+                'desc'  => __( 'Free cancellation up to 24 hours before the tour starts for a full refund.', 'moga-travel-core' ),
+            ),
+            'moderate' => array(
+                'label' => __( 'Moderate', 'moga-travel-core' ),
+                'desc'  => __( 'Free cancellation up to 3 days before the tour starts. Cancellations made within 3 days of departure are charged 50% of the total price.', 'moga-travel-core' ),
+            ),
+            'strict' => array(
+                'label' => __( 'Strict', 'moga-travel-core' ),
+                'desc'  => __( 'Non-refundable. This tour cannot be cancelled, changed, or rescheduled once booked.', 'moga-travel-core' ),
+            ),
+            'no_refund_no_show' => array(
+                'label' => __( 'Non-refundable', 'moga-travel-core' ),
+                'desc'  => __( 'This tour is non-refundable. Failure to show up at the departure point and time forfeits the full amount paid.', 'moga-travel-core' ),
+            ),
         );
     }
 }

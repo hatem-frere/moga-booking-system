@@ -1865,3 +1865,350 @@
     text-transform: lowercase;
     letter-spacing: 0.02em;
 }
+
+/* ============================================================
+   29. Includes / Excludes Grid (Tour "What's Included")
+   ============================================================ */
+
+.moga-includes-excludes {
+    display: grid;
+    grid-template-columns: repeat( 2, 1fr );
+    gap: var(--moga-spacing-xl);
+}
+
+.moga-includes-excludes__title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--moga-gray-800);
+    margin-bottom: var(--moga-spacing-md);
+}
+
+.moga-includes-excludes__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-sm);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.moga-includes-excludes__list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--moga-spacing-sm);
+    font-size: 0.875rem;
+    color: var(--moga-gray-700);
+    line-height: 1.4;
+}
+
+.moga-includes-excludes__col--included .moga-includes-excludes__list li svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--moga-success);
+}
+
+.moga-includes-excludes__col--excluded .moga-includes-excludes__list li svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--moga-gray-400);
+}
+
+.moga-includes-excludes__col--excluded .moga-includes-excludes__list li {
+    color: var(--moga-gray-500);
+}
+
+
+/* ============================================================
+   30. Tour Itinerary Timeline
+   ============================================================ */
+
+.moga-itinerary {
+    display: flex;
+    flex-direction: column;
+}
+
+.moga-itinerary-day {
+    display: flex;
+    gap: var(--moga-spacing-lg);
+}
+
+/* Marker column — numbered circle + connecting vertical line */
+.moga-itinerary-day__marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 36px;
+}
+
+.moga-itinerary-day__number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    font-weight: 700;
+    font-size: 0.95rem;
+    font-family: var(--moga-font-heading);
+    flex-shrink: 0;
+}
+
+.moga-itinerary-day__line {
+    width: 2px;
+    flex: 1;
+    background-color: var(--moga-gray-200);
+    margin-top: 4px;
+    min-height: 24px;
+}
+
+/* Content column */
+.moga-itinerary-day__content {
+    flex: 1;
+    min-width: 0;
+    padding-bottom: var(--moga-spacing-xl);
+}
+
+.moga-itinerary-day--last .moga-itinerary-day__content {
+    padding-bottom: 0;
+}
+
+.moga-itinerary-day__header {
+    margin-bottom: 6px;
+}
+
+.moga-itinerary-day__label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--moga-secondary);
+    margin-bottom: 2px;
+}
+
+.moga-itinerary-day__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+    margin: 0;
+}
+
+.moga-itinerary-day__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--moga-spacing-md);
+    margin: var(--moga-spacing-xs) 0 var(--moga-spacing-sm);
+}
+
+.moga-itinerary-day__meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+    color: var(--moga-gray-600);
+}
+
+.moga-itinerary-day__meta-item svg {
+    color: var(--moga-gray-500);
+    flex-shrink: 0;
+}
+
+.moga-itinerary-day__desc {
+    font-size: 0.875rem;
+    line-height: 1.65;
+    color: var(--moga-gray-700);
+    margin-bottom: var(--moga-spacing-sm);
+}
+
+.moga-itinerary-day__desc p {
+    margin-bottom: var(--moga-spacing-sm);
+}
+
+.moga-itinerary-day__desc p:last-child {
+    margin-bottom: 0;
+}
+
+.moga-itinerary-day__activities {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    list-style: none;
+    margin: 0 0 var(--moga-spacing-sm);
+    padding: 0;
+}
+
+.moga-itinerary-day__activities li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--moga-spacing-sm);
+    font-size: 0.85rem;
+    color: var(--moga-gray-700);
+}
+
+.moga-itinerary-day__activities li svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--moga-success);
+}
+
+.moga-itinerary-day__footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--moga-spacing-sm);
+    margin-top: var(--moga-spacing-sm);
+}
+
+.moga-itinerary-day__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background-color: var(--moga-gray-100);
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--moga-gray-700);
+}
+
+.moga-itinerary-day__badge svg {
+    flex-shrink: 0;
+    color: var(--moga-secondary);
+}
+
+.moga-itinerary-day__badge--stay {
+    background-color: var(--moga-primary-light, var(--moga-gray-100));
+    color: var(--moga-primary);
+}
+
+.moga-itinerary-day__badge--stay svg {
+    color: var(--moga-primary);
+}
+
+
+/* ============================================================
+   31. Tour Booking Form — Single Date Field
+   ============================================================ */
+
+.moga-booking-dates--single {
+    grid-template-columns: 1fr;
+}
+
+.moga-booking-dates--single .moga-booking-dates__field {
+    border-right: none;
+}
+
+
+/* ============================================================
+   32. Participant Counter (Adults / Children / Infants)
+   ============================================================ */
+
+.moga-participants {
+    border: 1px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    padding: var(--moga-spacing-sm) var(--moga-spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-participant-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--moga-spacing-md);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--moga-gray-100);
+}
+
+.moga-participant-row:last-of-type {
+    border-bottom: none;
+}
+
+.moga-participant-row__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.moga-participant-row__label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--moga-gray-800);
+}
+
+.moga-participant-row__price {
+    font-size: 0.75rem;
+    color: var(--moga-gray-500);
+}
+
+.moga-participant-row__controls {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+    flex-shrink: 0;
+}
+
+.moga-participant-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--moga-gray-400);
+    background: none;
+    color: var(--moga-gray-700);
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+    flex-shrink: 0;
+    font-family: var(--moga-font-primary);
+}
+
+.moga-participant-btn:hover:not(:disabled) {
+    border-color: var(--moga-gray-800);
+    color: var(--moga-gray-900);
+}
+
+.moga-participant-btn:disabled {
+    border-color: var(--moga-gray-300);
+    color: var(--moga-gray-400);
+    cursor: not-allowed;
+}
+
+.moga-participant-count {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--moga-gray-800);
+    text-align: center;
+    min-width: 18px;
+}
+
+.moga-participants__max {
+    font-size: 0.725rem;
+    color: var(--moga-gray-500);
+    margin: 4px 0 0;
+}
+
+
+/* ============================================================
+   33. RTL Overrides — Tour Components
+   ============================================================ */
+
+[dir="rtl"] .moga-itinerary-day {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .moga-itinerary-day__activities li,
+[dir="rtl"] .moga-includes-excludes__list li,
+[dir="rtl"] .moga-itinerary-day__meta-item {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .moga-participant-row {
+    flex-direction: row-reverse;
+}

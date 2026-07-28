@@ -1,8 +1,8 @@
 <?php
 /**
- * Property Videos — Sidebar Widget
+ * Tour Videos — Sidebar Widget
  *
- * Path: themes/moga-travel/template-parts/property/single-videos.php
+ * Path: themes/moga-travel/template-parts/tour/single-videos.php
  *
  * Displays in the sidebar below the map/location widget.
  * Shows 1 video thumbnail. If multiple videos exist, the
@@ -30,13 +30,13 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-$property_id = get_the_ID();
+$tour_id = get_the_ID();
 
 // ============================================================
 // READ VIDEO META
 // ============================================================
 
-$videos_json = get_post_meta( $property_id, '_moga_videos', true );
+$videos_json = get_post_meta( $tour_id, '_moga_videos', true );
 $video_items = $videos_json ? json_decode( $videos_json, true ) : array();
 $video_items = is_array( $video_items ) ? $video_items : array();
 
@@ -54,7 +54,7 @@ if ( empty( $video_items ) ) {
 
 $total_videos = count( $video_items );
 $extra_videos = $total_videos - 1; // Shown: 1. Extra: rest.
-$gallery_key  = 'property-' . $property_id; // shared page key, videos append '-videos'
+$gallery_key  = 'tour-' . $tour_id; // shared page key, videos append '-videos'
 
 
 // ============================================================
@@ -101,7 +101,7 @@ $moga_extract_vimeo_id = function( $url ) {
  *   - thumb:     thumbnail image URL (empty string if unavailable)
  *   - type_attr: value for data-type attribute ('' = GLightbox auto-detect)
  */
-$moga_resolve_video = function( $video, $property_id ) use ( $moga_extract_yt_id, $moga_extract_vimeo_id ) {
+$moga_resolve_video = function( $video, $tour_id ) use ( $moga_extract_yt_id, $moga_extract_vimeo_id ) {
 
     $url       = '';
     $thumb     = '';
@@ -117,7 +117,7 @@ $moga_resolve_video = function( $video, $property_id ) use ( $moga_extract_yt_id
         // Poster frame: try attachment image, then property thumbnail.
         $thumb = $aid ? wp_get_attachment_image_url( $aid, 'medium' ) : '';
         if ( ! $thumb ) {
-            $thumb = get_the_post_thumbnail_url( $property_id, 'medium' ) ?: '';
+            $thumb = get_the_post_thumbnail_url( $tour_id, 'medium' ) ?: '';
         }
 
     } elseif ( 'url' === $video['type'] ) {
@@ -140,14 +140,14 @@ $moga_resolve_video = function( $video, $property_id ) use ( $moga_extract_yt_id
 
         if ( $vimeo_id ) {
             $url   = 'https://vimeo.com/' . $vimeo_id;
-            $thumb = get_the_post_thumbnail_url( $property_id, 'medium' ) ?: '';
+            $thumb = get_the_post_thumbnail_url( $tour_id, 'medium' ) ?: '';
             $type_attr = ''; // GLightbox auto-detects Vimeo URLs.
             return compact( 'url', 'thumb', 'type_attr' );
         }
 
         // Other URL (unknown format) — pass as-is and let GLightbox try.
         $url       = $raw_url;
-        $thumb     = get_the_post_thumbnail_url( $property_id, 'medium' ) ?: '';
+        $thumb     = get_the_post_thumbnail_url( $tour_id, 'medium' ) ?: '';
         $type_attr = '';
     }
 
@@ -159,7 +159,7 @@ $moga_resolve_video = function( $video, $property_id ) use ( $moga_extract_yt_id
 // RESOLVE FIRST VIDEO (visible thumbnail)
 // ============================================================
 
-$first_video = $moga_resolve_video( $video_items[0], $property_id );
+$first_video = $moga_resolve_video( $video_items[0], $tour_id );
 $first_url   = $first_video['url'];
 $first_thumb = $first_video['thumb'];
 $first_type  = $first_video['type_attr'];
@@ -176,7 +176,7 @@ if ( ! $first_url ) {
 $extra_video_links = array();
 
 for ( $i = 1; $i < $total_videos; $i++ ) {
-    $resolved = $moga_resolve_video( $video_items[ $i ], $property_id );
+    $resolved = $moga_resolve_video( $video_items[ $i ], $tour_id );
     if ( $resolved['url'] ) {
         $extra_video_links[] = $resolved;
     }

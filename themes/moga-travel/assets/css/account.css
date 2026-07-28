@@ -1,0 +1,618 @@
+/**
+ * Moga Travel — Account Page (Login / Register / Profile)
+ *
+ * Path: themes/moga-travel/assets/css/account.css
+ *
+ * Enqueued only on the My Account page — see Moga_Assets::is_account_page()
+ * and the conditional enqueue in enqueue_frontend_styles().
+ *
+ * @package MogaTravel
+ * @since   1.0.0
+ */
+
+.moga-account-page {
+    padding: var(--moga-spacing-xl) 0 var(--moga-spacing-xl);
+    min-height: 60vh;
+}
+
+.moga-account-page__title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--moga-gray-900);
+    margin-bottom: var(--moga-spacing-lg);
+    text-align: center;
+}
+
+.moga-container--narrow {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0 var(--moga-spacing-md);
+}
+
+
+/* ============================================================
+   CARD SHELL
+   ============================================================ */
+
+.moga-account {
+    background-color: var(--moga-white);
+    border: 1px solid var(--moga-gray-200);
+    border-radius: var(--moga-border-radius-lg);
+    box-shadow: var(--moga-shadow-lg);
+    padding: var(--moga-spacing-xl);
+}
+
+
+/* ============================================================
+   TABS
+   ============================================================ */
+
+.moga-account__tabs {
+    display: flex;
+    border-bottom: 2px solid var(--moga-gray-200);
+    margin-bottom: var(--moga-spacing-lg);
+}
+
+.moga-account__tab {
+    flex: 1;
+    text-align: center;
+    padding: var(--moga-spacing-sm) var(--moga-spacing-md) calc(var(--moga-spacing-sm) + 2px);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--moga-gray-500);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-account__tab:hover {
+    color: var(--moga-primary);
+}
+
+.moga-account__tab.is-active {
+    color: var(--moga-primary);
+    border-bottom-color: var(--moga-secondary);
+}
+
+
+/* ============================================================
+   NOTICES
+   ============================================================ */
+
+.moga-account__notice {
+    padding: var(--moga-spacing-sm) var(--moga-spacing-md);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.875rem;
+    margin-bottom: var(--moga-spacing-md);
+    line-height: 1.5;
+}
+
+.moga-account__notice--error {
+    background-color: #fdecea;
+    color: #b42318;
+    border: 1px solid #f5c6c1;
+}
+
+.moga-account__notice--success {
+    background-color: #e9f9ee;
+    color: #0f7a3d;
+    border: 1px solid #b9ecc8;
+}
+
+.moga-account__notice--warning {
+    background-color: #fff8e6;
+    color: #8a5a00;
+    border: 1px solid #ffe4a3;
+}
+
+
+/* ============================================================
+   FORM FIELDS
+   ============================================================ */
+
+.moga-account__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-md);
+}
+
+.moga-account__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* This rule is required, not decorative — without it, the [hidden]
+   attribute set by PHP/JS on .moga-account__field elements gets
+   silently overridden by the display:flex rule above (equal CSS
+   specificity, author stylesheet loads after the browser's default
+   [hidden] rule, so flex wins the cascade and the field shows up
+   anyway despite hidden="hidden" being correctly present in the
+   HTML). This is what caused Company Name / Verification Documents
+   to stay visible in Individual mode even though the server-side
+   and JS logic were both already correct. */
+.moga-account__field[hidden] {
+    display: none;
+}
+
+.moga-account__field label {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: var(--moga-gray-700);
+}
+
+.moga-account__field input[type="text"],
+.moga-account__field input[type="email"],
+.moga-account__field input[type="tel"],
+.moga-account__field input[type="password"],
+.moga-account__field input[type="date"],
+.moga-account__field input[type="file"] {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.9rem;
+    font-family: var(--moga-font-primary);
+    color: var(--moga-gray-900);
+    background-color: var(--moga-white);
+    box-sizing: border-box;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-account__field input[type="text"]:focus,
+.moga-account__field input[type="email"]:focus,
+.moga-account__field input[type="tel"]:focus,
+.moga-account__field input[type="password"]:focus,
+.moga-account__field input[type="date"]:focus {
+    outline: none;
+    border-color: var(--moga-secondary);
+    box-shadow: 0 0 0 3px rgba(0, 113, 194, 0.12);
+}
+
+.moga-account__field--checkbox {
+    flex-direction: row;
+    align-items: center;
+}
+
+.moga-account__field--checkbox label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.moga-account__hint {
+    font-size: 0.75rem;
+    color: var(--moga-gray-500);
+    margin: 0;
+}
+
+
+/* ============================================================
+   ACCOUNT TYPE / ENTITY TYPE RADIO CARDS
+   ============================================================ */
+
+.moga-account__type-choices {
+    display: flex;
+    gap: var(--moga-spacing-sm);
+    flex-wrap: wrap;
+}
+
+.moga-account__type-choice {
+    flex: 1;
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--moga-gray-700);
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-account__type-choice:hover {
+    border-color: var(--moga-secondary);
+}
+
+.moga-account__type-choice:has(input:checked) {
+    border-color: var(--moga-secondary);
+    background-color: #eef6fd;
+    color: var(--moga-primary);
+    font-weight: 700;
+}
+
+.moga-account__vendor-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-md);
+    padding: var(--moga-spacing-md);
+    background-color: var(--moga-gray-100);
+    border-radius: var(--moga-border-radius);
+    border: 1px dashed var(--moga-gray-300);
+}
+
+
+/* ============================================================
+   BUTTONS / LINKS
+   ============================================================ */
+
+.moga-w-100 {
+    width: 100%;
+}
+
+.moga-account__lost-password {
+    text-align: center;
+    font-size: 0.825rem;
+    margin: var(--moga-spacing-sm) 0 0;
+}
+
+.moga-account__lost-password a {
+    color: var(--moga-secondary);
+    text-decoration: none;
+}
+
+.moga-account__lost-password a:hover {
+    text-decoration: underline;
+}
+
+.moga-account__logout {
+    text-align: center;
+    margin-top: var(--moga-spacing-lg);
+    padding-top: var(--moga-spacing-md);
+    border-top: 1px solid var(--moga-gray-200);
+}
+
+.moga-account__logout a {
+    color: var(--moga-gray-500);
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
+.moga-account__logout a:hover {
+    color: var(--moga-danger);
+}
+
+
+/* ============================================================
+   PROFILE — UPSELL / STATUS
+   ============================================================ */
+
+.moga-account__upsell {
+    background-color: #eef6fd;
+    border: 1px dashed var(--moga-secondary);
+    border-radius: var(--moga-border-radius);
+    padding: var(--moga-spacing-md);
+    margin-bottom: var(--moga-spacing-lg);
+    text-align: center;
+}
+
+.moga-account__upsell p {
+    margin: 0 0 var(--moga-spacing-sm);
+    font-size: 0.875rem;
+    color: var(--moga-gray-700);
+}
+
+.moga-account__photo-preview {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--moga-gray-200);
+    margin-bottom: 8px;
+}
+
+
+/* ============================================================
+   RTL
+   ============================================================ */
+
+[dir="rtl"] .moga-account__field--checkbox label,
+[dir="rtl"] .moga-account__type-choice {
+    flex-direction: row-reverse;
+}
+
+
+/* ============================================================
+   REGISTRATION — STEP 1: TYPE PICKER CARDS
+   ============================================================ */
+
+.moga-account__step-intro {
+    text-align: center;
+    font-weight: 600;
+    color: var(--moga-gray-700);
+    margin-bottom: var(--moga-spacing-md);
+}
+
+.moga-account__type-picker {
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-account__type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+    padding: var(--moga-spacing-lg) var(--moga-spacing-md);
+    border: 1.5px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    text-decoration: none;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-account__type-card:hover {
+    border-color: var(--moga-secondary);
+    background-color: #eef6fd;
+    transform: translateY(-1px);
+}
+
+.moga-account__type-card-icon {
+    font-size: 1.75rem;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.moga-account__type-card-label {
+    font-weight: 700;
+    color: var(--moga-gray-900);
+    font-size: 0.95rem;
+}
+
+.moga-account__type-card-desc {
+    font-size: 0.8rem;
+    color: var(--moga-gray-500);
+}
+
+
+/* ============================================================
+   REGISTRATION — STEP 2: BACK LINK, FIELD ROWS
+   ============================================================ */
+
+.moga-account__back-link {
+    display: inline-block;
+    font-size: 0.825rem;
+    color: var(--moga-gray-500);
+    text-decoration: none;
+    margin-bottom: var(--moga-spacing-md);
+}
+
+.moga-account__back-link:hover {
+    color: var(--moga-secondary);
+}
+
+.moga-account__field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--moga-spacing-md);
+}
+
+@media (max-width: 480px) {
+    .moga-account__field-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* ============================================================
+   PASSWORD STRENGTH METER
+   ============================================================ */
+
+.moga-password-meter {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.moga-password-meter li {
+    font-size: 0.75rem;
+    color: var(--moga-gray-500);
+    padding-left: 18px;
+    position: relative;
+}
+
+.moga-password-meter li::before {
+    content: "○";
+    position: absolute;
+    left: 0;
+    font-size: 0.7rem;
+}
+
+.moga-password-meter li.is-met {
+    color: #0f7a3d;
+}
+
+.moga-password-meter li.is-met::before {
+    content: "✓";
+}
+
+.moga-password-meter li.is-unmet {
+    color: #b42318;
+}
+
+.moga-password-meter li.is-unmet::before {
+    content: "✕";
+}
+
+.moga-account__hint--success {
+    color: #0f7a3d;
+    font-weight: 600;
+}
+
+.moga-account__hint--error {
+    color: #b42318;
+    font-weight: 600;
+}
+
+
+/* ============================================================
+   RTL — REGISTRATION ADDITIONS
+   ============================================================ */
+
+[dir="rtl"] .moga-password-meter li {
+    padding-left: 0;
+    padding-right: 18px;
+}
+
+[dir="rtl"] .moga-password-meter li::before {
+    left: auto;
+    right: 0;
+}
+
+
+/* ============================================================
+   DATE INPUT — CALENDAR ICON POLISH
+   (input[type=date] itself is styled by the shared selector
+   list above; this just recolors the native picker icon so it
+   doesn't look like a stray browser-default element)
+   ============================================================ */
+
+.moga-account__field input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(45%) sepia(15%) saturate(500%) hue-rotate(175deg);
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.moga-account__field input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+
+/* ============================================================
+   REGISTRATION — BACK BUTTON (STEP 2)
+   ============================================================ */
+
+.moga-account__back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1.5px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--moga-gray-700);
+    text-decoration: none;
+    margin-bottom: var(--moga-spacing-lg);
+    transition: var(--moga-transition-fast);
+}
+
+.moga-account__back-btn:hover {
+    border-color: var(--moga-secondary);
+    color: var(--moga-secondary);
+    background-color: #eef6fd;
+}
+
+[dir="rtl"] .moga-account__back-btn svg {
+    transform: scaleX(-1);
+}
+
+
+/* ============================================================
+   PROFILE — INLINE ACTION LINK (e.g. "Resend email")
+   ============================================================ */
+
+.moga-account__inline-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+    font-weight: 700;
+    color: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.moga-account__inline-link:hover {
+    opacity: 0.8;
+}
+
+
+/* ============================================================
+   PASSWORD SHOW/HIDE TOGGLE
+   ============================================================ */
+
+.moga-password-field {
+    position: relative;
+}
+
+.moga-password-field input[type="password"],
+.moga-password-field input[type="text"] {
+    padding-right: 42px;
+}
+
+[dir="rtl"] .moga-password-field input[type="password"],
+[dir="rtl"] .moga-password-field input[type="text"] {
+    padding-right: 14px;
+    padding-left: 42px;
+}
+
+.moga-password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--moga-gray-500);
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+}
+
+[dir="rtl"] .moga-password-toggle {
+    right: auto;
+    left: 10px;
+}
+
+.moga-password-toggle:hover {
+    color: var(--moga-secondary);
+}
+
+
+/* ============================================================
+   DATE OF BIRTH — DAY / MONTH / YEAR DROPDOWNS
+   ============================================================ */
+
+.moga-dob-row {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr 1fr;
+    gap: 8px;
+}
+
+.moga-dob-row select {
+    padding: 10px 10px;
+    border: 1.5px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.9rem;
+    font-family: var(--moga-font-primary);
+    color: var(--moga-gray-900);
+    background-color: var(--moga-white);
+    box-sizing: border-box;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-dob-row select:focus {
+    outline: none;
+    border-color: var(--moga-secondary);
+    box-shadow: 0 0 0 3px rgba(0, 113, 194, 0.12);
+}
+
+@media (max-width: 480px) {
+    .moga-dob-row {
+        grid-template-columns: 1fr;
+    }
+}

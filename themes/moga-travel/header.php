@@ -9,6 +9,13 @@
  * @package MogaTravel
  * @since   1.0.0
  */
+
+// NOTE: moga_account_url() is defined in the plugin
+// (plugins/moga-travel-core/includes/helpers/helper-functions.php)
+// and currently takes no arguments. The login/register tab is
+// added here in the theme via add_query_arg( 'tab', ..., ... )
+// instead of passing it into that function, so no plugin change
+// is required and there's no arity mismatch.
 ?>
 <!DOCTYPE html>
 <html <?php language_attributes(); ?>>
@@ -159,12 +166,12 @@
 
                         <?php else : ?>
 
-                            <a href="<?php echo esc_url( wp_login_url( get_permalink() ) ); ?>"
+                            <a href="<?php echo esc_url( add_query_arg( 'tab', 'login', moga_account_url() ) ); ?>"
                                class="moga-header__login-btn">
                                 <?php esc_html_e( 'Sign in', 'moga-travel' ); ?>
                             </a>
 
-                            <a href="<?php echo esc_url( wp_registration_url() ); ?>"
+                            <a href="<?php echo esc_url( add_query_arg( 'tab', 'register', moga_account_url() ) ); ?>"
                                class="moga-header__register-btn">
                                 <?php esc_html_e( 'Register', 'moga-travel' ); ?>
                             </a>
@@ -220,11 +227,11 @@
 
         <?php if ( ! is_user_logged_in() ) : ?>
             <div class="moga-mobile-menu__actions">
-                <a href="<?php echo esc_url( wp_login_url() ); ?>"
+                <a href="<?php echo esc_url( add_query_arg( 'tab', 'login', moga_account_url() ) ); ?>"
                    class="moga-btn moga-btn--outline-white moga-btn--block">
                     <?php esc_html_e( 'Sign In', 'moga-travel' ); ?>
                 </a>
-                <a href="<?php echo esc_url( wp_registration_url() ); ?>"
+                <a href="<?php echo esc_url( add_query_arg( 'tab', 'register', moga_account_url() ) ); ?>"
                    class="moga-btn moga-btn--primary moga-btn--block">
                     <?php esc_html_e( 'Register', 'moga-travel' ); ?>
                 </a>

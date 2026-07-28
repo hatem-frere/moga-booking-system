@@ -186,9 +186,10 @@ class Moga_Assets {
      *   6. home.css       — homepage hero, search, sections
      *   7. search.css     — search results page + all card styles
      *   8. booking.css    — single property/tour page styles
-     *   9. dashboard.css  — owner dashboard styles
-     *  10. responsive.css — all media queries (always last)
-     *  11. rtl.css        — RTL overrides (if RTL language)
+     *   9. account.css    — login/register/profile page
+     *  10. dashboard.css  — owner dashboard styles
+     *  11. responsive.css — all media queries (always last)
+     *  12. rtl.css        — RTL overrides (if RTL language)
      *
      * @since  1.0.0
      * @return void
@@ -281,6 +282,16 @@ class Moga_Assets {
             );
             wp_enqueue_style( 'flatpickr' );
             wp_enqueue_style( 'intl-tel-input' );
+        }
+
+        // Account page styles — login/register/profile only.
+        if ( self::is_account_page() ) {
+            wp_enqueue_style(
+                'moga-account',
+                $css . 'account.css',
+                array( 'moga-main', 'moga-components' ),
+                $ver
+            );
         }
 
         // Dashboard styles — only on dashboard pages.
@@ -506,6 +517,18 @@ class Moga_Assets {
         return is_page( $booking_pages )
             || is_singular( 'moga_property' )
             || is_singular( 'moga_tour' );
+    }
+
+    /**
+     * Check if current page is the My Account page (login/register/profile).
+     *
+     * @since  1.0.0
+     * @return bool
+     */
+    private static function is_account_page() {
+
+        return is_page_template( 'page-templates/template-account.php' )
+            || is_page( get_option( 'moga_page_my_account' ) );
     }
 
     /**

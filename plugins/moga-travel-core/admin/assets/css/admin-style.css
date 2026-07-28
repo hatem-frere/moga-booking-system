@@ -454,6 +454,7 @@
 #moga_tour_location .postbox-header,
 #moga_tour_contact .postbox-header,
 #moga_tour_details .postbox-header,
+#moga_tour_itinerary .postbox-header,
 #moga_tour_includes .postbox-header,
 #moga_tour_bus .postbox-header,
 #moga_tour_status .postbox-header {
@@ -473,6 +474,7 @@
 #moga_tour_location .postbox-header h2,
 #moga_tour_contact .postbox-header h2,
 #moga_tour_details .postbox-header h2,
+#moga_tour_itinerary .postbox-header h2,
 #moga_tour_includes .postbox-header h2,
 #moga_tour_bus .postbox-header h2,
 #moga_tour_status .postbox-header h2 {
@@ -495,6 +497,7 @@
 #moga_tour_location .inside,
 #moga_tour_contact .inside,
 #moga_tour_details .inside,
+#moga_tour_itinerary .inside,
 #moga_tour_includes .inside,
 #moga_tour_bus .inside,
 #moga_tour_status .inside {
@@ -816,4 +819,166 @@
 #pageparentdiv,
 #page-attributes-meta-box {
     order: 99;
+}
+
+/* ============================================================
+   TOUR ITINERARY BUILDER
+   ============================================================ */
+
+.moga-itinerary-builder {
+    padding: 4px 0;
+}
+
+.moga-itinerary-builder__list {
+    list-style: none;
+    margin: 0 0 14px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.moga-itinerary-builder__row {
+    background: var(--moga-gray-100);
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: var(--moga-radius);
+    padding: 14px;
+}
+
+.moga-itinerary-builder__row-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--moga-gray-200);
+}
+
+.moga-itinerary-builder__handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: grab;
+    color: var(--moga-gray-300);
+    flex-shrink: 0;
+    user-select: none;
+    touch-action: none;
+    transition: background var(--moga-transition), color var(--moga-transition);
+}
+
+.moga-itinerary-builder__handle:hover {
+    background: var(--moga-gray-200);
+    color: var(--moga-primary);
+}
+
+.moga-itinerary-builder__handle:active {
+    cursor: grabbing;
+}
+
+.moga-itinerary-builder__day-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--moga-primary);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+.moga-itinerary-builder__day-number {
+    font-size: 12px;
+}
+
+.moga-itinerary-builder__remove {
+    margin-left: auto;
+    width: 22px;
+    height: 22px;
+    background: var(--moga-danger);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    transition: background var(--moga-transition);
+}
+
+.moga-itinerary-builder__remove:hover {
+    background: #b02a2a;
+}
+
+.moga-itinerary-builder__row textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: var(--moga-radius);
+    background: #fff;
+    color: var(--moga-gray-900);
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+    box-shadow: var(--moga-shadow);
+    box-sizing: border-box;
+    transition: border-color var(--moga-transition);
+}
+
+.moga-itinerary-builder__row textarea:focus {
+    border-color: var(--moga-primary);
+    box-shadow: 0 0 0 2px rgba(0, 53, 128, 0.12);
+    outline: none;
+}
+
+.moga-itinerary-builder__meals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.moga-checklist__item--inline {
+    padding: 6px 10px;
+    background: #fff;
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+.moga-checklist__item--inline:hover {
+    border-color: var(--moga-primary);
+    background: #f0f4ff;
+}
+
+.moga-itinerary-builder__placeholder {
+    background: #f0f4ff;
+    border: 2px dashed var(--moga-primary);
+    border-radius: var(--moga-radius);
+    height: 60px;
+}
+
+.moga-itinerary-builder__btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    height: 36px;
+    border-radius: var(--moga-radius) !important;
+    border-color: var(--moga-primary) !important;
+    color: var(--moga-primary) !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    transition: all var(--moga-transition) !important;
+}
+
+.moga-itinerary-builder__btn:hover {
+    background: var(--moga-primary) !important;
+    color: #fff !important;
 }

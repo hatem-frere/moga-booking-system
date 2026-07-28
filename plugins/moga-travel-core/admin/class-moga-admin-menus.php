@@ -77,7 +77,7 @@ class Moga_Admin_Menus {
             'moga-dashboard',
             __( 'Properties', 'moga-travel-core' ),
             __( 'Properties', 'moga-travel-core' ),
-            'manage_options',
+            'edit_moga_propertys',
             'edit.php?post_type=moga_property'
         );
 
@@ -86,7 +86,7 @@ class Moga_Admin_Menus {
             'moga-dashboard',
             __( 'Tours', 'moga-travel-core' ),
             __( 'Tours', 'moga-travel-core' ),
-            'manage_options',
+            'edit_moga_tours',
             'edit.php?post_type=moga_tour'
         );
 
@@ -95,7 +95,7 @@ class Moga_Admin_Menus {
             'moga-dashboard',
             __( 'Buses', 'moga-travel-core' ),
             __( 'Buses', 'moga-travel-core' ),
-            'manage_options',
+            'moga_manage_buses',
             'edit.php?post_type=moga_bus'
         );
 
@@ -109,14 +109,16 @@ class Moga_Admin_Menus {
             array( __CLASS__, 'render_placeholder' )
         );
 
-        // ---- Users (Phase 5) ----
+        // ---- Users / Vendor Approvals ----
         add_submenu_page(
             'moga-dashboard',
+            __( 'Vendors', 'moga-travel-core' ),
             __( 'Users', 'moga-travel-core' ),
-            __( 'Users', 'moga-travel-core' ),
-            'manage_options',
+            'moga_approve_vendors',
             'moga-users',
-            array( __CLASS__, 'render_placeholder' )
+            class_exists( 'Moga_Admin_Vendors' )
+                ? array( 'Moga_Admin_Vendors', 'render_page' )
+                : array( __CLASS__, 'render_placeholder' )
         );
 
         // ---- Location Settings + Editor ----

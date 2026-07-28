@@ -219,6 +219,11 @@ class Moga_Core {
             Moga_Admin_Metaboxes::init();
         }
 
+        // Initialize vendor approval screen.
+        if ( class_exists( 'Moga_Admin_Vendors' ) ) {
+            Moga_Admin_Vendors::init();
+        }
+
         // Enqueue admin CSS only on Moga CPT screens.
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
     }
@@ -298,6 +303,9 @@ class Moga_Core {
         }
         if ( class_exists( 'Moga_Shortcode_Booking_Form' ) ) {
             ( new Moga_Shortcode_Booking_Form() )->register();
+        }
+        if ( class_exists( 'Moga_Shortcode_Account' ) ) {
+            ( new Moga_Shortcode_Account() )->register();
         }
     }
 
@@ -463,12 +471,7 @@ class Moga_Core {
                 'i18n'      => array(
                     'loading'              => __( 'Loading...', 'moga-travel-core' ),
                     'error'                => __( 'Something went wrong.', 'moga-travel-core' ),
-                    'selectCountryFirst'   => __( '— Select Country First —', 'moga-travel-core' ),
-                    'selectProvince'       => __( '— Select Province —', 'moga-travel-core' ),
-                    'selectProvinceFirst'  => __( '— Select Province First —', 'moga-travel-core' ),
-                    'loadingProvinces'     => __( 'Loading provinces…', 'moga-travel-core' ),
                     'selectCity'           => __( '— Select City —', 'moga-travel-core' ),
-                    'selectDistrict'       => __( '— Select District —', 'moga-travel-core' ),
                     'checkingAvailability' => __( 'Checking availability...', 'moga-travel-core' ),
                     'available'            => __( '✅ Available for your dates!', 'moga-travel-core' ),
                     'unavailable'          => __( '❌ Not available for selected dates.', 'moga-travel-core' ),
