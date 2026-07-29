@@ -133,3 +133,4 @@ error_log
 *.tar.gz
 *.rarplugins/duplicate-post/ 
 plugins/duplicate-post/ 
+vendor/ 
