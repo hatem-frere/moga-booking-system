@@ -29,12 +29,12 @@
    19. RTL Overrides
    ============================================================ */
 
-
 /* ============================================================
    01. Single Page Layout
    ============================================================ */
 
-.moga-property-single {
+.moga-property-single,
+.moga-tour-single {
     padding-bottom: 80px; /* space for mobile sticky bar */
     background-color: var(--moga-white);
 }
@@ -55,9 +55,8 @@
 /* Sticky sidebar */
 .moga-single-sidebar {
     position: sticky;
-    top: calc( var(--moga-header-height) + var(--moga-spacing-md) );
+    top: calc(var(--moga-header-height) + var(--moga-spacing-md));
 }
-
 
 /* ============================================================
    02. Breadcrumb
@@ -93,7 +92,6 @@
     color: var(--moga-gray-800);
     font-weight: 500;
 }
-
 
 /* ============================================================
    03. Property Header
@@ -191,7 +189,6 @@
     color: var(--moga-danger);
     border-color: var(--moga-danger);
 }
-
 
 /* ============================================================
    04. Gallery Mosaic
@@ -328,7 +325,6 @@
     grid-row: 2;
 }
 
-
 /* ============================================================
    05. Single Section (shared)
    ============================================================ */
@@ -359,7 +355,6 @@
     font-size: 0.875rem;
     font-weight: 400;
 }
-
 
 /* ============================================================
    06. Property Highlights Bar
@@ -418,7 +413,6 @@
     line-height: 1.3;
 }
 
-
 /* ============================================================
    07. Property Description
    ============================================================ */
@@ -445,13 +439,13 @@
 }
 
 .moga-property-description--collapsed::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
     height: 60px;
-    background: linear-gradient( to bottom, transparent, var(--moga-white) );
+    background: linear-gradient(to bottom, transparent, var(--moga-white));
 }
 
 .moga-property-description--expanded {
@@ -462,14 +456,13 @@
     display: none;
 }
 
-
 /* ============================================================
    08. Amenities Grid
    ============================================================ */
 
 .moga-amenities-grid {
     display: grid;
-    grid-template-columns: repeat( 2, 1fr );
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--moga-spacing-sm) var(--moga-spacing-lg);
 }
 
@@ -494,7 +487,6 @@
 .moga-amenity-item--hidden.is-visible {
     display: flex;
 }
-
 
 /* ============================================================
    09. House Rules
@@ -555,7 +547,6 @@
     margin-bottom: 0;
 }
 
-
 /* ============================================================
    10. Reviews
    ============================================================ */
@@ -572,7 +563,6 @@
     font-style: italic;
     margin-bottom: 0;
 }
-
 
 /* ============================================================
    11. Booking Form Card
@@ -688,7 +678,6 @@
     flex-direction: column;
     gap: 8px;
 }
-
 
 /* ============================================================
    12. Date Pickers (Flatpickr custom styles)
@@ -824,7 +813,9 @@
     background-color: var(--moga-primary-light) !important;
     border-color: var(--moga-primary-light) !important;
     color: var(--moga-primary) !important;
-    box-shadow: -5px 0 0 var(--moga-primary-light), 5px 0 0 var(--moga-primary-light) !important;
+    box-shadow:
+        -5px 0 0 var(--moga-primary-light),
+        5px 0 0 var(--moga-primary-light) !important;
 }
 
 .flatpickr-day.today {
@@ -847,7 +838,6 @@
 .flatpickr-day.flatpickr-disabled {
     text-decoration: line-through !important;
 }
-
 
 /* ============================================================
    13. Guest Counter
@@ -918,7 +908,6 @@
     margin-bottom: 0;
 }
 
-
 /* ============================================================
    14. Price Breakdown
    ============================================================ */
@@ -975,7 +964,6 @@
     color: var(--moga-gray-900) !important;
 }
 
-
 /* ============================================================
    15. Booking Meta Items
    ============================================================ */
@@ -1000,7 +988,6 @@
 .moga-booking-meta-item--success svg {
     color: var(--moga-success);
 }
-
 
 /* ============================================================
    16. Rating Shared Styles
@@ -1042,7 +1029,6 @@
     color: var(--moga-secondary);
 }
 
-
 /* ============================================================
    17. Read More Button
    ============================================================ */
@@ -1076,7 +1062,6 @@
 .moga-read-more-btn[aria-expanded="true"] svg {
     transform: rotate(180deg);
 }
-
 
 /* ============================================================
    18. Mobile Sticky Bottom Bar
@@ -1134,7 +1119,6 @@
     text-decoration: none;
 }
 
-
 /* ============================================================
    19. RTL Overrides
    ============================================================ */
@@ -1173,7 +1157,6 @@
 [dir="rtl"] .moga-breadcrumb {
     flex-direction: row-reverse;
 }
-
 
 /* ============================================================
    20. Section Navigation (like Booking.com)
@@ -1225,7 +1208,6 @@
     border-bottom-color: var(--moga-primary);
     font-weight: 600;
 }
-
 
 /* ============================================================
    21. Gallery Thumbnail Strip
@@ -1300,14 +1282,13 @@
     background-color: rgba(0, 0, 0, 0.7);
 }
 
-
 /* ============================================================
    22. Review Categories (score bars)
    ============================================================ */
 
 .moga-review-categories {
     display: grid;
-    grid-template-columns: repeat( 2, 1fr );
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--moga-spacing-md) var(--moga-spacing-xl);
     margin-bottom: var(--moga-spacing-lg);
 }
@@ -1366,7 +1347,6 @@
     color: var(--moga-gray-800);
     margin-bottom: var(--moga-spacing-md);
 }
-
 
 /* ============================================================
    23. Review Cards
@@ -1494,7 +1474,6 @@
     margin-bottom: 0;
 }
 
-
 /* ============================================================
    24. Gallery with Sidebar Layout (gallery left + rating/map right)
    ============================================================ */
@@ -1520,7 +1499,6 @@
 .moga-gallery-mosaic {
     grid-template-columns: 60% 40% !important;
 }
-
 
 /* ============================================================
    25. Rating Box (beside gallery)
@@ -1631,7 +1609,6 @@
     font-size: 0.825rem;
 }
 
-
 /* ============================================================
    26. Map (beside gallery)
    ============================================================ */
@@ -1693,7 +1670,6 @@
     line-height: 1.4;
 }
 
-
 /* ============================================================
    27. Reserve button in property header
    ============================================================ */
@@ -1709,7 +1685,6 @@
 .moga-property-header__reserve:hover {
     text-decoration: none;
 }
-
 
 /* ============================================================
    28. Video Sidebar Widget (below map in gallery sidebar)
@@ -1780,7 +1755,9 @@
     width: 100%;
     height: 190px;
     object-fit: cover;
-    transition: transform 0.35s ease, opacity 0.35s ease;
+    transition:
+        transform 0.35s ease,
+        opacity 0.35s ease;
     opacity: 0.9;
 }
 
@@ -1810,7 +1787,7 @@
     z-index: 2;
     pointer-events: none;
     transition: transform 0.25s ease;
-    filter: drop-shadow( 0 2px 8px rgba(0, 0, 0, 0.5) );
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
 }
 
 .moga-sidebar-videos__thumb:hover .moga-sidebar-videos__play {
@@ -1829,8 +1806,8 @@
     right: 0;
     background: linear-gradient(
         to top,
-        rgba(0, 0, 0, 0.80) 0%,
-        rgba(0, 0, 0, 0.20) 60%,
+        rgba(0, 0, 0, 0.8) 0%,
+        rgba(0, 0, 0, 0.2) 60%,
         transparent 100%
     );
     padding: 36px 16px 14px;
@@ -1872,7 +1849,7 @@
 
 .moga-includes-excludes {
     display: grid;
-    grid-template-columns: repeat( 2, 1fr );
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--moga-spacing-xl);
 }
 
@@ -1916,7 +1893,6 @@
 .moga-includes-excludes__col--excluded .moga-includes-excludes__list li {
     color: var(--moga-gray-500);
 }
-
 
 /* ============================================================
    30. Tour Itinerary Timeline
@@ -2089,7 +2065,6 @@
     color: var(--moga-primary);
 }
 
-
 /* ============================================================
    31. Tour Booking Form — Single Date Field
    ============================================================ */
@@ -2101,7 +2076,6 @@
 .moga-booking-dates--single .moga-booking-dates__field {
     border-right: none;
 }
-
 
 /* ============================================================
    32. Participant Counter (Adults / Children / Infants)
@@ -2194,7 +2168,6 @@
     margin: 4px 0 0;
 }
 
-
 /* ============================================================
    33. RTL Overrides — Tour Components
    ============================================================ */
@@ -2211,4 +2184,282 @@
 
 [dir="rtl"] .moga-participant-row {
     flex-direction: row-reverse;
+}
+
+/* ============================================================
+   34. Organizer / Owner Card (tour + property sidebar)
+   ============================================================ */
+
+.moga-organizer-card {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-md);
+    padding: var(--moga-spacing-md);
+    background-color: var(--moga-white);
+    border: 1px solid var(--moga-gray-200);
+    border-radius: var(--moga-border-radius-lg);
+    margin-bottom: var(--moga-spacing-md);
+    box-shadow: var(--moga-shadow-lg);
+}
+
+.moga-organizer-card__photo {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.moga-organizer-card__photo--placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--moga-primary);
+    color: var(--moga-white);
+    font-weight: 700;
+    font-size: 1.25rem;
+    font-family: var(--moga-font-heading);
+}
+
+.moga-organizer-card__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.moga-organizer-card__label {
+    font-size: 0.7rem;
+    color: var(--moga-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.moga-organizer-card__name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.moga-organizer-card__whatsapp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #25d366;
+    color: #fff;
+    flex-shrink: 0;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-organizer-card__whatsapp:hover {
+    opacity: 0.85;
+}
+
+[dir="rtl"] .moga-organizer-card {
+    flex-direction: row-reverse;
+}
+
+/* ============================================================
+   35. Vendor Contact Form (property/tour sidebar)
+   ============================================================
+   Self-contained — account.css is NOT loaded on single
+   property/tour pages (only booking.css is), so the
+   .moga-account__* classes reused by vendor-contact-form.php
+   are given their own scoped definitions here rather than
+   depending on a stylesheet that may not be present.
+   ============================================================ */
+
+.moga-vendor-contact {
+    background-color: var(--moga-white);
+    border: 1px solid var(--moga-gray-200);
+    border-radius: var(--moga-border-radius-lg);
+    padding: var(--moga-spacing-md);
+    margin-bottom: var(--moga-spacing-md);
+    box-shadow: var(--moga-shadow-lg);
+}
+
+.moga-vendor-contact__title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+    margin: 0 0 var(--moga-spacing-sm);
+}
+
+.moga-vendor-contact .moga-account__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-vendor-contact .moga-account__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.moga-vendor-contact .moga-account__field label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--moga-gray-700);
+}
+
+.moga-vendor-contact .moga-account__field input,
+.moga-vendor-contact .moga-account__field textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--moga-gray-300);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.875rem;
+    font-family: var(--moga-font-primary);
+    color: var(--moga-gray-900);
+    background-color: var(--moga-white);
+    resize: vertical;
+    box-sizing: border-box;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-vendor-contact .moga-account__field input:focus,
+.moga-vendor-contact .moga-account__field textarea:focus {
+    outline: none;
+    border-color: var(--moga-secondary);
+    box-shadow: 0 0 0 3px rgba(0, 113, 194, 0.12);
+}
+
+.moga-vendor-contact .moga-account__notice {
+    padding: var(--moga-spacing-sm) var(--moga-spacing-md);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.825rem;
+    margin-bottom: var(--moga-spacing-sm);
+    line-height: 1.5;
+}
+
+.moga-vendor-contact .moga-account__notice--error {
+    background-color: #fdecea;
+    color: #b42318;
+    border: 1px solid #f5c6c1;
+}
+
+.moga-vendor-contact .moga-account__notice--success {
+    background-color: #e9f9ee;
+    color: #0f7a3d;
+    border: 1px solid #b9ecc8;
+}
+
+[dir="rtl"] .moga-vendor-contact {
+    text-align: right;
+}
+
+/* ============================================================
+   36. Vendor Contact Icons (below Send button)
+   ============================================================ */
+
+.moga-vendor-contact__icons {
+    display: flex;
+    gap: var(--moga-spacing-sm);
+    margin-top: var(--moga-spacing-sm);
+    padding-top: var(--moga-spacing-sm);
+    border-top: 1px solid var(--moga-gray-100);
+}
+
+.moga-vendor-contact__icon-btn {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    border-radius: var(--moga-border-radius);
+    border: 1.5px solid var(--moga-gray-300);
+    background-color: var(--moga-white);
+    color: var(--moga-gray-700);
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-vendor-contact__icon-btn:hover {
+    border-color: var(--moga-secondary);
+    color: var(--moga-secondary);
+    background-color: #eef6fd;
+}
+
+.moga-vendor-contact__icon-btn--whatsapp:hover {
+    border-color: #25d366;
+    color: #25d366;
+    background-color: #e7f9ee;
+}
+
+/* Faded/disabled — value not set, still clickable to show the tip. */
+.moga-vendor-contact__icon-btn.is-disabled {
+    /* opacity: 0.4; */
+    color: var(--moga-gray-500);
+}
+
+.moga-vendor-contact__icon-btn.is-disabled:hover {
+    border-color: var(--moga-gray-300);
+    color: var(--moga-gray-500);
+    background-color: var(--moga-white);
+}
+
+.moga-vendor-contact__tip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--moga-gray-900);
+    color: var(--moga-white);
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 6px 12px;
+    border-radius: var(--moga-border-radius);
+    box-shadow: var(--moga-shadow-md);
+    z-index: 10;
+    animation: moga-vendor-tip-in 0.15s ease;
+}
+
+.moga-vendor-contact__tip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--moga-gray-900);
+}
+
+@keyframes moga-vendor-tip-in {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* ============================================================
+   37. Honeypot (spam trap — must always be visually hidden)
+   ============================================================
+   Real fix for a real bug: this rule already existed in
+   contact.css, but that file only loads on the site-wide Contact
+   Us page, not here — so the honeypot field in
+   vendor-contact-form.php was rendering fully visible on single
+   property/tour pages. Same rule, scoped into the stylesheet
+   that's actually loaded where this form lives.
+   ============================================================ */
+
+.moga-contact-form__honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
 }

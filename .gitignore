@@ -134,3 +134,4 @@ error_log
 *.rarplugins/duplicate-post/ 
 plugins/duplicate-post/ 
 vendor/ 
+composer.json 

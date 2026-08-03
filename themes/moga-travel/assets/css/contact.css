@@ -1,0 +1,162 @@
+/**
+ * Moga Travel — Contact Page
+ *
+ * Path: themes/moga-travel/assets/css/contact.css
+ *
+ * Only the page-specific layout lives here (hero, info cards,
+ * map). Form field styling is intentionally NOT duplicated —
+ * template-contact.php wraps the form in .moga-account so it
+ * inherits all the input/button/notice styles already built in
+ * account.css, which is enqueued alongside this file.
+ *
+ * @package MogaTravel
+ * @since   1.0.0
+ */
+
+.moga-contact-hero {
+    background-color: var(--moga-primary);
+    padding: var(--moga-spacing-xxl) 0;
+    text-align: center;
+    color: var(--moga-white);
+}
+
+.moga-contact-hero__title {
+    font-size: 2.25rem;
+    font-weight: 800;
+    margin: 0 0 var(--moga-spacing-sm);
+}
+
+.moga-contact-hero__subtitle {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 560px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.moga-contact-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: var(--moga-spacing-xl);
+    padding: var(--moga-spacing-xxl) 0;
+}
+
+@media (max-width: 860px) {
+    .moga-contact-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================================
+   Info Cards
+   ============================================================ */
+
+.moga-contact-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-md);
+}
+
+.moga-contact-card {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-md);
+    padding: var(--moga-spacing-md);
+    background-color: var(--moga-white);
+    border: 1px solid var(--moga-gray-200);
+    border-radius: var(--moga-border-radius-lg);
+    box-shadow: var(--moga-shadow-md);
+    text-decoration: none;
+    transition: var(--moga-transition-fast);
+}
+
+a.moga-contact-card:hover {
+    border-color: var(--moga-secondary);
+    transform: translateY(-1px);
+    text-decoration: none;
+}
+
+.moga-contact-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: #eef6fd;
+    color: var(--moga-primary);
+    flex-shrink: 0;
+}
+
+.moga-contact-card__icon--whatsapp {
+    background-color: #e7f9ee;
+    color: #25d366;
+}
+
+.moga-contact-card__label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--moga-gray-500);
+}
+
+.moga-contact-card__value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+    word-break: break-word;
+}
+
+.moga-contact-card > span:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+/* ============================================================
+   Map
+   ============================================================ */
+
+.moga-contact-map {
+    border-radius: var(--moga-border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--moga-shadow-md);
+    height: 220px;
+}
+
+.moga-contact-map__iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+}
+
+/* ============================================================
+   Form Wrapper
+   ============================================================ */
+
+.moga-contact-form-wrap .moga-account {
+    height: 100%;
+}
+
+/* ============================================================
+   Honeypot (hidden from real visitors)
+   ============================================================ */
+
+.moga-contact-form__honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+/* ============================================================
+   RTL
+   ============================================================ */
+
+[dir="rtl"] .moga-contact-card {
+    flex-direction: row-reverse;
+    text-align: right;
+}

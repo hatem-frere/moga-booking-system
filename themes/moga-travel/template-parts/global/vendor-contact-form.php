@@ -12,18 +12,39 @@
  * single-moga_tour.php sidebars, right after each page's own
  * owner/organizer card.
  *
- * Expects these variables already set by the including template:
- *   $vendor_name     string  Display name shown in the form heading.
- *   $vendor_email    string  Resolved recipient — already run through
- *                            each page's own fallback chain (listing
- *                            override → vendor profile → nothing).
- *   $vendor_phone    string  Resolved phone, same fallback chain. May
- *                            be empty — the phone icon below the form
- *                            still renders, just faded/disabled.
- *   $vendor_whatsapp string  Resolved WhatsApp number, same pattern.
- *   $listing_title   string  Current listing's title, included in the
- *                            email subject so the vendor knows which
- *                            listing the message is about.
+ * Expects an $args array passed via get_template_part()'s third
+ * parameter — NOT loose local variables set by the caller. This
+ * matters: get_template_part() does not share the calling script's
+ * local scope the way a plain PHP include does — it routes through
+ * WordPress's own load_template() function first, which has its
+ * own separate scope. Only the $args array itself crosses that
+ * boundary. An earlier version of this file assumed loose variables
+ * would just be visible here; they never were, which silently
+ * broke the whole feature. Fixed by using $args properly:
+ *
+ *   get_template_part( 'template-parts/global/vendor-contact-form', null, array(
+ *       'vendor_name'     => $organizer_name,
+ *       'vendor_email'    => $organizer_email,
+ *       'vendor_phone'    => $organizer_phone,
+ *       'vendor_whatsapp' => $organizer_whatsapp,
+ *       'listing_title'   => $title,
+ *       'listing_type'    => 'tour',
+ *   ) );
+ *
+ * $args keys expected:
+ *   vendor_name     string  Display name shown in the form heading.
+ *   vendor_email    string  Resolved recipient — already run through
+ *                           each page's own fallback chain (listing
+ *                           override → vendor profile → nothing).
+ *   vendor_phone    string  Resolved phone, same fallback chain. May
+ *                           be empty — the phone icon below the form
+ *                           still renders, just faded/disabled.
+ *   vendor_whatsapp string  Resolved WhatsApp number, same pattern.
+ *   listing_title   string  Current listing's title, included in the
+ *                           email subject so the vendor knows which
+ *                           listing the message is about.
+ *   listing_type    string  'property' or 'tour' — drives the
+ *                           "Property Title:" / "Tour Title:" wording.
  *
  * Self-processing, same pattern as Moga_Shortcode_Contact — no
  * admin-post.php dependency, honeypot spam protection, no
@@ -37,20 +58,17 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-// This template is always included via get_template_part() from
-// single-moga_property.php / single-moga_tour.php, which set these
-// three variables immediately beforehand — PHP's include mechanism
-// shares that calling scope, so this already works correctly at
-// runtime. The lines below exist so this file also declares them
-// within its own visible scope (silences an editor cross-file
-// blind spot) and so it degrades gracefully if ever included
-// somewhere that forgets to set one.
-$vendor_name    = $vendor_name ?? '';
-$vendor_email   = $vendor_email ?? '';
-$vendor_phone   = $vendor_phone ?? '';
-$vendor_whatsapp = $vendor_whatsapp ?? '';
-$listing_title  = $listing_title ?? get_the_title();
-$listing_type   = $listing_type ?? 'property';
+// $args comes from get_template_part()'s third parameter — see the
+// docblock above for why this, and not loose local variables, is
+// the only thing that actually crosses into this file's scope.
+$args = isset($args) && is_array($args) ? $args : array();
+
+$vendor_name     = isset($args['vendor_name'])     ? $args['vendor_name']     : '';
+$vendor_email    = isset($args['vendor_email'])    ? $args['vendor_email']    : '';
+$vendor_phone    = isset($args['vendor_phone'])    ? $args['vendor_phone']    : '';
+$vendor_whatsapp = isset($args['vendor_whatsapp']) ? $args['vendor_whatsapp'] : '';
+$listing_title   = isset($args['listing_title'])   ? $args['listing_title']   : get_the_title();
+$listing_type    = isset($args['listing_type'])    ? $args['listing_type']    : 'property';
 
 if (empty($vendor_email)) {
     return; // Nothing to send to — no vendor email resolved anywhere in the fallback chain.
@@ -169,7 +187,7 @@ if (
                 <textarea id="moga_vendor_contact_message" name="moga_vendor_contact_message" rows="4" required></textarea>
             </div>
 
-            <button type="submit" class="moga-btn moga-btn--secondary moga-w-100">
+            <button type="submit" class="moga-btn moga-btn--primary moga-w-100 moga-booking-form__submit">
                 <?php esc_html_e('Send Message', 'moga-travel'); ?>
             </button>
         </form>
@@ -194,7 +212,7 @@ if (
             data-href="<?php echo $vendor_whatsapp ? esc_url('https://wa.me/' . preg_replace('/\D/', '', $vendor_whatsapp)) : ''; ?>"
             data-empty-message="<?php esc_attr_e('The partner does not have a WhatsApp number.', 'moga-travel'); ?>"
             aria-label="<?php esc_attr_e('WhatsApp', 'moga-travel'); ?>">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#49C95A" aria-hidden="true">
                 <path d="M17.6 6.3a8.9 8.9 0 0 0-14.2 10.7L2 22l5.2-1.4A8.9 8.9 0 0 0 17.6 6.3zM12 20.2a7.3 7.3 0 0 1-3.7-1l-.3-.2-2.7.7.7-2.6-.2-.3a7.3 7.3 0 1 1 13.6-3.7 7.3 7.3 0 0 1-7.4 7.1zm4-5.5c-.2-.1-1.3-.6-1.5-.7-.2-.1-.3-.1-.5.1s-.6.7-.7.8-.3.2-.5.1a6 6 0 0 1-1.8-1.1 6.7 6.7 0 0 1-1.2-1.5c-.1-.2 0-.3.1-.5l.4-.4c.1-.1.1-.2.2-.4s0-.3 0-.4l-.7-1.6c-.2-.4-.4-.4-.5-.4h-.5a.9.9 0 0 0-.6.3 2.7 2.7 0 0 0-.8 2 4.7 4.7 0 0 0 1 2.5 10.7 10.7 0 0 0 4.1 3.6c.6.2 1 .4 1.4.5a3.3 3.3 0 0 0 1.5.1 2.5 2.5 0 0 0 1.6-1.1 1.9 1.9 0 0 0 .1-1.1c-.1-.1-.2-.2-.4-.3z" />
             </svg>
         </button>

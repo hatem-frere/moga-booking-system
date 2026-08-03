@@ -5,13 +5,14 @@
    Version:     1.0.0
    ============================================================ */
 
-
 /* ============================================================
    01. Header
    ============================================================ */
 .moga-header {
     background-color: var(--moga-header-bg);
     height: var(--moga-header-height);
+    display: flex;
+    align-items: center;
     position: sticky;
     top: 0;
     z-index: var(--moga-z-sticky);
@@ -185,6 +186,7 @@
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    z-index: 10000;
 }
 
 .moga-header__dropdown a {
@@ -209,14 +211,13 @@
     margin: var(--moga-spacing-xs) 0;
 }
 
-
 /* ============================================================
    02. Main Navigation
    ============================================================ */
 .moga-header__nav {
     flex: 1;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
 }
 
 .moga-nav__list {
@@ -289,7 +290,6 @@
     text-decoration: none;
 }
 
-
 /* ============================================================
    03. Mobile Menu Toggle
    ============================================================ */
@@ -329,14 +329,20 @@
     transform: translateY(-7px) rotate(-45deg);
 }
 
-
 /* ============================================================
    04. Mobile Menu Panel
    ============================================================ */
 .moga-mobile-menu {
     display: none;
     position: fixed;
-    top: var(--moga-header-height);
+    /* Was: top: var(--moga-header-height);
+       Now accounts for BOTH stacked bars (header-top + the
+       category bar) since there used to be only one. 60px matches
+       the explicit height set on .moga-header-top below — if you
+       later move that into a root variable in main.css, update
+       this calc() to match rather than leaving two hardcoded
+       numbers that could drift out of sync. */
+    top: calc(60px + var(--moga-header-height));
     left: 0;
     right: 0;
     bottom: 0;
@@ -373,4 +379,86 @@
     display: flex;
     flex-direction: column;
     gap: var(--moga-spacing-sm);
+}
+
+/* ============================================================
+   05. Header Top Bar (Booking.com-style utility row)
+   ============================================================ */
+
+.moga-header-top {
+    display: flex;
+    align-items: center;
+    background-color: var(--moga-header-bg);
+    height: var(
+        --moga-header-top-height
+    ); /* See note on .moga-mobile-menu top offset above if this changes. */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.moga-header-top__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    gap: var(--moga-spacing-lg);
+}
+
+.moga-header-top__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+    flex-shrink: 0;
+}
+
+.moga-header-top__icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: var(--moga-white);
+    transition: var(--moga-transition-fast);
+}
+
+.moga-header-top__icon-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: var(--moga-white);
+    text-decoration: none;
+}
+
+.moga-header-top__partner-btn {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--moga-white);
+    padding: 7px var(--moga-spacing-md);
+    border-radius: var(--moga-border-radius);
+    transition: var(--moga-transition-fast);
+    white-space: nowrap;
+}
+
+.moga-header-top__partner-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: var(--moga-white);
+    text-decoration: none;
+}
+
+/* ============================================================
+   06. RTL
+   ============================================================ */
+
+[dir="rtl"] .moga-header-top__actions,
+[dir="rtl"] .moga-header__user,
+[dir="rtl"] .moga-nav__item > a {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .moga-header__dropdown {
+    right: auto;
+    left: 0;
+}
+
+[dir="rtl"] .moga-nav__item .sub-menu {
+    left: auto;
+    right: 0;
 }

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Account Shortcode — Registration, Login, Profile
+ * Account Shortcode — Registration, Login, Profile.
  *
  * Path: plugins/moga-travel-core/includes/shortcodes/class-moga-shortcode-account.php
  *

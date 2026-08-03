@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Activator Class
  *
@@ -11,14 +12,15 @@
  * @since      1.0.0
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
     exit;
 }
 
 /**
  * Class Moga_Activator
  */
-class Moga_Activator {
+class Moga_Activator
+{
 
     /**
      * Main activation method.
@@ -26,13 +28,22 @@ class Moga_Activator {
      * @since  1.0.0
      * @return void
      */
-    public static function activate() {
+    public static function activate()
+    {
         self::create_tables();
         self::set_default_options();
         self::create_pages();
-        self::setup_roles();
-        update_option( 'moga_core_version', MOGA_CORE_VERSION );
-        update_option( 'moga_core_activated_at', current_time( 'mysql' ) );
+        // Role definitions live in Moga_Roles now, not here — that class
+        // also re-syncs automatically on every 'init' if its version
+        // number changes, so role/capability fixes never require a
+        // deactivate/reactivate cycle. Called here too so roles exist
+        // immediately on first activation, without waiting for the
+        // next page load.
+        if (class_exists('Moga_Roles')) {
+            Moga_Roles::setup_roles();
+        }
+        update_option('moga_core_version', MOGA_CORE_VERSION);
+        update_option('moga_core_activated_at', current_time('mysql'));
         flush_rewrite_rules();
     }
 
@@ -49,7 +60,8 @@ class Moga_Activator {
      * @since  1.0.0
      * @return void
      */
-    private static function create_tables() {
+    private static function create_tables()
+    {
         global $wpdb;
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -323,17 +335,17 @@ class Moga_Activator {
             KEY idx_name (name)
         ) $charset_collate;";
 
-        dbDelta( $sql_bookings );
-        dbDelta( $sql_booking_meta );
-        dbDelta( $sql_availability );
-        dbDelta( $sql_seats );
-        dbDelta( $sql_payments );
-        dbDelta( $sql_reviews );
-        dbDelta( $sql_commissions );
-        dbDelta( $sql_loc_countries );
-        dbDelta( $sql_loc_provinces );
-        dbDelta( $sql_loc_cities );
-        dbDelta( $sql_loc_districts );
+        dbDelta($sql_bookings);
+        dbDelta($sql_booking_meta);
+        dbDelta($sql_availability);
+        dbDelta($sql_seats);
+        dbDelta($sql_payments);
+        dbDelta($sql_reviews);
+        dbDelta($sql_commissions);
+        dbDelta($sql_loc_countries);
+        dbDelta($sql_loc_provinces);
+        dbDelta($sql_loc_cities);
+        dbDelta($sql_loc_districts);
     }
 
 
@@ -347,7 +359,8 @@ class Moga_Activator {
      * @since  1.0.0
      * @return void
      */
-    private static function set_default_options() {
+    private static function set_default_options()
+    {
 
         $defaults = array(
             'moga_currency'           => 'USD',
@@ -368,17 +381,26 @@ class Moga_Activator {
             'moga_notify_email'       => '1',
             'moga_notify_sms'         => '0',
             'moga_notify_whatsapp'    => '0',
-            'moga_admin_email'        => get_option( 'admin_email' ),
+            'moga_admin_email'        => get_option('admin_email'),
             'moga_maps_provider'      => 'openstreetmap',
             'moga_default_language'   => 'en',
             'moga_rtl_support'        => '1',
+            // Contact page details — no Settings UI exists yet to manage
+            // these visually, update directly via the database until it
+            // does. Lat/lng default to Cairo (primary market) so the map
+            // renders something sensible immediately rather than blank.
+            'moga_contact_phone'      => '',
+            'moga_contact_whatsapp'   => '',
+            'moga_contact_address'    => '',
+            'moga_contact_lat'        => '30.0444',
+            'moga_contact_lng'        => '31.2357',
             // Location system — tracks whether admin has run the import wizard.
             // 0 = not imported, 1 = import complete.
             'moga_locations_imported' => '0',
         );
 
-        foreach ( $defaults as $key => $value ) {
-            add_option( $key, $value );
+        foreach ($defaults as $key => $value) {
+            add_option($key, $value);
         }
     }
 
@@ -393,42 +415,48 @@ class Moga_Activator {
      * @since  1.0.0
      * @return void
      */
-    private static function create_pages() {
+    private static function create_pages()
+    {
 
         $pages = array(
             array(
-                'title'   => __( 'Search Results', 'moga-travel-core' ),
+                'title'   => __('Search Results', 'moga-travel-core'),
                 'slug'    => 'search-results',
                 'content' => '[moga_search_results]',
             ),
             array(
-                'title'   => __( 'Booking', 'moga-travel-core' ),
+                'title'   => __('Booking', 'moga-travel-core'),
                 'slug'    => 'booking',
                 'content' => '[moga_booking_form]',
             ),
             array(
-                'title'   => __( 'My Account', 'moga-travel-core' ),
+                'title'   => __('My Account', 'moga-travel-core'),
                 'slug'    => 'my-account',
                 'content' => '[moga_account]',
             ),
             array(
-                'title'   => __( 'Owner Dashboard', 'moga-travel-core' ),
+                'title'   => __('Contact Us', 'moga-travel-core'),
+                'slug'    => 'contact',
+                'content' => '[moga_contact_form]',
+            ),
+            array(
+                'title'   => __('Owner Dashboard', 'moga-travel-core'),
                 'slug'    => 'dashboard',
                 'content' => '[moga_dashboard]',
             ),
             array(
-                'title'   => __( 'Checkout', 'moga-travel-core' ),
+                'title'   => __('Checkout', 'moga-travel-core'),
                 'slug'    => 'checkout',
                 'content' => '[moga_checkout]',
             ),
             array(
-                'title'   => __( 'Booking Confirmation', 'moga-travel-core' ),
+                'title'   => __('Booking Confirmation', 'moga-travel-core'),
                 'slug'    => 'booking-confirmation',
                 'content' => '[moga_booking_confirmation]',
             ),
         );
 
-        foreach ( $pages as $page ) {
+        foreach ($pages as $page) {
             self::create_page_if_not_exists(
                 $page['title'],
                 $page['slug'],
@@ -446,19 +474,20 @@ class Moga_Activator {
      * @param  string $content Page content.
      * @return int|WP_Error
      */
-    private static function create_page_if_not_exists( $title, $slug, $content ) {
+    private static function create_page_if_not_exists($title, $slug, $content)
+    {
 
-        $existing = get_page_by_path( $slug );
+        $existing = get_page_by_path($slug);
 
-        if ( $existing ) {
+        if ($existing) {
             update_option(
-                'moga_page_' . str_replace( '-', '_', $slug ),
+                'moga_page_' . str_replace('-', '_', $slug),
                 $existing->ID
             );
             return $existing->ID;
         }
 
-        $page_id = wp_insert_post( array(
+        $page_id = wp_insert_post(array(
             'post_title'     => $title,
             'post_name'      => $slug,
             'post_content'   => $content,
@@ -466,11 +495,11 @@ class Moga_Activator {
             'post_type'      => 'page',
             'post_author'    => 1,
             'comment_status' => 'closed',
-        ) );
+        ));
 
-        if ( ! is_wp_error( $page_id ) ) {
+        if (! is_wp_error($page_id)) {
             update_option(
-                'moga_page_' . str_replace( '-', '_', $slug ),
+                'moga_page_' . str_replace('-', '_', $slug),
                 $page_id
             );
         }
@@ -482,60 +511,9 @@ class Moga_Activator {
     // ============================================================
     // USER ROLES
     // ============================================================
-
-    /**
-     * Add custom user roles and capabilities.
-     *
-     * @since  1.0.0
-     * @return void
-     */
-    private static function setup_roles() {
-
-        add_role(
-            'moga_owner',
-            __( 'Property Owner', 'moga-travel-core' ),
-            array(
-                'read'                     => true,
-                'moga_manage_properties'   => true,
-                'moga_manage_tours'        => true,
-                'moga_manage_buses'        => true,
-                'moga_view_bookings'       => true,
-                'moga_manage_availability' => true,
-                'moga_view_earnings'       => true,
-            )
-        );
-
-        add_role(
-            'moga_guest',
-            __( 'Guest', 'moga-travel-core' ),
-            array(
-                'read'                 => true,
-                'moga_make_booking'    => true,
-                'moga_view_bookings'   => true,
-                'moga_write_reviews'   => true,
-                'moga_manage_wishlist' => true,
-            )
-        );
-
-        $admin = get_role( 'administrator' );
-        if ( $admin ) {
-            $caps = array(
-                'moga_manage_properties',
-                'moga_manage_tours',
-                'moga_manage_buses',
-                'moga_view_bookings',
-                'moga_manage_bookings',
-                'moga_manage_availability',
-                'moga_view_earnings',
-                'moga_manage_commissions',
-                'moga_manage_settings',
-                'moga_make_booking',
-                'moga_write_reviews',
-                'moga_manage_wishlist',
-            );
-            foreach ( $caps as $cap ) {
-                $admin->add_cap( $cap );
-            }
-        }
-    }
+    //
+    // Moved to Moga_Roles::setup_roles() (includes/classes/class-moga-roles.php).
+    // That class also re-syncs automatically on every 'init' if its
+    // ROLES_VERSION constant changes, unlike this one-time activation
+    // routine — see that file's header for why the split was needed.
 }

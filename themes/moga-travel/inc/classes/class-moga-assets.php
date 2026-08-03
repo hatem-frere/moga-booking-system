@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Theme Assets Class
  *
@@ -12,14 +13,15 @@
  */
 
 // Block direct access.
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
     exit;
 }
 
 /**
  * Class Moga_Assets
  */
-class Moga_Assets {
+class Moga_Assets
+{
 
     /**
      * intl-tel-input library version.
@@ -60,7 +62,8 @@ class Moga_Assets {
      * @since  1.0.0
      * @return void
      */
-    public static function enqueue_frontend() {
+    public static function enqueue_frontend()
+    {
 
         self::register_vendor_assets();
         self::enqueue_frontend_styles();
@@ -74,7 +77,8 @@ class Moga_Assets {
      * @since  1.0.0
      * @return void
      */
-    public static function enqueue_admin() {
+    public static function enqueue_admin()
+    {
 
         self::register_vendor_assets();
         self::enqueue_admin_styles();
@@ -99,7 +103,8 @@ class Moga_Assets {
      * @since  1.0.0
      * @return void
      */
-    private static function register_vendor_assets() {
+    private static function register_vendor_assets()
+    {
 
         $vendor_css = MOGA_THEME_URL . 'assets/css/vendor/';
         $vendor_js  = MOGA_THEME_URL . 'assets/js/vendor/';
@@ -187,14 +192,16 @@ class Moga_Assets {
      *   7. search.css     — search results page + all card styles
      *   8. booking.css    — single property/tour page styles
      *   9. account.css    — login/register/profile page
-     *  10. dashboard.css  — owner dashboard styles
-     *  11. responsive.css — all media queries (always last)
-     *  12. rtl.css        — RTL overrides (if RTL language)
+     *  10. contact.css    — contact page (loads account.css as a dependency for form fields)
+     *  11. dashboard.css  — owner dashboard styles
+     *  12. responsive.css — all media queries (always last)
+     *  13. rtl.css        — RTL overrides (if RTL language)
      *
      * @since  1.0.0
      * @return void
      */
-    private static function enqueue_frontend_styles() {
+    private static function enqueue_frontend_styles()
+    {
 
         $ver = MOGA_THEME_VERSION;
         $css = MOGA_THEME_URL . 'assets/css/';
@@ -211,7 +218,7 @@ class Moga_Assets {
         wp_enqueue_style(
             'moga-main',
             $css . 'main.css',
-            array( 'moga-google-fonts' ),
+            array('moga-google-fonts'),
             $ver
         );
 
@@ -219,7 +226,7 @@ class Moga_Assets {
         wp_enqueue_style(
             'moga-components',
             $css . 'components.css',
-            array( 'moga-main' ),
+            array('moga-main'),
             $ver
         );
 
@@ -227,7 +234,7 @@ class Moga_Assets {
         wp_enqueue_style(
             'moga-header',
             $css . 'header.css',
-            array( 'moga-main' ),
+            array('moga-main'),
             $ver
         );
 
@@ -235,71 +242,89 @@ class Moga_Assets {
         wp_enqueue_style(
             'moga-footer',
             $css . 'footer.css',
-            array( 'moga-main' ),
+            array('moga-main'),
             $ver
         );
 
         // Home page styles — only on the homepage.
         // Also loads search.css for property card styles used in
         // the Featured Properties section (badges, ratings, etc.).
-        if ( is_front_page() || is_page_template( 'page-templates/template-home.php' ) ) {
+        if (is_front_page() || is_page_template('page-templates/template-home.php')) {
             wp_enqueue_style(
                 'moga-home',
                 $css . 'home.css',
-                array( 'moga-main', 'moga-components' ),
+                array('moga-main', 'moga-components'),
                 $ver
             );
             wp_enqueue_style(
                 'moga-search',
                 $css . 'search.css',
-                array( 'moga-main', 'moga-components' ),
+                array('moga-main', 'moga-components'),
                 $ver
             );
         }
 
         // Search results page styles.
-        if ( self::is_search_page() ) {
+        if (self::is_search_page()) {
             wp_enqueue_style(
                 'moga-search',
                 $css . 'search.css',
-                array( 'moga-main', 'moga-components' ),
+                array('moga-main', 'moga-components'),
                 $ver
             );
         }
 
         // Gallery pages — GLightbox CSS on property/tour/destination singles.
-        if ( self::is_gallery_page() ) {
-            wp_enqueue_style( 'glightbox' );
+        if (self::is_gallery_page()) {
+            wp_enqueue_style('glightbox');
         }
 
         // Single property / tour pages — booking.css + Flatpickr + intl-tel-input.
-        if ( self::is_booking_page() ) {
+        if (self::is_booking_page()) {
             wp_enqueue_style(
                 'moga-booking',
                 $css . 'booking.css',
-                array( 'moga-main', 'moga-components' ),
+                array('moga-main', 'moga-components'),
                 $ver
             );
-            wp_enqueue_style( 'flatpickr' );
-            wp_enqueue_style( 'intl-tel-input' );
+            wp_enqueue_style('flatpickr');
+            wp_enqueue_style('intl-tel-input');
         }
 
         // Account page styles — login/register/profile only.
-        if ( self::is_account_page() ) {
+        if (self::is_account_page()) {
             wp_enqueue_style(
                 'moga-account',
                 $css . 'account.css',
-                array( 'moga-main', 'moga-components' ),
+                array('moga-main', 'moga-components'),
+                $ver
+            );
+        }
+
+        // Contact page styles — reuses account.css for form field
+        // styling (loaded as a dependency) plus its own layout CSS
+        // for the hero/info-cards/map that account.css doesn't have.
+        if (self::is_contact_page()) {
+            wp_enqueue_style(
+                'moga-account',
+                $css . 'account.css',
+                array('moga-main', 'moga-components'),
+                $ver
+            );
+            wp_enqueue_style(
+                'moga-contact',
+                $css . 'contact.css',
+                array('moga-main', 'moga-components', 'moga-account'),
                 $ver
             );
         }
 
         // Dashboard styles — only on dashboard pages.
-        if ( self::is_dashboard_page() ) {
+        if (self::is_dashboard_page()) {
             wp_enqueue_style(
                 'moga-dashboard',
                 $css . 'dashboard.css',
-                array( 'moga-main', 'moga-components' ),
+                array('moga-main', 'moga-components'),
                 $ver
             );
         }
@@ -308,16 +333,16 @@ class Moga_Assets {
         wp_enqueue_style(
             'moga-responsive',
             $css . 'responsive.css',
-            array( 'moga-main' ),
+            array('moga-main'),
             $ver
         );
 
         // RTL support — only if current language is RTL (e.g. Arabic).
-        if ( is_rtl() ) {
+        if (is_rtl()) {
             wp_enqueue_style(
                 'moga-rtl',
                 $css . 'rtl.css',
-                array( 'moga-main' ),
+                array('moga-main'),
                 $ver
             );
         }
@@ -334,7 +359,8 @@ class Moga_Assets {
      * @since  1.0.0
      * @return void
      */
-    private static function enqueue_frontend_scripts() {
+    private static function enqueue_frontend_scripts()
+    {
 
         $ver = MOGA_THEME_VERSION;
         $js  = MOGA_THEME_URL . 'assets/js/';
@@ -343,40 +369,40 @@ class Moga_Assets {
         wp_enqueue_script(
             'moga-main',
             $js . 'main.js',
-            array( 'jquery' ),
+            array('jquery'),
             $ver,
             true
         );
 
         // Search results page script.
-        if ( self::is_search_page() ) {
+        if (self::is_search_page()) {
             wp_enqueue_script(
                 'moga-search',
                 $js . 'search.js',
-                array( 'jquery', 'moga-main' ),
+                array('jquery', 'moga-main'),
                 $ver,
                 true
             );
         }
 
         // Gallery pages — GLightbox JS on property/tour/destination singles.
-        if ( self::is_gallery_page() ) {
-            wp_enqueue_script( 'glightbox' );
+        if (self::is_gallery_page()) {
+            wp_enqueue_script('glightbox');
         }
 
         // Single property / tour pages — booking.js with all dependencies.
         // Dependencies include flatpickr and glightbox so WordPress guarantees
         // they are loaded before booking.js runs.
-        if ( self::is_booking_page() ) {
-            wp_enqueue_script( 'flatpickr' );
+        if (self::is_booking_page()) {
+            wp_enqueue_script('flatpickr');
             wp_enqueue_script(
                 'moga-booking',
                 $js . 'booking.js',
-                array( 'jquery', 'moga-main', 'flatpickr', 'glightbox' ),
+                array('jquery', 'moga-main', 'flatpickr', 'glightbox'),
                 $ver,
                 true
             );
-            wp_enqueue_script( 'intl-tel-input' );
+            wp_enqueue_script('intl-tel-input');
             wp_localize_script(
                 'intl-tel-input',
                 'mogaItiData',
@@ -387,11 +413,11 @@ class Moga_Assets {
         }
 
         // Seat map script — only on tour/bus booking pages.
-        if ( self::is_seat_map_page() ) {
+        if (self::is_seat_map_page()) {
             wp_enqueue_script(
                 'moga-seat-map',
                 $js . 'seat-map.js',
-                array( 'jquery', 'moga-main' ),
+                array('jquery', 'moga-main'),
                 $ver,
                 true
             );
@@ -402,20 +428,20 @@ class Moga_Assets {
             'moga-main',
             'mogaData',
             array(
-                'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
-                'restUrl'        => rest_url( 'moga/v1/' ),
-                'nonce'          => wp_create_nonce( 'moga_nonce' ),
+                'ajaxUrl'        => admin_url('admin-ajax.php'),
+                'restUrl'        => rest_url('moga/v1/'),
+                'nonce'          => wp_create_nonce('moga_nonce'),
                 'siteUrl'        => home_url(),
-                'currency'       => get_option( 'moga_currency', 'USD' ),
-                'currencySymbol' => get_option( 'moga_currency_symbol', '$' ),
+                'currency'       => get_option('moga_currency', 'USD'),
+                'currencySymbol' => get_option('moga_currency_symbol', '$'),
                 'isLoggedIn'     => is_user_logged_in(),
                 'userId'         => get_current_user_id(),
                 'i18n'           => array(
-                    'loading'    => __( 'Loading...', 'moga-travel' ),
-                    'error'      => __( 'Something went wrong. Please try again.', 'moga-travel' ),
-                    'confirm'    => __( 'Are you sure?', 'moga-travel' ),
-                    'seatTaken'  => __( 'This seat is already taken.', 'moga-travel' ),
-                    'seatLocked' => __( 'This seat is temporarily reserved.', 'moga-travel' ),
+                    'loading'    => __('Loading...', 'moga-travel'),
+                    'error'      => __('Something went wrong. Please try again.', 'moga-travel'),
+                    'confirm'    => __('Are you sure?', 'moga-travel'),
+                    'seatTaken'  => __('This seat is already taken.', 'moga-travel'),
+                    'seatLocked' => __('This seat is temporarily reserved.', 'moga-travel'),
                 ),
             )
         );
@@ -432,19 +458,20 @@ class Moga_Assets {
      * @since  1.0.0
      * @return void
      */
-    private static function enqueue_admin_styles() {
+    private static function enqueue_admin_styles()
+    {
 
         // intl-tel-input CSS — for phone fields in meta boxes.
-        wp_enqueue_style( 'intl-tel-input' );
+        wp_enqueue_style('intl-tel-input');
 
         // Fix flags path — override CSS variable to correct absolute URL.
         // intlTelInput.min.css uses relative ../img/ path which breaks
         // when loaded through WordPress. We override with absolute URL.
         $flags_url  = MOGA_THEME_URL . 'assets/css/vendor/intl-tel-input/img/';
-        $inline_css  = '.iti { --iti-path-flags-1x: url("' . esc_url( $flags_url . 'flags.webp' ) . '"); }';
-        $inline_css .= '.iti { --iti-path-flags-2x: url("' . esc_url( $flags_url . 'flags@2x.webp' ) . '"); }';
+        $inline_css  = '.iti { --iti-path-flags-1x: url("' . esc_url($flags_url . 'flags.webp') . '"); }';
+        $inline_css .= '.iti { --iti-path-flags-2x: url("' . esc_url($flags_url . 'flags@2x.webp') . '"); }';
 
-        wp_add_inline_style( 'intl-tel-input', $inline_css );
+        wp_add_inline_style('intl-tel-input', $inline_css);
     }
 
     /**
@@ -453,10 +480,11 @@ class Moga_Assets {
      * @since  1.0.0
      * @return void
      */
-    private static function enqueue_admin_scripts() {
+    private static function enqueue_admin_scripts()
+    {
 
         // intl-tel-input JS — for phone fields in meta boxes.
-        wp_enqueue_script( 'intl-tel-input' );
+        wp_enqueue_script('intl-tel-input');
 
         // Pass utils.js path to JavaScript for intl-tel-input init in admin.
         wp_localize_script(
@@ -479,10 +507,11 @@ class Moga_Assets {
      * @since  1.0.0
      * @return bool
      */
-    private static function is_search_page() {
+    private static function is_search_page()
+    {
 
-        return is_page_template( 'page-templates/template-search.php' )
-            || is_page( get_option( 'moga_page_search_results' ) );
+        return is_page_template('page-templates/template-search.php')
+            || is_page(get_option('moga_page_search_results'));
     }
 
     /**
@@ -492,11 +521,12 @@ class Moga_Assets {
      * @since  1.0.0
      * @return bool
      */
-    private static function is_gallery_page() {
+    private static function is_gallery_page()
+    {
 
-        return is_singular( 'moga_property' )
-            || is_singular( 'moga_tour' )
-            || is_singular( 'moga_destination' );
+        return is_singular('moga_property')
+            || is_singular('moga_tour')
+            || is_singular('moga_destination');
     }
 
     /**
@@ -506,17 +536,18 @@ class Moga_Assets {
      * @since  1.0.0
      * @return bool
      */
-    private static function is_booking_page() {
+    private static function is_booking_page()
+    {
 
         $booking_pages = array(
-            get_option( 'moga_page_booking' ),
-            get_option( 'moga_page_checkout' ),
-            get_option( 'moga_page_booking_confirmation' ),
+            get_option('moga_page_booking'),
+            get_option('moga_page_checkout'),
+            get_option('moga_page_booking_confirmation'),
         );
 
-        return is_page( $booking_pages )
-            || is_singular( 'moga_property' )
-            || is_singular( 'moga_tour' );
+        return is_page($booking_pages)
+            || is_singular('moga_property')
+            || is_singular('moga_tour');
     }
 
     /**
@@ -525,10 +556,24 @@ class Moga_Assets {
      * @since  1.0.0
      * @return bool
      */
-    private static function is_account_page() {
+    private static function is_account_page()
+    {
 
-        return is_page_template( 'page-templates/template-account.php' )
-            || is_page( get_option( 'moga_page_my_account' ) );
+        return is_page_template('page-templates/template-account.php')
+            || is_page(get_option('moga_page_my_account'));
+    }
+
+    /**
+     * Check if current page is the Contact Us page.
+     *
+     * @since  1.0.0
+     * @return bool
+     */
+    private static function is_contact_page()
+    {
+
+        return is_page_template('page-templates/template-contact.php')
+            || is_page(get_option('moga_page_contact'));
     }
 
     /**
@@ -537,14 +582,15 @@ class Moga_Assets {
      * @since  1.0.0
      * @return bool
      */
-    private static function is_dashboard_page() {
+    private static function is_dashboard_page()
+    {
 
         $dashboard_pages = array(
-            get_option( 'moga_page_dashboard' ),
-            get_option( 'moga_page_my_account' ),
+            get_option('moga_page_dashboard'),
+            get_option('moga_page_my_account'),
         );
 
-        return is_page( $dashboard_pages );
+        return is_page($dashboard_pages);
     }
 
     /**
@@ -553,9 +599,10 @@ class Moga_Assets {
      * @since  1.0.0
      * @return bool
      */
-    private static function is_seat_map_page() {
+    private static function is_seat_map_page()
+    {
 
-        return is_singular( 'moga_tour' )
-            || is_page( get_option( 'moga_page_booking' ) );
+        return is_singular('moga_tour')
+            || is_page(get_option('moga_page_booking'));
     }
 }
