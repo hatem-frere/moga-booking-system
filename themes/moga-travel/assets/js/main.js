@@ -14,14 +14,13 @@
  * @since   1.0.0
  */
 
-( function( $ ) {
-    'use strict';
+(function ($) {
+    "use strict";
 
     // ============================================================
     // DOCUMENT READY
     // ============================================================
-    $( document ).ready( function() {
-
+    $(document).ready(function () {
         Moga.mobileMenu.init();
         Moga.dropdown.init();
         Moga.stickyHeader.init();
@@ -29,301 +28,311 @@
         Moga.backToTop.init();
         Moga.smoothScroll.init();
         Moga.searchTabs.init();
-
-    } );
-
+    });
 
     // ============================================================
     // MOGA NAMESPACE
     // ============================================================
     window.Moga = window.Moga || {};
 
-
     // ============================================================
     // 01. MOBILE MENU
     // ============================================================
     Moga.mobileMenu = {
+        toggle: $("#moga-nav-toggle"),
+        menu: $("#moga-mobile-menu"),
+        backdrop: $("#moga-mobile-menu-backdrop"),
+        closeBtn: $("#moga-mobile-menu-close"),
+        isOpen: false,
 
-        toggle:   $( '#moga-nav-toggle' ),
-        menu:     $( '#moga-mobile-menu' ),
-        isOpen:   false,
-
-        init: function() {
-            if ( ! this.toggle.length ) return;
+        init: function () {
+            if (!this.toggle.length) return;
             this.bindEvents();
         },
 
-        bindEvents: function() {
+        bindEvents: function () {
             var self = this;
 
             // Toggle button click.
-            this.toggle.on( 'click', function() {
+            this.toggle.on("click", function () {
                 self.isOpen ? self.close() : self.open();
-            } );
+            });
+
+            // X close button — added when the panel got its own header.
+            this.closeBtn.on("click", function () {
+                self.close();
+            });
+
+            // Backdrop click also closes — in addition to the existing
+            // outside-click handler below (which already covers this
+            // case too, since the backdrop isn't inside #moga-mobile-menu
+            // or #moga-nav-toggle) — kept explicit for clarity.
+            this.backdrop.on("click", function () {
+                self.close();
+            });
 
             // Close on outside click.
-            $( document ).on( 'click', function( e ) {
-                if ( self.isOpen
-                    && ! $( e.target ).closest( '#moga-mobile-menu, #moga-nav-toggle' ).length
+            $(document).on("click", function (e) {
+                if (
+                    self.isOpen &&
+                    !$(e.target).closest("#moga-mobile-menu, #moga-nav-toggle")
+                        .length
                 ) {
                     self.close();
                 }
-            } );
+            });
 
             // Close on ESC key.
-            $( document ).on( 'keydown', function( e ) {
-                if ( e.key === 'Escape' && self.isOpen ) {
+            $(document).on("keydown", function (e) {
+                if (e.key === "Escape" && self.isOpen) {
                     self.close();
                     self.toggle.focus();
                 }
-            } );
+            });
         },
 
-        open: function() {
+        open: function () {
             this.isOpen = true;
-            this.toggle.addClass( 'is-open' ).attr( 'aria-expanded', 'true' );
-            this.menu.addClass( 'is-open' ).attr( 'aria-hidden', 'false' );
-            $( 'body' ).addClass( 'moga-menu-open' );
+            this.toggle.addClass("is-open").attr("aria-expanded", "true");
+            this.menu.addClass("is-open").attr("aria-hidden", "false");
+            this.backdrop.addClass("is-open");
+            $("body").addClass("moga-menu-open");
         },
 
-        close: function() {
+        close: function () {
             this.isOpen = false;
-            this.toggle.removeClass( 'is-open' ).attr( 'aria-expanded', 'false' );
-            this.menu.removeClass( 'is-open' ).attr( 'aria-hidden', 'true' );
-            $( 'body' ).removeClass( 'moga-menu-open' );
+            this.toggle.removeClass("is-open").attr("aria-expanded", "false");
+            this.menu.removeClass("is-open").attr("aria-hidden", "true");
+            this.backdrop.removeClass("is-open");
+            $("body").removeClass("moga-menu-open");
         },
     };
-
 
     // ============================================================
     // 02. DROPDOWN MENUS
     // ============================================================
     Moga.dropdown = {
-
-        init: function() {
+        init: function () {
             this.bindAvatarDropdown();
         },
 
-        bindAvatarDropdown: function() {
-            var btn      = $( '.moga-header__avatar-btn' );
-            var dropdown = $( '.moga-header__dropdown' );
+        bindAvatarDropdown: function () {
+            var btn = $(".moga-header__avatar-btn");
+            var dropdown = $(".moga-header__dropdown");
 
-            if ( ! btn.length ) return;
+            if (!btn.length) return;
 
-            btn.on( 'click', function( e ) {
+            btn.on("click", function (e) {
                 e.stopPropagation();
-                var isOpen = dropdown.hasClass( 'is-open' );
-                dropdown.toggleClass( 'is-open' );
-                btn.attr( 'aria-expanded', ! isOpen );
-            } );
+                var isOpen = dropdown.hasClass("is-open");
+                dropdown.toggleClass("is-open");
+                btn.attr("aria-expanded", !isOpen);
+            });
 
             // Close on outside click.
-            $( document ).on( 'click', function() {
-                dropdown.removeClass( 'is-open' );
-                btn.attr( 'aria-expanded', 'false' );
-            } );
+            $(document).on("click", function () {
+                dropdown.removeClass("is-open");
+                btn.attr("aria-expanded", "false");
+            });
 
             // Close on ESC.
-            $( document ).on( 'keydown', function( e ) {
-                if ( e.key === 'Escape' ) {
-                    dropdown.removeClass( 'is-open' );
-                    btn.attr( 'aria-expanded', 'false' );
+            $(document).on("keydown", function (e) {
+                if (e.key === "Escape") {
+                    dropdown.removeClass("is-open");
+                    btn.attr("aria-expanded", "false");
                 }
-            } );
+            });
         },
     };
-
 
     // ============================================================
     // 03. STICKY HEADER
     // ============================================================
     Moga.stickyHeader = {
+        header: $("#moga-header"),
+        scrolled: false,
+        threshold: 50,
 
-        header:      $( '#moga-header' ),
-        scrolled:    false,
-        threshold:   50,
-
-        init: function() {
-            if ( ! this.header.length ) return;
+        init: function () {
+            if (!this.header.length) return;
             this.bindEvents();
             this.check(); // Run on load.
         },
 
-        bindEvents: function() {
+        bindEvents: function () {
             var self = this;
-            $( window ).on( 'scroll.mogaHeader', function() {
+            $(window).on("scroll.mogaHeader", function () {
                 self.check();
-            } );
+            });
         },
 
-        check: function() {
-            var scrollTop = $( window ).scrollTop();
-            if ( scrollTop > this.threshold ) {
-                this.header.addClass( 'is-scrolled' );
+        check: function () {
+            var scrollTop = $(window).scrollTop();
+            if (scrollTop > this.threshold) {
+                this.header.addClass("is-scrolled");
             } else {
-                this.header.removeClass( 'is-scrolled' );
+                this.header.removeClass("is-scrolled");
             }
         },
     };
-
 
     // ============================================================
     // 04. ALERT DISMISSAL
     // ============================================================
     Moga.alerts = {
-
-        init: function() {
-            $( document ).on( 'click', '.moga-alert__close', function() {
-                $( this ).closest( '.moga-alert' ).fadeOut( 300, function() {
-                    $( this ).remove();
-                } );
-            } );
+        init: function () {
+            $(document).on("click", ".moga-alert__close", function () {
+                $(this)
+                    .closest(".moga-alert")
+                    .fadeOut(300, function () {
+                        $(this).remove();
+                    });
+            });
         },
     };
-
 
     // ============================================================
     // 05. BACK TO TOP
     // ============================================================
     Moga.backToTop = {
-
-        btn:       null,
+        btn: null,
         threshold: 400,
 
-        init: function() {
+        init: function () {
             this.createButton();
             this.bindEvents();
         },
 
-        createButton: function() {
-            if ( $( '#moga-back-to-top' ).length ) return;
+        createButton: function () {
+            if ($("#moga-back-to-top").length) return;
 
-            this.btn = $( '<button>', {
-                id:           'moga-back-to-top',
-                class:        'moga-back-to-top',
-                'aria-label': mogaData.i18n.loading || 'Back to top',
-                html:         '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>',
-            } );
+            this.btn = $("<button>", {
+                id: "moga-back-to-top",
+                class: "moga-back-to-top",
+                "aria-label": mogaData.i18n.loading || "Back to top",
+                html: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>',
+            });
 
-            $( 'body' ).append( this.btn );
+            $("body").append(this.btn);
         },
 
-        bindEvents: function() {
+        bindEvents: function () {
             var self = this;
 
-            $( window ).on( 'scroll.mogaBackToTop', function() {
-                if ( $( window ).scrollTop() > self.threshold ) {
-                    self.btn.addClass( 'is-visible' );
+            $(window).on("scroll.mogaBackToTop", function () {
+                if ($(window).scrollTop() > self.threshold) {
+                    self.btn.addClass("is-visible");
                 } else {
-                    self.btn.removeClass( 'is-visible' );
+                    self.btn.removeClass("is-visible");
                 }
-            } );
+            });
 
-            $( document ).on( 'click', '#moga-back-to-top', function() {
-                $( 'html, body' ).animate( { scrollTop: 0 }, 400 );
-            } );
+            $(document).on("click", "#moga-back-to-top", function () {
+                $("html, body").animate({ scrollTop: 0 }, 400);
+            });
         },
     };
-
 
     // ============================================================
     // 06. SMOOTH SCROLL
     // ============================================================
     Moga.smoothScroll = {
-
-        init: function() {
-            $( document ).on( 'click', 'a[href^="#"]', function( e ) {
-                var target = $( $( this ).attr( 'href' ) );
-                if ( ! target.length ) return;
+        init: function () {
+            $(document).on("click", 'a[href^="#"]', function (e) {
+                var target = $($(this).attr("href"));
+                if (!target.length) return;
 
                 e.preventDefault();
-                var headerHeight = $( '#moga-header' ).outerHeight() || 70;
+                var headerHeight = $("#moga-header").outerHeight() || 70;
 
-                $( 'html, body' ).animate( {
-                    scrollTop: target.offset().top - headerHeight - 16,
-                }, 500 );
-            } );
+                $("html, body").animate(
+                    {
+                        scrollTop: target.offset().top - headerHeight - 16,
+                    },
+                    500,
+                );
+            });
         },
     };
-
 
     // ============================================================
     // 07. TABS
     // ============================================================
     Moga.tabs = {
-
-        init: function( context ) {
+        init: function (context) {
             var scope = context || document;
 
-            $( scope ).on( 'click', '.moga-tabs__nav-item', function() {
-                var tab     = $( this );
-                var target  = tab.data( 'tab' );
-                var wrapper = tab.closest( '.moga-tabs' );
+            $(scope).on("click", ".moga-tabs__nav-item", function () {
+                var tab = $(this);
+                var target = tab.data("tab");
+                var wrapper = tab.closest(".moga-tabs");
 
                 // Update nav items.
-                wrapper.find( '.moga-tabs__nav-item' ).removeClass( 'is-active' );
-                tab.addClass( 'is-active' );
+                wrapper.find(".moga-tabs__nav-item").removeClass("is-active");
+                tab.addClass("is-active");
 
                 // Update panels.
-                wrapper.find( '.moga-tabs__panel' ).removeClass( 'is-active' );
-                wrapper.find( '[data-panel="' + target + '"]' ).addClass( 'is-active' );
-            } );
+                wrapper.find(".moga-tabs__panel").removeClass("is-active");
+                wrapper
+                    .find('[data-panel="' + target + '"]')
+                    .addClass("is-active");
+            });
         },
     };
-
 
     // ============================================================
     // 08. SEARCH BOX TABS
     // ============================================================
     Moga.searchTabs = {
-
-        init: function() {
-
+        init: function () {
             // Switch active tab and panel.
-            $( document ).on( 'click', '.moga-search-box__tab', function() {
-                var tab    = $( this );
-                var target = tab.data( 'tab' );
+            $(document).on("click", ".moga-search-box__tab", function () {
+                var tab = $(this);
+                var target = tab.data("tab");
 
                 // Update tabs.
-                $( '.moga-search-box__tab' )
-                    .removeClass( 'is-active' )
-                    .attr( 'aria-selected', 'false' );
-                tab.addClass( 'is-active' ).attr( 'aria-selected', 'true' );
+                $(".moga-search-box__tab")
+                    .removeClass("is-active")
+                    .attr("aria-selected", "false");
+                tab.addClass("is-active").attr("aria-selected", "true");
 
                 // Update panels.
-                $( '.moga-search-box__panel' ).removeClass( 'is-active' );
-                $( '[data-panel="' + target + '"]' ).addClass( 'is-active' );
-            } );
+                $(".moga-search-box__panel").removeClass("is-active");
+                $('[data-panel="' + target + '"]').addClass("is-active");
+            });
 
             // Bus city swap button.
-            $( document ).on( 'click', '#moga-swap-cities', function() {
-                var from = $( '#bus-from' );
-                var to   = $( '#bus-to' );
+            $(document).on("click", "#moga-swap-cities", function () {
+                var from = $("#bus-from");
+                var to = $("#bus-to");
                 var temp = from.val();
-                from.val( to.val() );
-                to.val( temp );
-            } );
+                from.val(to.val());
+                to.val(temp);
+            });
 
             // Set minimum check-out date based on check-in selection.
-            $( document ).on( 'change', '#property-checkin, #rental-checkin', function() {
-                var checkin  = $( this );
-                var checkout = checkin
-                    .closest( '.moga-search-form__fields' )
-                    .find( '[name="check_out"]' );
+            $(document).on(
+                "change",
+                "#property-checkin, #rental-checkin",
+                function () {
+                    var checkin = $(this);
+                    var checkout = checkin
+                        .closest(".moga-search-form__fields")
+                        .find('[name="check_out"]');
 
-                checkout.attr( 'min', checkin.val() );
+                    checkout.attr("min", checkin.val());
 
-                if ( checkout.val() && checkout.val() < checkin.val() ) {
-                    checkout.val( checkin.val() );
-                }
-            } );
+                    if (checkout.val() && checkout.val() < checkin.val()) {
+                        checkout.val(checkin.val());
+                    }
+                },
+            );
 
             // Set minimum dates to today on all date inputs.
-            var today = new Date().toISOString().split( 'T' )[0];
-            $( 'input[type="date"]' ).attr( 'min', today );
+            var today = new Date().toISOString().split("T")[0];
+            $('input[type="date"]').attr("min", today);
         },
     };
-
 
     // ============================================================
     // 09. UTILITY FUNCTIONS
@@ -335,14 +344,12 @@
      * @param  {number} amount
      * @return {string}
      */
-    Moga.formatPrice = function( amount ) {
-        var symbol    = mogaData.currencySymbol || '$';
-        var position  = mogaData.currencyPosition || 'before';
-        var formatted = parseFloat( amount ).toFixed( 2 );
+    Moga.formatPrice = function (amount) {
+        var symbol = mogaData.currencySymbol || "$";
+        var position = mogaData.currencyPosition || "before";
+        var formatted = parseFloat(amount).toFixed(2);
 
-        return position === 'before'
-            ? symbol + formatted
-            : formatted + symbol;
+        return position === "before" ? symbol + formatted : formatted + symbol;
     };
 
     /**
@@ -352,25 +359,26 @@
      * @param {string} type     success | danger | warning | info
      * @param {number} duration Milliseconds before auto-dismiss.
      */
-    Moga.notify = function( message, type, duration ) {
-        type     = type     || 'info';
+    Moga.notify = function (message, type, duration) {
+        type = type || "info";
         duration = duration || 4000;
 
-        var notice = $( '<div>', {
-            class: 'moga-alert moga-alert--' + type,
-            html:  message
-                + '<button class="moga-alert__close" aria-label="Dismiss">&times;</button>',
-        } );
+        var notice = $("<div>", {
+            class: "moga-alert moga-alert--" + type,
+            html:
+                message +
+                '<button class="moga-alert__close" aria-label="Dismiss">&times;</button>',
+        });
 
-        $( '.moga-wrapper' ).prepend( notice );
-        notice.hide().slideDown( 200 );
+        $(".moga-wrapper").prepend(notice);
+        notice.hide().slideDown(200);
 
-        if ( duration > 0 ) {
-            setTimeout( function() {
-                notice.slideUp( 200, function() {
-                    $( this ).remove();
-                } );
-            }, duration );
+        if (duration > 0) {
+            setTimeout(function () {
+                notice.slideUp(200, function () {
+                    $(this).remove();
+                });
+            }, duration);
         }
     };
 
@@ -381,12 +389,11 @@
      * @param  {object}   data     Data to send.
      * @param  {function} callback Success callback.
      */
-    Moga.ajax = function( action, data, callback ) {
+    Moga.ajax = function (action, data, callback) {
         $.post(
             mogaData.ajaxUrl,
-            $.extend( { action: action, nonce: mogaData.nonce }, data ),
-            callback
+            $.extend({ action: action, nonce: mogaData.nonce }, data),
+            callback,
         );
     };
-
-} )( jQuery );
+})(jQuery);

@@ -86,6 +86,7 @@
 .moga-header__lang:hover {
     background-color: rgba(255, 255, 255, 0.15);
     border-color: rgba(255, 255, 255, 0.6);
+    color: var(--moga-white) !important;
 }
 
 .moga-header__divider {
@@ -335,21 +336,26 @@
 .moga-mobile-menu {
     display: none;
     position: fixed;
-    /* Was: top: var(--moga-header-height);
-       Now accounts for BOTH stacked bars (header-top + the
-       category bar) since there used to be only one. 60px matches
-       the explicit height set on .moga-header-top below — if you
-       later move that into a root variable in main.css, update
-       this calc() to match rather than leaving two hardcoded
-       numbers that could drift out of sync. */
-    top: calc(60px + var(--moga-header-height));
+    top: var(--moga-header-top-height);
     left: 0;
-    right: 0;
+    /* Was: right: 0 (full-bleed, no width constraint at all — this was
+       the actual cause of the "fills the entire screen" complaint).
+       Fixed width instead, capped so it doesn't get unreasonably wide
+       on larger phones/small tablets. */
+    width: min(320px, 67%);
     bottom: 0;
     background-color: var(--moga-primary-dark);
     z-index: var(--moga-z-fixed);
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: var(--moga-spacing-lg);
+    /* Confirmed via console diagnostic — scrollHeight and clientHeight
+       are exactly equal, meaning content already fits the panel with
+       no actual overflow. "Register looked cut off" wasn't a scroll
+       bug at all — the button just sat flush against the very bottom
+       edge with zero breathing room. This extra bottom padding is the
+       real, small fix for that. */
+    padding-bottom: calc(var(--moga-spacing-lg) * 2);
     transform: translateX(-100%);
     transition: transform 0.3s ease;
 }
@@ -359,7 +365,9 @@
 }
 
 .moga-mobile-menu__nav a {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
     color: var(--moga-white);
     font-size: 1rem;
     font-weight: 500;
@@ -445,13 +453,19 @@
 
 /* ============================================================
    06. RTL
+   ============================================================
+   Note: no flex-direction overrides needed for the actions bar,
+   user block, or nav item icon+text pairs — flex's default 'row'
+   already auto-mirrors correctly for dir="rtl" natively, since
+   flex's row axis follows the container's direction property.
+   An earlier version of this file added explicit row-reverse
+   rules here, assuming that behavior needed to be forced — it
+   didn't, and doing so double-reversed the layout, undoing the
+   correct automatic mirroring and making everything look
+   LTR-ordered again despite the page being RTL. Only genuinely
+   direction-unaware properties (absolute positioning's left/right)
+   need explicit overrides, which is all that remains below.
    ============================================================ */
-
-[dir="rtl"] .moga-header-top__actions,
-[dir="rtl"] .moga-header__user,
-[dir="rtl"] .moga-nav__item > a {
-    flex-direction: row-reverse;
-}
 
 [dir="rtl"] .moga-header__dropdown {
     right: auto;
@@ -461,4 +475,299 @@
 [dir="rtl"] .moga-nav__item .sub-menu {
     left: auto;
     right: 0;
+}
+
+/* ============================================================
+   07. Header-Top Secondary Group (desktop only — see responsive.css)
+   ============================================================ */
+
+.moga-header-top__secondary {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+}
+
+/* ============================================================
+   08. Mobile Menu — Backdrop
+   ============================================================ */
+
+.moga-mobile-menu-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: calc(var(--moga-z-fixed) - 1);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+@media (max-width: 1024px) {
+    .moga-mobile-menu-backdrop {
+        display: block;
+        pointer-events: none;
+    }
+
+    .moga-mobile-menu-backdrop.is-open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+body.moga-menu-open {
+    overflow: hidden;
+}
+
+/* ============================================================
+   09. Mobile Menu — Header Row (title + X close button)
+   ============================================================ */
+
+.moga-mobile-menu__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--moga-spacing-lg);
+    padding-bottom: var(--moga-spacing-md);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.moga-mobile-menu__title {
+    color: var(--moga-white);
+    font-family: var(--moga-font-heading);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.moga-mobile-menu__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: none;
+    color: var(--moga-white);
+    cursor: pointer;
+    transition: var(--moga-transition-fast);
+}
+
+.moga-mobile-menu__close:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: rotate(90deg);
+}
+
+/* ============================================================
+   10. Mobile Menu — Refined Slide Animation + Staggered Items
+   ============================================================
+   The slide transform already existed (section 04 above); this
+   adds a smoother easing curve, elevation shadow while open, and
+   a staggered fade-in for each nav item so the panel feels like a
+   deliberately designed transition rather than an instant swap.
+   ============================================================ */
+
+.moga-mobile-menu {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: var(--moga-shadow-xl);
+}
+
+.moga-mobile-menu__nav a,
+.moga-mobile-menu__secondary-link {
+    opacity: 0;
+    transform: translateX(-12px);
+}
+
+.moga-mobile-menu.is-open .moga-mobile-menu__nav a,
+.moga-mobile-menu.is-open .moga-mobile-menu__secondary-link {
+    animation: moga-mobile-item-in 0.35s ease forwards;
+}
+
+.moga-mobile-menu.is-open .moga-mobile-menu__nav a:nth-child(1) {
+    animation-delay: 0.08s;
+}
+.moga-mobile-menu.is-open .moga-mobile-menu__nav a:nth-child(2) {
+    animation-delay: 0.12s;
+}
+.moga-mobile-menu.is-open .moga-mobile-menu__nav a:nth-child(3) {
+    animation-delay: 0.16s;
+}
+.moga-mobile-menu.is-open .moga-mobile-menu__nav a:nth-child(4) {
+    animation-delay: 0.2s;
+}
+.moga-mobile-menu.is-open .moga-mobile-menu__secondary-link:nth-child(1) {
+    animation-delay: 0.24s;
+}
+.moga-mobile-menu.is-open .moga-mobile-menu__secondary-link:nth-child(2) {
+    animation-delay: 0.28s;
+}
+.moga-mobile-menu.is-open .moga-mobile-menu__secondary-link:nth-child(3) {
+    animation-delay: 0.32s;
+}
+
+@keyframes moga-mobile-item-in {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ============================================================
+   11. Mobile Menu — Secondary Links (Language / Contact / Partner)
+   ============================================================ */
+
+.moga-mobile-menu__secondary {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: var(--moga-spacing-md) 0;
+    padding: var(--moga-spacing-md) 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.moga-mobile-menu__secondary-link {
+    display: flex;
+    align-items: center;
+    gap: var(--moga-spacing-sm);
+    color: var(--moga-white);
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: var(--moga-spacing-sm) 4px;
+    border-radius: var(--moga-border-radius);
+    transition: var(--moga-transition-fast);
+}
+
+.moga-mobile-menu__secondary-link:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--moga-white);
+    text-decoration: none;
+    padding-left: var(--moga-spacing-sm);
+}
+
+.moga-mobile-menu__secondary-link svg {
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.moga-mobile-menu__secondary-link--accent {
+    color: var(--moga-accent);
+}
+
+.moga-mobile-menu__secondary-link--accent svg {
+    opacity: 1;
+}
+
+/* ============================================================
+   12. RTL — Mobile Menu Additions
+   ============================================================ */
+
+[dir="rtl"] .moga-mobile-menu {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+}
+
+[dir="rtl"] .moga-mobile-menu.is-open {
+    transform: translateX(0);
+}
+
+[dir="rtl"] .moga-mobile-menu__nav a,
+[dir="rtl"] .moga-mobile-menu__secondary-link {
+    transform: translateX(12px);
+}
+
+[dir="rtl"] .moga-mobile-menu.is-open .moga-mobile-menu__nav a,
+[dir="rtl"] .moga-mobile-menu.is-open .moga-mobile-menu__secondary-link {
+    animation-name: moga-mobile-item-in-rtl;
+}
+
+@keyframes moga-mobile-item-in-rtl {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+[dir="rtl"] .moga-mobile-menu__close:hover {
+    transform: rotate(-90deg);
+}
+
+/* ============================================================
+   13. Mobile Menu Nav — Explicit Vertical Stacking
+   ============================================================
+   .moga-mobile-menu__list (the <ul> the nav fallback outputs for
+   the mobile panel) had no CSS rule anywhere, and .moga-nav__item
+   (the shared <li> class used by both desktop and mobile) also
+   has no display rule of its own — so this was resolving through
+   default browser behavior in a way that wasn't reliably
+   guaranteed to stack vertically. This rule makes it explicit and
+   unambiguous rather than depending on cascade behavior between
+   files.
+   ============================================================ */
+
+.moga-mobile-menu__nav .moga-mobile-menu__list {
+    display: flex !important;
+    flex-direction: column !important;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.moga-mobile-menu__nav .moga-nav__item {
+    width: 100%;
+}
+
+/* ============================================================
+   14. Mobile Top Bar — Compact Sizing
+   ============================================================
+   Currency, language, and Contact Us are now always visible on
+   mobile (moved out of the hide-on-mobile secondary group), so
+   they need to actually fit alongside the avatar in a narrow bar.
+   ============================================================ */
+
+@media (max-width: 480px) {
+    .moga-header-top__actions {
+        gap: 3px;
+    }
+
+    .moga-header__currency,
+    .moga-header__lang {
+        padding: 6px 6px;
+        font-size: 0.7rem;
+    }
+
+    .moga-header-top__icon-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    /* Per your own suggestion — drop the display-name text on very
+       small screens, keep just the avatar photo, to make room for
+       currency + language + Contact Us all staying visible together. */
+    .moga-header__avatar-btn span {
+        display: none;
+    }
+
+    .moga-header__avatar-btn {
+        padding: 4px;
+    }
+
+    /* Added — the avatar image itself was still rendering at its
+       default 28x28 (set via HTML width/height attributes, which
+       CSS needs to explicitly override, not just the button's
+       padding around it). With the language switcher correctly
+       back in the row, there wasn't quite enough combined room,
+       and this was the one remaining oversized piece — confirmed
+       via screenshot showing it physically cut off at the screen
+       edge in both regular and incognito mode. */
+    .moga-header__avatar-img {
+        width: 22px;
+        height: 22px;
+    }
+
+    /* The logo's full text ("Moga Booking System") was also never
+       reduced for mobile — shrinking it recovers a bit more of the
+       limited width for everything on the right side of the bar. */
+    .moga-header__logo-text {
+        font-size: 1.1rem;
+    }
 }

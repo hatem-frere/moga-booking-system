@@ -95,6 +95,13 @@
 
 
         <!-- ======================================================
+         MOBILE MENU BACKDROP
+         Dims the page behind the panel; also closes the menu on
+         click, same convention as the account dropdown.
+    ====================================================== -->
+        <div id="moga-mobile-menu-backdrop" class="moga-mobile-menu-backdrop" aria-hidden="true"></div>
+
+        <!-- ======================================================
          MOBILE MENU PANEL
     ====================================================== -->
         <div id="moga-mobile-menu"
@@ -103,6 +110,19 @@
             aria-label="<?php esc_attr_e('Mobile Navigation', 'moga-travel'); ?>"
             aria-modal="true"
             aria-hidden="true">
+
+            <div class="moga-mobile-menu__header">
+                <span class="moga-mobile-menu__title"><?php esc_html_e('Menu', 'moga-travel'); ?></span>
+                <button type="button"
+                    id="moga-mobile-menu-close"
+                    class="moga-mobile-menu__close"
+                    aria-label="<?php esc_attr_e('Close menu', 'moga-travel'); ?>">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                </button>
+            </div>
 
             <nav class="moga-mobile-menu__nav"
                 aria-label="<?php esc_attr_e('Mobile Navigation', 'moga-travel'); ?>">
@@ -117,6 +137,34 @@
                 ));
                 ?>
             </nav>
+
+            <!-- Relocated from the top bar for small screens.
+                 Language stays always visible in the top bar itself
+                 (see header-top.php). Contact Us and "Become a Partner"
+                 move in here as text instead of staying icon/button-only,
+                 both needing more room than the compact top bar has. -->
+            <div class="moga-mobile-menu__secondary">
+
+                <a href="<?php echo esc_url(get_option('moga_page_contact') ? get_permalink(get_option('moga_page_contact')) : home_url('/contact/')); ?>" class="moga-mobile-menu__secondary-link">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    <?php esc_html_e('Contact Us', 'moga-travel'); ?>
+                </a>
+
+                <a href="<?php echo esc_url(add_query_arg('tab', 'register', moga_account_url())); ?>" class="moga-mobile-menu__secondary-link moga-mobile-menu__secondary-link--accent">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    <?php esc_html_e('Become a Partner', 'moga-travel'); ?>
+                </a>
+
+            </div>
 
             <?php if (! is_user_logged_in()) : ?>
                 <div class="moga-mobile-menu__actions">

@@ -1,0 +1,96 @@
+/**
+ * Moga Travel — RTL Overrides
+ *
+ * Path: themes/moga-travel/assets/css/rtl.css
+ *
+ * Loaded only when is_rtl() is true (see class-moga-assets.php).
+ * This file is for genuinely SITE-WIDE, cross-cutting RTL rules —
+ * component-specific RTL fixes (header, booking form, account
+ * forms, etc.) live inside their own stylesheets, next to the
+ * rules they're overriding, which is the pattern already used
+ * throughout this project (booking.css, account.css, header.css
+ * each have their own [dir="rtl"] sections). This file is not
+ * meant to duplicate those.
+ *
+ * @package MogaTravel
+ * @since   1.0.0
+ */
+
+/* ============================================================
+   01. Punctuation-flip fix for untranslated English text
+   ============================================================
+   Real bug, real cause: with the page set to dir="rtl" but the
+   actual text still English (translations aren't built yet —
+   pending Phase 6), a trailing period or question mark at the
+   end of an English sentence can get pulled to the visual START
+   of the line instead of staying at the end, because the browser
+   resolves the paragraph's bidi direction from the page's overall
+   direction rather than the text's own content.
+
+   unicode-bidi: plaintext tells the browser to determine each
+   text block's direction from its own first strong character
+   instead of inheriting the page's direction wholesale. An
+   English sentence gets correctly treated as LTR internally
+   (fixing this exact bug) — and importantly, this keeps working
+   correctly later once real Arabic translations exist, since a
+   block that actually starts with Arabic text will then resolve
+   as RTL on its own, with zero need to revisit this rule. This
+   is the durable fix, not a workaround specific to today's
+   English-placeholder situation.
+   ============================================================ */
+
+[dir="rtl"] p,
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] h4,
+[dir="rtl"] h5,
+[dir="rtl"] h6,
+[dir="rtl"] span,
+[dir="rtl"] a,
+[dir="rtl"] li,
+[dir="rtl"] label,
+[dir="rtl"] button,
+[dir="rtl"] .moga-hero__title,
+[dir="rtl"] .moga-hero__subtitle {
+    unicode-bidi: plaintext;
+}
+
+/* ============================================================
+   02. Body base direction
+   ============================================================ */
+
+[dir="rtl"] body {
+    text-align: right;
+}
+
+/* ============================================================
+   03. Form elements — placeholders and text inputs should
+   still align per their own content direction, same reasoning
+   as section 01.
+   ============================================================ */
+
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] select {
+    text-align: right;
+    unicode-bidi: plaintext;
+}
+
+/* ============================================================
+   04. Popular Destinations — chevron direction
+   ============================================================
+   The arrow is a directional icon (an SVG chevron pointing
+   right), not decorative — it needs to visually point toward
+   "into the page" the same way it does in LTR, which means
+   pointing left in RTL. scaleX(-1) mirrors the existing icon
+   rather than needing a second SVG asset for the RTL case.
+   ============================================================ */
+
+[dir="rtl"] .moga-destination-card__arrow {
+    transform: scaleX(-1);
+}
+
+[dir="rtl"] .moga-destination-card:hover .moga-destination-card__arrow {
+    transform: scaleX(-1) translateX(4px);
+}

@@ -14,7 +14,6 @@
    xxl: > 1280px  (Large desktops)
    ============================================================ */
 
-
 /* ============================================================
    Large Desktop — max-width: 1280px
    ============================================================ */
@@ -29,27 +28,58 @@
     }
 }
 
-
 /* ============================================================
    Laptop — max-width: 1024px
    ============================================================ */
 @media (max-width: 1024px) {
     /* Typography */
-    h1 { font-size: 2.25rem; }
-    h2 { font-size: 1.75rem; }
+    h1 {
+        font-size: 2.25rem;
+    }
+    h2 {
+        font-size: 1.75rem;
+    }
 
     /* Grid */
-    .moga-grid--4         { grid-template-columns: repeat(2, 1fr); }
-    .moga-grid--3         { grid-template-columns: repeat(2, 1fr); }
-    .moga-grid--sidebar   { grid-template-columns: 260px 1fr; }
+    .moga-grid--4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .moga-grid--3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .moga-grid--sidebar {
+        grid-template-columns: 260px 1fr;
+    }
 
     /* Header */
-    .moga-header__nav     { display: none; }
-    .moga-nav__toggle     { display: flex; }
-    .moga-mobile-menu     { display: block; }
+    .moga-header__nav {
+        display: none;
+    }
+    .moga-nav__toggle {
+        display: flex;
+    }
+    .moga-mobile-menu {
+        display: block;
+    }
 
-    .moga-header__currency,
-    .moga-header__lang    { display: none; }
+    /* Was hiding .moga-header__lang here — leftover from an earlier
+       architecture where the language switcher lived inside the
+       mobile-hidden .moga-header-top__secondary group. It was later
+       moved out to be always-visible (see header-top.php), but this
+       rule was never removed to match, so it kept hiding a switcher
+       that the HTML no longer expected to be hidden. This is the
+       actual, confirmed cause of the language switcher not appearing
+       on mobile at all — not a caching issue. */
+
+    /* This is the actual fix for the horizontal-overflow bug reported —
+       nothing was ever hiding .moga-header-top__secondary (language,
+       Contact Us, Become a Partner, and their dividers) on narrow
+       screens, so it forced the whole page wider than the viewport.
+       Currency and auth (.moga-header__user) are NOT in this group,
+       by design — they stay visible in the top bar per Option B. */
+    .moga-header-top__secondary {
+        display: none;
+    }
 
     /* Footer */
     .moga-footer__widgets {
@@ -68,36 +98,60 @@
     }
 }
 
-
 /* ============================================================
    Tablet Portrait — max-width: 768px
    ============================================================ */
 @media (max-width: 768px) {
     /* Typography */
-    h1 { font-size: 1.75rem; }
-    h2 { font-size: 1.5rem; }
-    h3 { font-size: 1.25rem; }
-    h4 { font-size: 1.1rem; }
+    h1 {
+        font-size: 1.75rem;
+    }
+    h2 {
+        font-size: 1.5rem;
+    }
+    h3 {
+        font-size: 1.25rem;
+    }
+    h4 {
+        font-size: 1.1rem;
+    }
 
     /* Layout */
     .moga-grid--2,
     .moga-grid--3,
-    .moga-grid--4           { grid-template-columns: 1fr; }
+    .moga-grid--4 {
+        grid-template-columns: 1fr;
+    }
     .moga-grid--sidebar,
-    .moga-grid--sidebar-right { grid-template-columns: 1fr; }
+    .moga-grid--sidebar-right {
+        grid-template-columns: 1fr;
+    }
 
-    .moga-section           { padding: var(--moga-spacing-xl) 0; }
-    .moga-section--lg       { padding: var(--moga-spacing-xxl) 0; }
+    .moga-section {
+        padding: var(--moga-spacing-xl) 0;
+    }
+    .moga-section--lg {
+        padding: var(--moga-spacing-xxl) 0;
+    }
 
     /* Section Header */
-    .moga-section__title    { font-size: 1.5rem; }
+    .moga-section__title {
+        font-size: 1.5rem;
+    }
 
     /* Header */
-    .moga-header__divider   { display: none; }
-    .moga-header__user .moga-header__login-btn { display: none; }
+    .moga-header__divider {
+        display: none;
+    }
+    .moga-header__user .moga-header__login-btn {
+        display: none;
+    }
 
     /* Footer */
-    .moga-footer__widgets   { grid-template-columns: 1fr; gap: var(--moga-spacing-xl); }
+    .moga-footer__widgets {
+        grid-template-columns: 1fr;
+        gap: var(--moga-spacing-xl);
+    }
 
     .moga-footer__bottom-inner {
         flex-direction: column;
@@ -112,73 +166,124 @@
     }
 
     /* Forms */
-    .moga-form__row         { grid-template-columns: 1fr; }
+    .moga-form__row {
+        grid-template-columns: 1fr;
+    }
 
     /* Modal */
-    .moga-modal-backdrop    { padding: var(--moga-spacing-md); align-items: flex-end; }
-    .moga-modal             { max-height: 85vh; border-radius: var(--moga-border-radius-lg) var(--moga-border-radius-lg) 0 0; }
+    .moga-modal-backdrop {
+        padding: var(--moga-spacing-md);
+        align-items: flex-end;
+    }
+    .moga-modal {
+        max-height: 85vh;
+        border-radius: var(--moga-border-radius-lg) var(--moga-border-radius-lg)
+            0 0;
+    }
 
     /* Tabs */
-    .moga-tabs__nav         { overflow-x: auto; }
-    .moga-tabs__nav-item    { white-space: nowrap; }
+    .moga-tabs__nav {
+        overflow-x: auto;
+    }
+    .moga-tabs__nav-item {
+        white-space: nowrap;
+    }
 
     /* Pagination */
-    .moga-pagination        { flex-wrap: wrap; }
+    .moga-pagination {
+        flex-wrap: wrap;
+    }
 
     /* Utilities */
-    .moga-d-md-none         { display: none; }
-    .moga-d-md-block        { display: block; }
+    .moga-d-md-none {
+        display: none;
+    }
+    .moga-d-md-block {
+        display: block;
+    }
 }
-
 
 /* ============================================================
    Phone — max-width: 576px
    ============================================================ */
 @media (max-width: 576px) {
     /* Header */
-    .moga-header__logo-text { font-size: 1.2rem; }
-    .moga-header__register-btn { display: none; }
+    .moga-header__logo-text {
+        font-size: 1.2rem;
+    }
+    .moga-header__register-btn {
+        display: none;
+    }
 
     /* Cards */
-    .moga-card__image-wrap  { height: 180px; }
-    .moga-card__footer      { flex-direction: column; align-items: flex-start; gap: var(--moga-spacing-sm); }
+    .moga-card__image-wrap {
+        height: 180px;
+    }
+    .moga-card__footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--moga-spacing-sm);
+    }
 
     /* Buttons */
-    .moga-btn--lg           { padding: 12px var(--moga-spacing-lg); font-size: 0.9rem; }
+    .moga-btn--lg {
+        padding: 12px var(--moga-spacing-lg);
+        font-size: 0.9rem;
+    }
 
     /* Alerts */
-    .moga-alert             { flex-direction: column; gap: var(--moga-spacing-sm); }
+    .moga-alert {
+        flex-direction: column;
+        gap: var(--moga-spacing-sm);
+    }
 
     /* Utilities */
-    .moga-d-sm-none         { display: none; }
-    .moga-d-sm-block        { display: block; }
+    .moga-d-sm-none {
+        display: none;
+    }
+    .moga-d-sm-block {
+        display: block;
+    }
 }
-
 
 /* ============================================================
    Small Phone — max-width: 480px
    ============================================================ */
 @media (max-width: 480px) {
     :root {
-        --moga-container-pad:  16px;
-        --moga-header-height:  60px;
+        --moga-container-pad: 16px;
+        --moga-header-height: 60px;
         --moga-font-size-base: 15px;
     }
 
     /* Typography */
-    h1 { font-size: 1.5rem; }
-    h2 { font-size: 1.3rem; }
+    h1 {
+        font-size: 1.5rem;
+    }
+    h2 {
+        font-size: 1.3rem;
+    }
 
     /* Header */
-    .moga-header__logo img  { height: 32px; }
-    .moga-header__logo-text { font-size: 1.1rem; }
+    .moga-header__logo img {
+        height: 32px;
+    }
+    .moga-header__logo-text {
+        font-size: 1.1rem;
+    }
 
     /* Section */
-    .moga-section           { padding: var(--moga-spacing-lg) 0; }
+    .moga-section {
+        padding: var(--moga-spacing-lg) 0;
+    }
 
     /* Cards */
-    .moga-card__body        { padding: var(--moga-spacing-md); }
-    .moga-card__footer      { padding: var(--moga-spacing-sm) var(--moga-spacing-md); }
+    .moga-card__body {
+        padding: var(--moga-spacing-md);
+    }
+    .moga-card__footer {
+        padding: var(--moga-spacing-sm) var(--moga-spacing-md);
+    }
 
     /* Footer */
     .moga-footer__newsletter-form {
@@ -186,8 +291,12 @@
     }
 
     /* Utilities */
-    .moga-d-xs-none         { display: none; }
-    .moga-d-xs-block        { display: block; }
+    .moga-d-xs-none {
+        display: none;
+    }
+    .moga-d-xs-block {
+        display: block;
+    }
 
     .moga-back-to-top {
         bottom: 16px;
@@ -197,7 +306,6 @@
     }
 }
 
-
 /* ============================================================
    Print
    ============================================================ */
@@ -206,7 +314,9 @@
     .moga-footer,
     .moga-nav__toggle,
     .moga-mobile-menu,
-    .moga-btn           { display: none !important; }
+    .moga-btn {
+        display: none !important;
+    }
 
     body {
         background: white;
@@ -214,44 +324,110 @@
         font-size: 12pt;
     }
 
-    a { color: black; text-decoration: underline; }
+    a {
+        color: black;
+        text-decoration: underline;
+    }
 
-    .moga-container     { max-width: 100%; padding: 0; }
+    .moga-container {
+        max-width: 100%;
+        padding: 0;
+    }
 }
 
 /* ============================================================
    07. Home Page Responsive
    ============================================================ */
 @media (max-width: 1024px) {
-    .moga-hero__title          { font-size: 2.5rem; }
-    .moga-destinations__grid   { grid-template-columns: repeat(2, 1fr); }
-    .moga-search-form__fields  { flex-wrap: wrap; }
-    .moga-search-form__field--date  { flex: 0 0 calc(50% - 4px); }
+    .moga-hero__title {
+        font-size: 2.5rem;
+    }
+    .moga-destinations__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .moga-search-form__fields {
+        flex-wrap: wrap;
+    }
+    .moga-search-form__field--date {
+        flex: 0 0 calc(50% - 4px);
+    }
 }
 
 @media (max-width: 768px) {
-    .moga-hero                 { min-height: 400px; padding: var(--moga-spacing-xl) 0; }
-    .moga-hero__title          { font-size: 1.75rem; }
-    .moga-hero__subtitle       { font-size: 1rem; }
+    .moga-hero {
+        min-height: 400px;
+        padding: var(--moga-spacing-xl) 0;
+    }
+    .moga-hero__title {
+        font-size: 1.75rem;
+    }
+    .moga-hero__subtitle {
+        font-size: 1rem;
+    }
 
-    .moga-search-box__tabs     { overflow-x: auto; }
-    .moga-search-box__tab      { white-space: nowrap; font-size: 0.85rem; padding: var(--moga-spacing-sm) var(--moga-spacing-md); }
+    .moga-search-box__tabs {
+        overflow-x: auto;
+    }
+    .moga-search-box__tab {
+        white-space: nowrap;
+        font-size: 0.85rem;
+        padding: var(--moga-spacing-sm) var(--moga-spacing-md);
+    }
 
-    .moga-search-form__fields  { flex-direction: column; }
+    .moga-search-form__fields {
+        flex-direction: column;
+        /* This reset is the actual fix — align-items: flex-end from the
+           base (row) rule was never reset for the column layout, so
+           every field aligned to the cross-axis end: right in LTR,
+           left in RTL (flex's alignment auto-mirrors, same mechanism
+           as the header fixes earlier). That's exactly what was
+           reported in both directions. */
+        align-items: stretch;
+    }
     .moga-search-form__field,
     .moga-search-form__field--date,
-    .moga-search-form__field--guests { flex: 1 1 100%; }
-    .moga-search-form__btn     { width: 100%; justify-content: center; }
+    .moga-search-form__field--guests,
+    .moga-search-form__field--submit {
+        /* width:100% is the correct fix here, not flex-basis (the
+           previous flex: 1 1 100% rule) — flex-basis:100% sizes along
+           the MAIN axis, which is vertical once flex-direction is
+           column, so it was never actually controlling width at all.
+           The submit button field was also missing from this list
+           entirely, so it stayed content-sized while everything else
+           attempted to stack. */
+        width: 100%;
+        flex: 1 1 auto;
+    }
+    .moga-search-form__btn {
+        width: 100%;
+        justify-content: center;
+    }
 
-    .moga-destinations__grid   { grid-template-columns: 1fr; }
+    .moga-destinations__grid {
+        grid-template-columns: 1fr;
+    }
 
-    .moga-cta__inner           { flex-direction: column; text-align: center; }
-    .moga-cta__actions         { justify-content: center; flex-wrap: wrap; }
-    .moga-cta__title           { font-size: 1.5rem; }
+    .moga-cta__inner {
+        flex-direction: column;
+        text-align: center;
+    }
+    .moga-cta__actions {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .moga-cta__title {
+        font-size: 1.5rem;
+    }
 }
 
 @media (max-width: 480px) {
-    .moga-hero__title          { font-size: 1.5rem; }
-    .moga-search-box           { border-radius: var(--moga-border-radius-lg); }
-    .moga-search-box__panel    { padding: var(--moga-spacing-md); }
+    .moga-hero__title {
+        font-size: 1.5rem;
+    }
+    .moga-search-box {
+        border-radius: var(--moga-border-radius-lg);
+    }
+    .moga-search-box__panel {
+        padding: var(--moga-spacing-md);
+    }
 }

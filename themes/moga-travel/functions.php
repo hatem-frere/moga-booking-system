@@ -289,23 +289,44 @@ function moga_part_data()
 }
 
 /**
- * Navigation fallback — shown when no menu is assigned to the
- * 'moga-primary' location.
+ * Navigation fallback — shown when no menu is assigned to a
+ * location using this callback ('moga-primary' AND 'moga-mobile'
+ * both use it).
  *
  * Outputs four default items mapped directly to this site's real
  * content types (Properties, Tours, Buses, Destinations) so every
  * visitor sees working navigation from day one, not just an
  * "assign a menu" prompt visible only to admins (the previous
  * behavior here). The moment an admin creates and assigns a real
- * menu at Appearance > Menus > Primary Navigation, wp_nav_menu()
- * automatically renders that instead and this function is never
- * called again — nothing else needs to change for that handoff.
+ * menu at Appearance > Menus, wp_nav_menu() automatically renders
+ * that instead and this function is never called again — nothing
+ * else needs to change for that handoff.
+ *
+ * IMPORTANT: WordPress passes the full wp_nav_menu() $args to the
+ * fallback_cb as a plain PHP ARRAY — via an explicit (array) $args
+ * cast in wp_nav_menu()'s own source — NOT an object. The previous
+ * version of this function used object syntax ($args->menu_id),
+ * which PHP silently evaluates to null on an array instead of
+ * throwing an error — so it always fell through to the hardcoded
+ * defaults below, for EVERY call, desktop and mobile alike. Desktop
+ * happened to look correct purely by coincidence, since the
+ * hardcoded default class matches desktop's real intended class
+ * (moga-nav__list) — mobile silently got that same wrong class
+ * instead of its own (moga-mobile-menu__list), which is why the
+ * mobile menu items never actually stacked vertically despite the
+ * CSS correctly targeting a class that was never actually rendered.
+ * Confirmed directly via DevTools: the real element showed
+ * id="moga-nav-fallback" class="moga-nav__list" — this function's
+ * own hardcoded defaults — for BOTH the desktop and mobile calls.
  *
  * @since  1.0.0
+ * @param  array $args The wp_nav_menu() args, as passed by WordPress.
  * @return void
  */
-function moga_nav_fallback()
+function moga_nav_fallback($args = array())
 {
+    $menu_id    = ! empty($args['menu_id']) ? $args['menu_id'] : 'moga-nav-fallback';
+    $menu_class = ! empty($args['menu_class']) ? $args['menu_class'] : 'moga-nav__list';
 
     $items = array(
         'property'    => array(
@@ -326,7 +347,7 @@ function moga_nav_fallback()
         ),
     );
 
-    echo '<ul id="moga-primary-menu" class="moga-nav__list" role="menubar">';
+    printf('<ul id="%s" class="%s" role="menubar">', esc_attr($menu_id), esc_attr($menu_class));
 
     foreach ($items as $type => $item) {
         printf(

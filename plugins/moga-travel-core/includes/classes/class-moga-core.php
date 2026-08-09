@@ -103,6 +103,13 @@ class Moga_Core
         require_once MOGA_CORE_PATH . 'includes/helpers/helper-functions.php';
         require_once MOGA_CORE_PATH . 'includes/helpers/helper-date.php';
         require_once MOGA_CORE_PATH . 'includes/helpers/helper-price.php';
+
+        // Language switching — the 'locale' filter must be registered
+        // here, not from boot_components() on 'init', since WordPress
+        // resolves the request's locale (and therefore is_rtl()) well
+        // before 'init' fires. See class-moga-i18n.php's own docblock.
+        require_once MOGA_CORE_PATH . 'includes/classes/class-moga-i18n.php';
+        Moga_I18n::register_locale_filter();
     }
 
 
@@ -174,6 +181,9 @@ class Moga_Core
 
         if (class_exists('Moga_Roles')) {
             $this->roles = new Moga_Roles();
+        }
+        if (class_exists('Moga_I18n')) {
+            Moga_I18n::init();
         }
         if (class_exists('Moga_Booking')) {
             $this->booking = new Moga_Booking();

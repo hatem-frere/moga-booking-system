@@ -135,3 +135,4 @@ error_log
 plugins/duplicate-post/ 
 vendor/ 
 composer.json 
+languages/ 

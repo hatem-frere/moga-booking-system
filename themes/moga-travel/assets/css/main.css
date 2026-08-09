@@ -107,6 +107,19 @@ html {
     font-size: var(--moga-font-size-base);
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    /* No overflow-x rule here anymore — see .moga-main below for
+       where the horizontal-overflow safety net actually lives now.
+       History: this used to be overflow-x:hidden here, which broke
+       position:sticky on the header (hidden creates a new scroll
+       container). Switched to overflow-x:clip as a same-browser fix
+       — but confirmed via DevTools that Firefox doesn't fully
+       support the clip keyword yet and silently computes it AS
+       hidden, reintroducing the exact same sticky-breaking problem
+       on that browser specifically, while Chrome worked fine. Rather
+       than keep chasing per-browser support quirks on html/body,
+       the constraint moved to .moga-main instead — a sibling of the
+       header bars, not an ancestor, so it can never interfere with
+       sticky positioning on any browser, full stop. */
 }
 
 body {
@@ -233,6 +246,14 @@ blockquote {
 
 .moga-main {
     flex: 1;
+    /* Horizontal-overflow safety net lives here now, not on html/body
+       — see the comment on html above for the full history of why.
+       .moga-main is a sibling of the header bars inside .moga-wrapper,
+       not an ancestor, so this can never break position:sticky on the
+       header regardless of browser. Plain 'hidden' is fine here
+       specifically because nothing inside <main> needs to be sticky
+       relative to the page in a way this would interfere with. */
+    overflow-x: hidden;
 }
 
 .moga-container {

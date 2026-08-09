@@ -13,9 +13,13 @@
  *
  * Currency switcher and the Sign in/Register/avatar-dropdown block
  * are moved here unchanged from their previous location directly
- * inside header.php. Language switcher is a visual shell only —
- * per project decision, actual language switching is deferred to
- * a later phase; this just reserves its place in the bar.
+ * inside header.php. Language switcher is now fully working — a
+ * real link via Moga_I18n::switch_url(), see class-moga-i18n.php.
+ *
+ * Mobile note: currency and auth stay visible in this bar on small
+ * screens; language/Contact/Become a Partner (wrapped in
+ * .moga-header-top__secondary below) move into the mobile menu
+ * panel instead — see header.php and header.css.
  *
  * @package MogaTravel
  * @since   1.0.0
@@ -60,7 +64,7 @@ $contact_url = get_option('moga_page_contact')
             <!-- Right-side utility group -->
             <div class="moga-header-top__actions">
 
-                <!-- Currency Switcher -->
+                <!-- Currency Switcher — always visible, including mobile -->
                 <button class="moga-header__currency"
                     aria-label="<?php esc_attr_e('Switch currency', 'moga-travel'); ?>">
                     <?php echo esc_html(get_option('moga_currency', 'USD')); ?>
@@ -69,44 +73,56 @@ $contact_url = get_option('moga_page_contact')
                     </svg>
                 </button>
 
-                <!-- Language Switcher — visual only, wiring deferred -->
-                <button class="moga-header__lang"
+                <!-- Language Switcher — always visible, including mobile.
+                     Shows the OTHER language's identifier (what clicking
+                     switches TO), not the current one — "ع" when
+                     currently English, "EN" when currently Arabic. -->
+                <a href="<?php echo esc_url(Moga_I18n::switch_url()); ?>"
+                    class="moga-header__lang"
                     aria-label="<?php esc_attr_e('Switch language', 'moga-travel'); ?>"
-                    title="<?php esc_attr_e('Language switching coming soon', 'moga-travel'); ?>">
+                    title="<?php echo esc_attr(Moga_I18n::other_lang_label()); ?>">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <circle cx="12" cy="12" r="10" />
                         <line x1="2" y1="12" x2="22" y2="12" />
                         <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                     </svg>
-                    <?php echo esc_html(strtoupper(substr(get_locale(), 0, 2))); ?>
-                    <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
-                        <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                    </svg>
-                </button>
-
-                <span class="moga-header__divider" aria-hidden="true"></span>
-
-                <!-- Contact Us -->
-                <a href="<?php echo esc_url($contact_url); ?>"
-                    class="moga-header-top__icon-btn"
-                    aria-label="<?php esc_attr_e('Contact us', 'moga-travel'); ?>"
-                    title="<?php esc_attr_e('Contact us', 'moga-travel'); ?>">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
-                </a>
-
-                <!-- Become a Partner -->
-                <a href="<?php echo esc_url(add_query_arg('tab', 'register', moga_account_url())); ?>"
-                    class="moga-header-top__partner-btn">
-                    <?php esc_html_e('Become a Partner', 'moga-travel'); ?>
+                    <?php echo esc_html('ar' === Moga_I18n::other_lang() ? 'ع' : 'EN'); ?>
                 </a>
 
                 <span class="moga-header__divider" aria-hidden="true"></span>
 
-                <!-- Auth Buttons -->
+                <!-- Secondary group — Contact Us + Become a Partner.
+                     Hidden on mobile via .moga-header-top__secondary in
+                     header.css/responsive.css; both relocate into the
+                     mobile menu panel as text instead (see header.php).
+                     Contact Us stays a plain icon here on desktop —
+                     only its mobile treatment changes. -->
+                <div class="moga-header-top__secondary">
+
+                    <!-- Contact Us -->
+                    <a href="<?php echo esc_url($contact_url); ?>"
+                        class="moga-header-top__icon-btn"
+                        aria-label="<?php esc_attr_e('Contact us', 'moga-travel'); ?>"
+                        title="<?php esc_attr_e('Contact us', 'moga-travel'); ?>">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                    </a>
+
+                    <!-- Become a Partner -->
+                    <a href="<?php echo esc_url(add_query_arg('tab', 'register', moga_account_url())); ?>"
+                        class="moga-header-top__partner-btn">
+                        <?php esc_html_e('Become a Partner', 'moga-travel'); ?>
+                    </a>
+
+                    <span class="moga-header__divider" aria-hidden="true"></span>
+
+                </div>
+                <!-- / Secondary group -->
+
+                <!-- Auth Buttons — always visible, including mobile -->
                 <div class="moga-header__user">
 
                     <?php if (is_user_logged_in()) : ?>

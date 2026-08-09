@@ -25,7 +25,6 @@
    -- Step 19: Search Page Layout + Filters (coming next)
    ============================================================ */
 
-
 /* ============================================================
    01. Shared Card Base
    ============================================================ */
@@ -74,7 +73,6 @@
     transform: scale(1.05);
 }
 
-
 /* ============================================================
    02. Badges
    ============================================================ */
@@ -122,7 +120,6 @@
     color: var(--moga-white);
 }
 
-
 /* ============================================================
    03. Wishlist Button
    ============================================================ */
@@ -162,7 +159,6 @@
     flex-shrink: 0;
 }
 
-
 /* ============================================================
    04. Property Type Tag
    ============================================================ */
@@ -182,7 +178,6 @@
     -webkit-backdrop-filter: blur(4px);
     white-space: nowrap;
 }
-
 
 /* ============================================================
    05. Card Body — Location
@@ -209,7 +204,6 @@
     flex-shrink: 0;
     color: var(--moga-secondary);
 }
-
 
 /* ============================================================
    06. Card Body — Title
@@ -238,7 +232,6 @@
     text-decoration: none;
 }
 
-
 /* ============================================================
    07. Card Body — Details Row
    ============================================================ */
@@ -264,7 +257,6 @@
     flex-shrink: 0;
     color: var(--moga-gray-500);
 }
-
 
 /* ============================================================
    08. Card Body — Rating
@@ -303,7 +295,6 @@
     color: var(--moga-gray-500);
 }
 
-
 /* ============================================================
    09. Card Footer — Price
    ============================================================ */
@@ -313,7 +304,8 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--moga-spacing-sm);
-    padding: var(--moga-spacing-sm) var(--moga-spacing-md) var(--moga-spacing-md);
+    padding: var(--moga-spacing-sm) var(--moga-spacing-md)
+        var(--moga-spacing-md);
     border-top: 1px solid var(--moga-gray-200);
     margin-top: auto;
 }
@@ -345,7 +337,6 @@
     font-weight: 400;
 }
 
-
 /* ============================================================
    10. Card Footer — Button
    ============================================================ */
@@ -354,7 +345,6 @@
     flex-shrink: 0;
     white-space: nowrap;
 }
-
 
 /* ============================================================
    11. Grid Layout Modifier
@@ -367,7 +357,6 @@
 .moga-card--grid .moga-card__image {
     aspect-ratio: 16 / 10;
 }
-
 
 /* ============================================================
    12. Shared Button Styles
@@ -496,7 +485,8 @@
 /* Body — grows to push footer down */
 .moga-card--list .moga-card__body {
     flex: 1;
-    padding: var(--moga-spacing-md) var(--moga-spacing-md) var(--moga-spacing-sm);
+    padding: var(--moga-spacing-md) var(--moga-spacing-md)
+        var(--moga-spacing-sm);
 }
 
 /* Excerpt — only visible in list view */
@@ -521,7 +511,8 @@
 
 /* Footer — sits at bottom of content */
 .moga-card--list .moga-card__footer {
-    padding: var(--moga-spacing-sm) var(--moga-spacing-md) var(--moga-spacing-md);
+    padding: var(--moga-spacing-sm) var(--moga-spacing-md)
+        var(--moga-spacing-md);
     margin-top: 0;
 }
 
@@ -679,7 +670,6 @@
     padding-bottom: var(--moga-spacing-xxl);
 }
 
-
 /* ============================================================
    17. Sidebar
    ============================================================ */
@@ -690,8 +680,10 @@
     box-shadow: var(--moga-shadow-sm);
     overflow: hidden;
     position: sticky;
-    top: calc( var(--moga-header-height) + var(--moga-spacing-md) );
-    max-height: calc( 100vh - var(--moga-header-height) - var(--moga-spacing-xl) );
+    top: calc(var(--moga-header-height) + var(--moga-spacing-md));
+    max-height: calc(
+        100vh - var(--moga-header-height) - var(--moga-spacing-xl)
+    );
     overflow-y: auto;
 }
 
@@ -728,7 +720,6 @@
     border-bottom-color: var(--moga-primary);
     background-color: var(--moga-primary-light);
 }
-
 
 /* ============================================================
    18. Filter Groups
@@ -922,7 +913,6 @@
     padding: 0 5px;
 }
 
-
 /* ============================================================
    19. Active Filter Pills
    ============================================================ */
@@ -971,7 +961,6 @@
     border-color: var(--moga-danger);
 }
 
-
 /* ============================================================
    20. Sort Controls
    ============================================================ */
@@ -1017,7 +1006,6 @@
     border-color: var(--moga-secondary);
     box-shadow: 0 0 0 3px rgba(0, 113, 194, 0.1);
 }
-
 
 /* ============================================================
    21. Pagination
@@ -1074,7 +1062,6 @@
     background: none;
 }
 
-
 /* ============================================================
    22. No Results
    ============================================================ */
@@ -1105,7 +1092,6 @@
     color: var(--moga-gray-600);
     margin-bottom: 0;
 }
-
 
 /* ============================================================
    23. Search Main Area
@@ -1151,13 +1137,16 @@
 }
 
 .moga-filter-group__title[aria-expanded="true"] .moga-filter-group__chevron {
-    transform: rotate( 180deg );
+    transform: rotate(180deg);
 }
 
 /* Content wrapper — CSS transition for smooth open/close */
 .moga-filter-group__content {
     overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+    transition:
+        max-height 0.3s ease,
+        opacity 0.3s ease,
+        margin-top 0.3s ease;
     max-height: 1000px;
     opacity: 1;
     margin-top: var(--moga-spacing-sm);
@@ -1170,4 +1159,35 @@
     opacity: 0;
     margin-top: 0;
     pointer-events: none;
+}
+
+/* ============================================================
+   RTL — Card Badge/Icon Positioning
+   ============================================================
+   Badges, the wishlist heart, and the type tag are all
+   position:absolute with a raw left/right value — unlike
+   flexbox's default 'row' (which auto-mirrors for dir="rtl"),
+   absolute positioning's left/right never does. Nothing was
+   overriding them for RTL at all, so all three sat on the same
+   physical side regardless of page direction. This is the same
+   underlying issue as the destination-card arrow fixed in
+   rtl.css, just a different mechanism (absolute position instead
+   of a directional icon), so it needs its own explicit swap here
+   rather than something already handled by removing an incorrect
+   rule elsewhere.
+   ============================================================ */
+
+[dir="rtl"] .moga-card__badges {
+    left: auto;
+    right: var(--moga-spacing-sm);
+}
+
+[dir="rtl"] .moga-card__wishlist {
+    right: auto;
+    left: var(--moga-spacing-sm);
+}
+
+[dir="rtl"] .moga-card__type {
+    left: auto;
+    right: var(--moga-spacing-sm);
 }

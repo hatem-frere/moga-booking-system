@@ -39,6 +39,12 @@
     grid-template-columns: 1fr 1.3fr;
     gap: var(--moga-spacing-xl);
     padding: var(--moga-spacing-xxl) 0;
+    /* Without this, CSS Grid can refuse to shrink a track below the
+       intrinsic content size of what's inside it — and an <iframe>
+       (the map, below) has a real, sometimes large, default intrinsic
+       size. This is what almost certainly caused the severe overflow
+       found via DevTools (over 10,000px wide on a phone screen). */
+    min-width: 0;
 }
 
 @media (max-width: 860px) {
@@ -55,6 +61,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--moga-spacing-md);
+    min-width: 0;
 }
 
 .moga-contact-card {
@@ -123,6 +130,8 @@ a.moga-contact-card:hover {
     overflow: hidden;
     box-shadow: var(--moga-shadow-md);
     height: 220px;
+    width: 100%;
+    min-width: 0;
 }
 
 .moga-contact-map__iframe {
