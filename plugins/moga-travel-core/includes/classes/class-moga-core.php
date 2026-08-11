@@ -511,7 +511,12 @@ class Moga_Core
                 'i18n'      => array(
                     'loading'              => __('Loading...', 'moga-travel-core'),
                     'error'                => __('Something went wrong.', 'moga-travel-core'),
+                    'loadingProvinces'     => __('Loading provinces…', 'moga-travel-core'),
+                    'selectCountryFirst'   => __('— Select Country First —', 'moga-travel-core'),
+                    'selectProvince'       => __('— Select Province —', 'moga-travel-core'),
+                    'selectProvinceFirst'  => __('— Select Province First —', 'moga-travel-core'),
                     'selectCity'           => __('— Select City —', 'moga-travel-core'),
+                    'selectDistrict'       => __('— Select District —', 'moga-travel-core'),
                     'checkingAvailability' => __('Checking availability...', 'moga-travel-core'),
                     'available'            => __('✅ Available for your dates!', 'moga-travel-core'),
                     'unavailable'          => __('❌ Not available for selected dates.', 'moga-travel-core'),
