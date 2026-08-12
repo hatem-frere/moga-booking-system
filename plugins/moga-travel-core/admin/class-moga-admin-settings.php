@@ -53,17 +53,19 @@ class Moga_Admin_Settings
         register_setting('moga_settings_general', 'moga_date_format');
 
         // Booking group.
-        register_setting('moga_settings_booking', 'moga_commission_rate');
-        register_setting('moga_settings_booking', 'moga_commission_type');
-        register_setting('moga_settings_booking', 'moga_booking_expiry');
-        register_setting('moga_settings_booking', 'moga_min_booking_notice');
-        register_setting('moga_settings_booking', 'moga_max_booking_days');
-        register_setting('moga_settings_booking', 'moga_seat_lock_duration');
+        register_setting('moga_settings_booking', 'moga_commission_rate', array('sanitize_callback' => 'floatval'));
+        register_setting('moga_settings_booking', 'moga_commission_type', array('sanitize_callback' => 'sanitize_key'));
+        register_setting('moga_settings_booking', 'moga_booking_expiry', array('sanitize_callback' => 'absint'));
+        register_setting('moga_settings_booking', 'moga_min_booking_notice', array('sanitize_callback' => 'absint'));
+        register_setting('moga_settings_booking', 'moga_max_booking_days', array('sanitize_callback' => 'absint'));
+        register_setting('moga_settings_booking', 'moga_seat_lock_duration', array('sanitize_callback' => 'absint'));
+        register_setting('moga_settings_booking', 'moga_deposit_floor_percent', array('sanitize_callback' => array(__CLASS__, 'sanitize_deposit_floor_percent')));
+        register_setting('moga_settings_booking', 'moga_cancellation_fee_percent', array('sanitize_callback' => array(__CLASS__, 'sanitize_cancellation_fee_percent')));
 
         // Payment group.
-        register_setting('moga_settings_payment', 'moga_payment_stripe');
-        register_setting('moga_settings_payment', 'moga_payment_paypal');
-        register_setting('moga_settings_payment', 'moga_payment_offline');
+        register_setting('moga_settings_payment', 'moga_payment_stripe', array('sanitize_callback' => 'rest_sanitize_boolean'));
+        register_setting('moga_settings_payment', 'moga_payment_paypal', array('sanitize_callback' => 'rest_sanitize_boolean'));
+        register_setting('moga_settings_payment', 'moga_payment_offline', array('sanitize_callback' => 'rest_sanitize_boolean'));
 
         // Notifications group.
         register_setting('moga_settings_notifications', 'moga_notify_email');
@@ -85,6 +87,70 @@ class Moga_Admin_Settings
         register_setting('moga_settings_contact', 'moga_contact_address');
         register_setting('moga_settings_contact', 'moga_contact_lat');
         register_setting('moga_settings_contact', 'moga_contact_lng');
+    }
+
+    /**
+     * Sanitize callback for moga_deposit_floor_percent.
+     * Locked decision: 20% is the platform-wide minimum deposit
+     * floor and cannot be lowered via this form. Rejects anything
+     * below it, surfaces a visible error, and keeps the previous
+     * saved value instead of silently accepting the bad input.
+     *
+     * @since  1.0.0
+     * @param  mixed $value Raw submitted value.
+     * @return float
+     */
+    public static function sanitize_deposit_floor_percent($value)
+    {
+        $minimum = 20;
+        $value   = floatval($value);
+
+        if ($value < $minimum) {
+            add_settings_error(
+                'moga_deposit_floor_percent',
+                'deposit_floor_too_low',
+                sprintf(
+                    /* translators: %d: minimum percentage */
+                    __('Minimum Deposit Floor cannot be set below the platform default of %d%%. Your change was not saved.', 'moga-travel-core'),
+                    $minimum
+                ),
+                'error'
+            );
+            return get_option('moga_deposit_floor_percent', $minimum);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Sanitize callback for moga_cancellation_fee_percent.
+     * Locked decision: 10% is the platform-wide minimum
+     * cancellation fee and cannot be lowered via this form.
+     *
+     * @since  1.0.0
+     * @param  mixed $value Raw submitted value.
+     * @return float
+     */
+    public static function sanitize_cancellation_fee_percent($value)
+    {
+        $minimum = 10;
+        $value   = floatval($value);
+
+        if ($value < $minimum) {
+            add_settings_error(
+                'moga_cancellation_fee_percent',
+                'cancellation_fee_too_low',
+                sprintf(
+                    /* translators: %d: minimum percentage */
+                    __('Cancellation Fee cannot be set below the platform default of %d%%. Your change was not saved.', 'moga-travel-core'),
+                    $minimum
+                ),
+                'error'
+            );
+            return get_option('moga_cancellation_fee_percent', $minimum);
+        }
+
+        return $value;
     }
 
     /**
@@ -114,11 +180,7 @@ class Moga_Admin_Settings
         <div class="wrap">
             <h1><?php esc_html_e('Moga Settings', 'moga-travel-core'); ?></h1>
 
-            <?php if (isset($_GET['settings-updated'])) : ?>
-                <div class="notice notice-success is-dismissible">
-                    <p><?php esc_html_e('Settings saved.', 'moga-travel-core'); ?></p>
-                </div>
-            <?php endif; ?>
+            <?php settings_errors(); ?>
 
             <nav class="nav-tab-wrapper wp-clearfix" style="margin-bottom:0;">
                 <?php foreach ($tabs as $slug => $label) : ?>
@@ -158,6 +220,116 @@ class Moga_Admin_Settings
                             <tr>
                                 <th scope="row"><label for="moga_contact_lng"><?php esc_html_e('Map Longitude', 'moga-travel-core'); ?></label></th>
                                 <td><input type="text" id="moga_contact_lng" name="moga_contact_lng" class="regular-text" value="<?php echo esc_attr(get_option('moga_contact_lng')); ?>"></td>
+                            </tr>
+                        </table>
+
+                        <?php submit_button(); ?>
+                    </form>
+
+                <?php elseif ('booking' === $tab) : ?>
+
+                    <form method="post" action="options.php">
+                        <?php settings_fields('moga_settings_booking'); ?>
+
+                        <table class="form-table" role="presentation">
+                            <tr>
+                                <th scope="row"><label for="moga_commission_rate"><?php esc_html_e('Commission Rate (%)', 'moga-travel-core'); ?></label></th>
+                                <td>
+                                    <input type="number" step="0.01" min="0" max="100" id="moga_commission_rate" name="moga_commission_rate" class="small-text" value="<?php echo esc_attr(get_option('moga_commission_rate', 10)); ?>">
+                                    <p class="description"><?php esc_html_e('Platform commission taken from each booking. Used by moga_calculate_commission().', 'moga-travel-core'); ?></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="moga_commission_type"><?php esc_html_e('Commission Type', 'moga-travel-core'); ?></label></th>
+                                <td>
+                                    <select id="moga_commission_type" name="moga_commission_type">
+                                        <option value="percentage" <?php selected(get_option('moga_commission_type', 'percentage'), 'percentage'); ?>><?php esc_html_e('Percentage', 'moga-travel-core'); ?></option>
+                                        <option value="fixed" <?php selected(get_option('moga_commission_type', 'percentage'), 'fixed'); ?>><?php esc_html_e('Fixed Amount', 'moga-travel-core'); ?></option>
+                                    </select>
+                                    <p class="description" style="color:#b32d2e;">
+                                        <?php esc_html_e('Note: only "Percentage" is currently implemented in the commission calculation logic. Selecting "Fixed Amount" has no effect yet.', 'moga-travel-core'); ?>
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="moga_deposit_floor_percent"><?php esc_html_e('Minimum Deposit Floor (%)', 'moga-travel-core'); ?></label></th>
+                                <td>
+                                    <input type="number" step="0.01" min="20" max="100" id="moga_deposit_floor_percent" name="moga_deposit_floor_percent" class="small-text" value="<?php echo esc_attr(get_option('moga_deposit_floor_percent', 20)); ?>">
+                                    <p class="description"><?php esc_html_e('Platform-wide minimum deposit. Cannot be set below 20% — vendors may require more, never less.', 'moga-travel-core'); ?></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="moga_cancellation_fee_percent"><?php esc_html_e('Cancellation Fee (%)', 'moga-travel-core'); ?></label></th>
+                                <td>
+                                    <input type="number" step="0.01" min="10" max="100" id="moga_cancellation_fee_percent" name="moga_cancellation_fee_percent" class="small-text" value="<?php echo esc_attr(get_option('moga_cancellation_fee_percent', 10)); ?>">
+                                    <p class="description"><?php esc_html_e('Site-wide default fee kept on a voluntary cancellation refund. Cannot be set below 10%. Vendors will be able to override this once the owner/organizer dashboard exists.', 'moga-travel-core'); ?></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="moga_booking_expiry"><?php esc_html_e('Pending Booking Expiry (minutes)', 'moga-travel-core'); ?></label></th>
+                                <td>
+                                    <input type="number" min="1" id="moga_booking_expiry" name="moga_booking_expiry" class="small-text" value="<?php echo esc_attr(get_option('moga_booking_expiry', 30)); ?>">
+                                    <p class="description"><?php esc_html_e('How long an unpaid pending booking holds its dates before auto-cancelling.', 'moga-travel-core'); ?></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="moga_min_booking_notice"><?php esc_html_e('Minimum Booking Notice (days)', 'moga-travel-core'); ?></label></th>
+                                <td><input type="number" min="0" id="moga_min_booking_notice" name="moga_min_booking_notice" class="small-text" value="<?php echo esc_attr(get_option('moga_min_booking_notice', 1)); ?>"></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="moga_max_booking_days"><?php esc_html_e('Maximum Advance Booking (days)', 'moga-travel-core'); ?></label></th>
+                                <td><input type="number" min="1" id="moga_max_booking_days" name="moga_max_booking_days" class="small-text" value="<?php echo esc_attr(get_option('moga_max_booking_days', 365)); ?>"></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="moga_seat_lock_duration"><?php esc_html_e('Seat Hold Duration (minutes)', 'moga-travel-core'); ?></label></th>
+                                <td>
+                                    <input type="number" min="1" id="moga_seat_lock_duration" name="moga_seat_lock_duration" class="small-text" value="<?php echo esc_attr(get_option('moga_seat_lock_duration', 15)); ?>">
+                                    <p class="description" style="color:#b32d2e;">
+                                        <?php esc_html_e('Note: not yet consumed by any code — class-moga-seat-map.php has not been built.', 'moga-travel-core'); ?>
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <?php submit_button(); ?>
+                    </form>
+
+                <?php elseif ('payment' === $tab) : ?>
+
+                    <p class="description" style="margin-bottom:20px;">
+                        <?php esc_html_e('These toggles only control which gateways are considered "enabled" for site-wide fallback purposes. No live gateway integration (API keys, checkout flow) exists yet for Stripe or PayPal — that is separate, not-yet-scoped work.', 'moga-travel-core'); ?>
+                    </p>
+
+                    <form method="post" action="options.php">
+                        <?php settings_fields('moga_settings_payment'); ?>
+
+                        <table class="form-table" role="presentation">
+                            <tr>
+                                <th scope="row"><?php esc_html_e('Stripe', 'moga-travel-core'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="moga_payment_stripe" value="1" <?php checked(get_option('moga_payment_stripe'), 1); ?>>
+                                        <?php esc_html_e('Enable Stripe as a site-wide gateway option', 'moga-travel-core'); ?>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?php esc_html_e('PayPal', 'moga-travel-core'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="moga_payment_paypal" value="1" <?php checked(get_option('moga_payment_paypal'), 1); ?>>
+                                        <?php esc_html_e('Enable PayPal as a site-wide gateway option', 'moga-travel-core'); ?>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?php esc_html_e('Offline Payment', 'moga-travel-core'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="moga_payment_offline" value="1" <?php checked(get_option('moga_payment_offline'), 1); ?>>
+                                        <?php esc_html_e('Allow bank transfer / cash payments, confirmed manually by an admin or vendor', 'moga-travel-core'); ?>
+                                    </label>
+                                </td>
                             </tr>
                         </table>
 

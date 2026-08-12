@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Price Helper Functions
  *
@@ -12,7 +13,7 @@
  * @since      1.0.0
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
     exit;
 }
 
@@ -33,25 +34,26 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param  bool   $symbol   Whether to show currency symbol. Default true.
  * @return string           Formatted price string.
  */
-function moga_format_price( $amount, $currency = '', $symbol = true ) {
+function moga_format_price($amount, $currency = '', $symbol = true)
+{
 
-    $amount = floatval( $amount );
+    $amount = floatval($amount);
 
-    if ( empty( $currency ) ) {
-        $currency = get_option( 'moga_currency', 'USD' );
+    if (empty($currency)) {
+        $currency = get_option('moga_currency', 'USD');
     }
 
     // Format the number with 2 decimal places.
-    $formatted = number_format( $amount, 2, '.', ',' );
+    $formatted = number_format($amount, 2, '.', ',');
 
-    if ( ! $symbol ) {
+    if (! $symbol) {
         return $formatted;
     }
 
-    $currency_symbol   = moga_get_currency_symbol( $currency );
-    $symbol_position   = get_option( 'moga_currency_position', 'before' );
+    $currency_symbol   = moga_get_currency_symbol($currency);
+    $symbol_position   = get_option('moga_currency_position', 'before');
 
-    if ( 'before' === $symbol_position ) {
+    if ('before' === $symbol_position) {
         return $currency_symbol . $formatted;
     }
 
@@ -69,10 +71,11 @@ function moga_format_price( $amount, $currency = '', $symbol = true ) {
  * @param  string $currency Currency code.
  * @return string           Formatted price range.
  */
-function moga_format_price_range( $min, $max, $currency = '' ) {
-    return moga_format_price( $min, $currency )
+function moga_format_price_range($min, $max, $currency = '')
+{
+    return moga_format_price($min, $currency)
         . ' – '
-        . moga_format_price( $max, $currency );
+        . moga_format_price($max, $currency);
 }
 
 /**
@@ -85,10 +88,11 @@ function moga_format_price_range( $min, $max, $currency = '' ) {
  * @param  string $currency Currency code.
  * @return string           Formatted price per night.
  */
-function moga_format_price_per_night( $price, $currency = '' ) {
-    return moga_format_price( $price, $currency )
+function moga_format_price_per_night($price, $currency = '')
+{
+    return moga_format_price($price, $currency)
         . ' / '
-        . __( 'night', 'moga-travel-core' );
+        . __('night', 'moga-travel-core');
 }
 
 /**
@@ -101,10 +105,11 @@ function moga_format_price_per_night( $price, $currency = '' ) {
  * @param  string $currency Currency code.
  * @return string           Formatted price per person.
  */
-function moga_format_price_per_person( $price, $currency = '' ) {
-    return moga_format_price( $price, $currency )
+function moga_format_price_per_person($price, $currency = '')
+{
+    return moga_format_price($price, $currency)
         . ' / '
-        . __( 'person', 'moga-travel-core' );
+        . __('person', 'moga-travel-core');
 }
 
 
@@ -119,10 +124,11 @@ function moga_format_price_per_person( $price, $currency = '' ) {
  * @param  string $currency_code ISO currency code (e.g. USD, EGP).
  * @return string                Currency symbol (e.g. $, E£).
  */
-function moga_get_currency_symbol( $currency_code = '' ) {
+function moga_get_currency_symbol($currency_code = '')
+{
 
-    if ( empty( $currency_code ) ) {
-        $currency_code = get_option( 'moga_currency', 'USD' );
+    if (empty($currency_code)) {
+        $currency_code = get_option('moga_currency', 'USD');
     }
 
     $symbols = array(
@@ -156,8 +162,8 @@ function moga_get_currency_symbol( $currency_code = '' ) {
         'DKK' => 'kr',
     );
 
-    return isset( $symbols[ $currency_code ] )
-        ? $symbols[ $currency_code ]
+    return isset($symbols[$currency_code])
+        ? $symbols[$currency_code]
         : $currency_code;
 }
 
@@ -167,25 +173,26 @@ function moga_get_currency_symbol( $currency_code = '' ) {
  * @since  1.0.0
  * @return array code => name pairs.
  */
-function moga_get_currencies() {
+function moga_get_currencies()
+{
     return array(
-        'USD' => __( 'US Dollar ($)', 'moga-travel-core' ),
-        'EUR' => __( 'Euro (€)', 'moga-travel-core' ),
-        'GBP' => __( 'British Pound (£)', 'moga-travel-core' ),
-        'EGP' => __( 'Egyptian Pound (E£)', 'moga-travel-core' ),
-        'SAR' => __( 'Saudi Riyal (SR)', 'moga-travel-core' ),
-        'AED' => __( 'UAE Dirham (AED)', 'moga-travel-core' ),
-        'KWD' => __( 'Kuwaiti Dinar (KD)', 'moga-travel-core' ),
-        'QAR' => __( 'Qatari Riyal (QR)', 'moga-travel-core' ),
-        'BHD' => __( 'Bahraini Dinar (BD)', 'moga-travel-core' ),
-        'OMR' => __( 'Omani Rial (OMR)', 'moga-travel-core' ),
-        'JOD' => __( 'Jordanian Dinar (JD)', 'moga-travel-core' ),
-        'MAD' => __( 'Moroccan Dirham (MAD)', 'moga-travel-core' ),
-        'TND' => __( 'Tunisian Dinar (DT)', 'moga-travel-core' ),
-        'TRY' => __( 'Turkish Lira (₺)', 'moga-travel-core' ),
-        'CAD' => __( 'Canadian Dollar (CA$)', 'moga-travel-core' ),
-        'AUD' => __( 'Australian Dollar (AU$)', 'moga-travel-core' ),
-        'CHF' => __( 'Swiss Franc (CHF)', 'moga-travel-core' ),
+        'USD' => __('US Dollar ($)', 'moga-travel-core'),
+        'EUR' => __('Euro (€)', 'moga-travel-core'),
+        'GBP' => __('British Pound (£)', 'moga-travel-core'),
+        'EGP' => __('Egyptian Pound (E£)', 'moga-travel-core'),
+        'SAR' => __('Saudi Riyal (SR)', 'moga-travel-core'),
+        'AED' => __('UAE Dirham (AED)', 'moga-travel-core'),
+        'KWD' => __('Kuwaiti Dinar (KD)', 'moga-travel-core'),
+        'QAR' => __('Qatari Riyal (QR)', 'moga-travel-core'),
+        'BHD' => __('Bahraini Dinar (BD)', 'moga-travel-core'),
+        'OMR' => __('Omani Rial (OMR)', 'moga-travel-core'),
+        'JOD' => __('Jordanian Dinar (JD)', 'moga-travel-core'),
+        'MAD' => __('Moroccan Dirham (MAD)', 'moga-travel-core'),
+        'TND' => __('Tunisian Dinar (DT)', 'moga-travel-core'),
+        'TRY' => __('Turkish Lira (₺)', 'moga-travel-core'),
+        'CAD' => __('Canadian Dollar (CA$)', 'moga-travel-core'),
+        'AUD' => __('Australian Dollar (AU$)', 'moga-travel-core'),
+        'CHF' => __('Swiss Franc (CHF)', 'moga-travel-core'),
     );
 }
 
@@ -202,17 +209,18 @@ function moga_get_currencies() {
  * @param  float  $discount_percent Discount percentage (0-100).
  * @return float                   Discounted price.
  */
-function moga_apply_discount( $original_price, $discount_percent ) {
-    $original_price   = floatval( $original_price );
-    $discount_percent = floatval( $discount_percent );
+function moga_apply_discount($original_price, $discount_percent)
+{
+    $original_price   = floatval($original_price);
+    $discount_percent = floatval($discount_percent);
 
-    if ( $discount_percent <= 0 || $discount_percent > 100 ) {
+    if ($discount_percent <= 0 || $discount_percent > 100) {
         return $original_price;
     }
 
-    $discount_amount = $original_price * ( $discount_percent / 100 );
+    $discount_amount = $original_price * ($discount_percent / 100);
 
-    return round( $original_price - $discount_amount, 2 );
+    return round($original_price - $discount_amount, 2);
 }
 
 /**
@@ -223,15 +231,16 @@ function moga_apply_discount( $original_price, $discount_percent ) {
  * @param  float $discount_percent Discount percentage.
  * @return float                   Discount amount.
  */
-function moga_calculate_discount_amount( $original_price, $discount_percent ) {
-    $original_price   = floatval( $original_price );
-    $discount_percent = floatval( $discount_percent );
+function moga_calculate_discount_amount($original_price, $discount_percent)
+{
+    $original_price   = floatval($original_price);
+    $discount_percent = floatval($discount_percent);
 
-    if ( $discount_percent <= 0 ) {
+    if ($discount_percent <= 0) {
         return 0.00;
     }
 
-    return round( $original_price * ( $discount_percent / 100 ), 2 );
+    return round($original_price * ($discount_percent / 100), 2);
 }
 
 /**
@@ -242,15 +251,16 @@ function moga_calculate_discount_amount( $original_price, $discount_percent ) {
  * @param  float $sale_price     Sale price.
  * @return int                   Percentage saved (0-100).
  */
-function moga_calculate_savings_percent( $original_price, $sale_price ) {
-    $original_price = floatval( $original_price );
-    $sale_price     = floatval( $sale_price );
+function moga_calculate_savings_percent($original_price, $sale_price)
+{
+    $original_price = floatval($original_price);
+    $sale_price     = floatval($sale_price);
 
-    if ( $original_price <= 0 || $sale_price >= $original_price ) {
+    if ($original_price <= 0 || $sale_price >= $original_price) {
         return 0;
     }
 
-    return intval( round( ( ( $original_price - $sale_price ) / $original_price ) * 100 ) );
+    return intval(round((($original_price - $sale_price) / $original_price) * 100));
 }
 
 
@@ -267,14 +277,15 @@ function moga_calculate_savings_percent( $original_price, $sale_price ) {
  * @param  string $check_out   Check-out date (Y-m-d).
  * @return array               Price breakdown array.
  */
-function moga_calculate_property_price( $property_id, $check_in, $check_out ) {
+function moga_calculate_property_price($property_id, $check_in, $check_out)
+{
 
-    $nights           = moga_calculate_nights( $check_in, $check_out );
-    $price_per_night  = floatval( get_post_meta( $property_id, '_moga_price_per_night', true ) );
-    $weekend_price    = floatval( get_post_meta( $property_id, '_moga_price_weekend', true ) );
-    $discount_percent = floatval( get_post_meta( $property_id, '_moga_price_discount', true ) );
+    $nights           = moga_calculate_nights($check_in, $check_out);
+    $price_per_night  = floatval(get_post_meta($property_id, '_moga_price_per_night', true));
+    $weekend_price    = floatval(get_post_meta($property_id, '_moga_price_weekend', true));
+    $discount_percent = floatval(get_post_meta($property_id, '_moga_price_discount', true));
 
-    if ( $nights <= 0 || $price_per_night <= 0 ) {
+    if ($nights <= 0 || $price_per_night <= 0) {
         return array(
             'nights'          => 0,
             'price_per_night' => 0,
@@ -285,17 +296,69 @@ function moga_calculate_property_price( $property_id, $check_in, $check_out ) {
         );
     }
 
-    // Calculate subtotal considering weekend pricing.
+    // Calculate subtotal considering weekend pricing and any
+    // per-date price overrides set via Moga_Availability::set_price_override().
+    // A single batch query avoids one query per date in the loop.
+    global $wpdb;
+    $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
+
+    $overrides = $wpdb->get_results($wpdb->prepare(
+        "SELECT date, price_override FROM {$prefix}availability
+         WHERE listing_id = %d AND date >= %s AND date < %s AND price_override IS NOT NULL",
+        $property_id,
+        $check_in,
+        $check_out
+    ), OBJECT_K);
+
+    // Which days count as "weekend" for THIS property. Per-property,
+    // not global — the platform has no single primary market, so a
+    // hardcoded region-specific weekend would be wrong for most
+    // owners. Stored as comma-separated day numbers (0=Sun..6=Sat),
+    // e.g. "5,6" for Friday/Saturday. Falls back to Saturday/Sunday
+    // (the most globally common weekend) when unset. NEW META KEY —
+    // '_moga_weekend_days' has no admin meta box UI yet, same
+    // situation as the deposit-type meta from earlier — functional
+    // via this fallback until that UI exists.
+    $weekend_days_meta = get_post_meta($property_id, '_moga_weekend_days', true);
+
+    if ($weekend_days_meta) {
+        $weekend_days = array_map(
+            'intval',
+            array_filter(array_map('trim', explode(',', $weekend_days_meta)), 'strlen')
+        );
+    } else {
+        $weekend_days = array(6, 0); // Saturday, Sunday.
+    }
+
     $subtotal        = 0;
     $weekend_nights  = 0;
     $weekday_nights  = 0;
-    $dates           = moga_date_range( $check_in, $check_out );
+    $override_nights = 0;
+    $dates           = moga_date_range($check_in, $check_out);
 
-    foreach ( $dates as $date ) {
-        $day_of_week = intval( gmdate( 'w', strtotime( $date ) ) );
+    foreach ($dates as $date) {
+        $day_of_week = intval(gmdate('w', strtotime($date)));
+        $is_weekend  = in_array($day_of_week, $weekend_days, true);
 
-        // 5 = Friday, 6 = Saturday (weekend in Egypt).
-        if ( $weekend_price > 0 && in_array( $day_of_week, array( 5, 6 ), true ) ) {
+        // A per-date override always takes precedence over both the
+        // weekend rate and the standard nightly rate.
+        if (isset($overrides[$date]) && null !== $overrides[$date]->price_override) {
+            $subtotal += (float) $overrides[$date]->price_override;
+            $override_nights++;
+
+            // Still tracked for the nights label, based on the
+            // actual calendar day — an overridden Friday is still
+            // a "weekend night" for display purposes, just priced
+            // differently.
+            if ($is_weekend) {
+                $weekend_nights++;
+            } else {
+                $weekday_nights++;
+            }
+            continue;
+        }
+
+        if ($weekend_price > 0 && $is_weekend) {
             $subtotal += $weekend_price;
             $weekend_nights++;
         } else {
@@ -306,35 +369,36 @@ function moga_calculate_property_price( $property_id, $check_in, $check_out ) {
 
     // Apply discount.
     $discount = 0;
-    if ( $discount_percent > 0 ) {
-        $discount = moga_calculate_discount_amount( $subtotal, $discount_percent );
+    if ($discount_percent > 0) {
+        $discount = moga_calculate_discount_amount($subtotal, $discount_percent);
         $subtotal_after_discount = $subtotal - $discount;
     } else {
         $subtotal_after_discount = $subtotal;
     }
 
     // Calculate taxes (no tax by default — can be configured).
-    $tax_rate = floatval( get_option( 'moga_tax_rate', 0 ) );
+    $tax_rate = floatval(get_option('moga_tax_rate', 0));
     $taxes    = $tax_rate > 0
-        ? round( $subtotal_after_discount * ( $tax_rate / 100 ), 2 )
+        ? round($subtotal_after_discount * ($tax_rate / 100), 2)
         : 0;
 
-    $total = round( $subtotal_after_discount + $taxes, 2 );
+    $total = round($subtotal_after_discount + $taxes, 2);
 
     return array(
         'nights'           => $nights,
         'weekend_nights'   => $weekend_nights,
         'weekday_nights'   => $weekday_nights,
+        'override_nights'  => $override_nights,
         'price_per_night'  => $price_per_night,
         'weekend_price'    => $weekend_price,
-        'subtotal'         => round( $subtotal, 2 ),
+        'subtotal'         => round($subtotal, 2),
         'discount_percent' => $discount_percent,
-        'discount'         => round( $discount, 2 ),
+        'discount'         => round($discount, 2),
         'tax_rate'         => $tax_rate,
         'taxes'            => $taxes,
         'total'            => $total,
-        'currency'         => get_post_meta( $property_id, '_moga_currency', true )
-                                ?: get_option( 'moga_currency', 'USD' ),
+        'currency'         => get_post_meta($property_id, '_moga_currency', true)
+            ?: get_option('moga_currency', 'USD'),
     );
 }
 
@@ -353,16 +417,17 @@ function moga_calculate_property_price( $property_id, $check_in, $check_out ) {
  * @param  int $infants       Number of infant participants.
  * @return array              Price breakdown array.
  */
-function moga_calculate_tour_price( $tour_id, $adults = 1, $children = 0, $infants = 0 ) {
+function moga_calculate_tour_price($tour_id, $adults = 1, $children = 0, $infants = 0)
+{
 
-    $price_adult    = floatval( get_post_meta( $tour_id, '_moga_price_per_person', true ) );
-    $price_child    = floatval( get_post_meta( $tour_id, '_moga_price_child', true ) );
-    $price_infant   = floatval( get_post_meta( $tour_id, '_moga_price_infant', true ) );
-    $group_discount = floatval( get_post_meta( $tour_id, '_moga_price_group', true ) );
+    $price_adult    = floatval(get_post_meta($tour_id, '_moga_price_per_person', true));
+    $price_child    = floatval(get_post_meta($tour_id, '_moga_price_child', true));
+    $price_infant   = floatval(get_post_meta($tour_id, '_moga_price_infant', true));
+    $group_discount = floatval(get_post_meta($tour_id, '_moga_price_group', true));
 
-    $adults   = max( 0, intval( $adults ) );
-    $children = max( 0, intval( $children ) );
-    $infants  = max( 0, intval( $infants ) );
+    $adults   = max(0, intval($adults));
+    $children = max(0, intval($children));
+    $infants  = max(0, intval($infants));
 
     $adults_total   = $price_adult * $adults;
     $children_total = $price_child * $children;
@@ -371,19 +436,19 @@ function moga_calculate_tour_price( $tour_id, $adults = 1, $children = 0, $infan
 
     // Apply group discount.
     $discount = 0;
-    if ( $group_discount > 0 ) {
-        $discount = moga_calculate_discount_amount( $subtotal, $group_discount );
+    if ($group_discount > 0) {
+        $discount = moga_calculate_discount_amount($subtotal, $group_discount);
     }
 
     $subtotal_after_discount = $subtotal - $discount;
 
     // Calculate taxes.
-    $tax_rate = floatval( get_option( 'moga_tax_rate', 0 ) );
+    $tax_rate = floatval(get_option('moga_tax_rate', 0));
     $taxes    = $tax_rate > 0
-        ? round( $subtotal_after_discount * ( $tax_rate / 100 ), 2 )
+        ? round($subtotal_after_discount * ($tax_rate / 100), 2)
         : 0;
 
-    $total = round( $subtotal_after_discount + $taxes, 2 );
+    $total = round($subtotal_after_discount + $taxes, 2);
 
     return array(
         'adults'           => $adults,
@@ -392,17 +457,17 @@ function moga_calculate_tour_price( $tour_id, $adults = 1, $children = 0, $infan
         'price_adult'      => $price_adult,
         'price_child'      => $price_child,
         'price_infant'     => $price_infant,
-        'adults_total'     => round( $adults_total, 2 ),
-        'children_total'   => round( $children_total, 2 ),
-        'infants_total'    => round( $infants_total, 2 ),
-        'subtotal'         => round( $subtotal, 2 ),
+        'adults_total'     => round($adults_total, 2),
+        'children_total'   => round($children_total, 2),
+        'infants_total'    => round($infants_total, 2),
+        'subtotal'         => round($subtotal, 2),
         'group_discount'   => $group_discount,
-        'discount'         => round( $discount, 2 ),
+        'discount'         => round($discount, 2),
         'tax_rate'         => $tax_rate,
         'taxes'            => $taxes,
         'total'            => $total,
-        'currency'         => get_post_meta( $tour_id, '_moga_currency', true )
-                                ?: get_option( 'moga_currency', 'USD' ),
+        'currency'         => get_post_meta($tour_id, '_moga_currency', true)
+            ?: get_option('moga_currency', 'USD'),
     );
 }
 
@@ -419,16 +484,17 @@ function moga_calculate_tour_price( $tour_id, $adults = 1, $children = 0, $infan
  * @param  float  $commission_rate Commission rate percentage.
  * @return array                   Commission breakdown.
  */
-function moga_calculate_commission( $booking_total, $commission_rate = null ) {
+function moga_calculate_commission($booking_total, $commission_rate = null)
+{
 
-    $booking_total = floatval( $booking_total );
+    $booking_total = floatval($booking_total);
 
-    if ( null === $commission_rate ) {
-        $commission_rate = floatval( get_option( 'moga_commission_rate', 10 ) );
+    if (null === $commission_rate) {
+        $commission_rate = floatval(get_option('moga_commission_rate', 10));
     }
 
-    $commission_amount = round( $booking_total * ( $commission_rate / 100 ), 2 );
-    $owner_earnings    = round( $booking_total - $commission_amount, 2 );
+    $commission_amount = round($booking_total * ($commission_rate / 100), 2);
+    $owner_earnings    = round($booking_total - $commission_amount, 2);
 
     return array(
         'booking_total'     => $booking_total,
@@ -459,38 +525,39 @@ function moga_calculate_commission( $booking_total, $commission_rate = null ) {
  * @param  bool   $echo           Whether to echo or return.
  * @return string|void
  */
-function moga_render_price( $price, $original_price = 0, $currency = '', $suffix = '', $echo = true ) {
+function moga_render_price($price, $original_price = 0, $currency = '', $suffix = '', $echo = true)
+{
 
     $html = '<div class="moga-price-wrap">';
 
     // Current price.
     $html .= '<span class="moga-card__price">'
-        . esc_html( moga_format_price( $price, $currency ) );
+        . esc_html(moga_format_price($price, $currency));
 
-    if ( $suffix ) {
+    if ($suffix) {
         $html .= '<span class="moga-card__price-label">'
-            . esc_html( $suffix ) . '</span>';
+            . esc_html($suffix) . '</span>';
     }
 
     $html .= '</span>';
 
     // Original price and discount badge (if discounted).
-    if ( $original_price > 0 && $original_price > $price ) {
-        $savings = moga_calculate_savings_percent( $original_price, $price );
+    if ($original_price > 0 && $original_price > $price) {
+        $savings = moga_calculate_savings_percent($original_price, $price);
 
         $html .= '<span class="moga-card__price-old">'
-            . esc_html( moga_format_price( $original_price, $currency ) )
+            . esc_html(moga_format_price($original_price, $currency))
             . '</span>';
 
-        if ( $savings > 0 ) {
+        if ($savings > 0) {
             $html .= '<span class="moga-badge moga-badge--danger">-'
-                . esc_html( $savings ) . '%</span>';
+                . esc_html($savings) . '%</span>';
         }
     }
 
     $html .= '</div>';
 
-    if ( $echo ) {
+    if ($echo) {
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         return;
     }
@@ -505,15 +572,16 @@ function moga_render_price( $price, $original_price = 0, $currency = '', $suffix
  * @param  int $property_id Property post ID.
  * @return array            Array with 'price', 'original', 'currency'.
  */
-function moga_get_property_display_price( $property_id ) {
+function moga_get_property_display_price($property_id)
+{
 
-    $price_per_night  = floatval( get_post_meta( $property_id, '_moga_price_per_night', true ) );
-    $discount_percent = floatval( get_post_meta( $property_id, '_moga_price_discount', true ) );
-    $currency         = get_post_meta( $property_id, '_moga_currency', true )
-                            ?: get_option( 'moga_currency', 'USD' );
+    $price_per_night  = floatval(get_post_meta($property_id, '_moga_price_per_night', true));
+    $discount_percent = floatval(get_post_meta($property_id, '_moga_price_discount', true));
+    $currency         = get_post_meta($property_id, '_moga_currency', true)
+        ?: get_option('moga_currency', 'USD');
 
     $display_price = $discount_percent > 0
-        ? moga_apply_discount( $price_per_night, $discount_percent )
+        ? moga_apply_discount($price_per_night, $discount_percent)
         : $price_per_night;
 
     return array(
@@ -531,15 +599,16 @@ function moga_get_property_display_price( $property_id ) {
  * @param  int $tour_id Tour post ID.
  * @return array        Array with 'price', 'original', 'currency'.
  */
-function moga_get_tour_display_price( $tour_id ) {
+function moga_get_tour_display_price($tour_id)
+{
 
-    $price_per_person = floatval( get_post_meta( $tour_id, '_moga_price_per_person', true ) );
-    $group_discount   = floatval( get_post_meta( $tour_id, '_moga_price_group', true ) );
-    $currency         = get_post_meta( $tour_id, '_moga_currency', true )
-                            ?: get_option( 'moga_currency', 'USD' );
+    $price_per_person = floatval(get_post_meta($tour_id, '_moga_price_per_person', true));
+    $group_discount   = floatval(get_post_meta($tour_id, '_moga_price_group', true));
+    $currency         = get_post_meta($tour_id, '_moga_currency', true)
+        ?: get_option('moga_currency', 'USD');
 
     $display_price = $group_discount > 0
-        ? moga_apply_discount( $price_per_person, $group_discount )
+        ? moga_apply_discount($price_per_person, $group_discount)
         : $price_per_person;
 
     return array(

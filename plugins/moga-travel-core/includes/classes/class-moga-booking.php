@@ -231,7 +231,10 @@ class Moga_Booking
 
         $booking_id = $wpdb->insert_id;
 
-        $this->block_availability($listing_id, $availability_type, $check_in, $check_out, $booking_id);
+        $availability_manager = $this->get_availability_manager();
+        if ($availability_manager) {
+            $availability_manager->block_dates($listing_id, $availability_type, $check_in, $check_out, $booking_id);
+        }
 
         return $booking_id;
     }
@@ -474,13 +477,16 @@ class Moga_Booking
 
         $availability_type = ('tour' === $booking['booking_type']) ? 'tour' : 'property';
 
-        $this->release_availability(
-            $booking['listing_id'],
-            $availability_type,
-            $booking['check_in'],
-            $booking['check_out'],
-            $booking_id
-        );
+        $availability_manager = $this->get_availability_manager();
+        if ($availability_manager) {
+            $availability_manager->release_dates(
+                $booking['listing_id'],
+                $availability_type,
+                $booking['check_in'],
+                $booking['check_out'],
+                $booking_id
+            );
+        }
 
         return true;
     }
@@ -632,6 +638,8 @@ class Moga_Booking
             $cutoff
         ));
 
+        $availability_manager = $this->get_availability_manager();
+
         foreach ($expired as $booking) {
             $this->update_status($booking->id, 'cancelled');
 
@@ -645,13 +653,15 @@ class Moga_Booking
 
             $availability_type = ('tour' === $booking->booking_type) ? 'tour' : 'property';
 
-            $this->release_availability(
-                $booking->listing_id,
-                $availability_type,
-                $booking->check_in,
-                $booking->check_out,
-                $booking->id
-            );
+            if ($availability_manager) {
+                $availability_manager->release_dates(
+                    $booking->listing_id,
+                    $availability_type,
+                    $booking->check_in,
+                    $booking->check_out,
+                    $booking->id
+                );
+            }
         }
     }
 
@@ -761,6 +771,8 @@ class Moga_Booking
              WHERE status = 'confirmed' AND balance_due > 0 AND check_in <= CURDATE()"
         );
 
+        $availability_manager = $this->get_availability_manager();
+
         foreach ($overdue as $booking) {
             $this->update_status($booking->id, 'cancelled');
 
@@ -776,13 +788,15 @@ class Moga_Booking
 
             $availability_type = ('tour' === $booking->booking_type) ? 'tour' : 'property';
 
-            $this->release_availability(
-                $booking->listing_id,
-                $availability_type,
-                $booking->check_in,
-                $booking->check_out,
-                $booking->id
-            );
+            if ($availability_manager) {
+                $availability_manager->release_dates(
+                    $booking->listing_id,
+                    $availability_type,
+                    $booking->check_in,
+                    $booking->check_out,
+                    $booking->id
+                );
+            }
 
             $this->trigger_reminder($booking->id, 'cancelled');
         }
@@ -894,71 +908,21 @@ class Moga_Booking
 
 
     // ============================================================
-    // AVAILABILITY HELPERS (PRIVATE)
+    // AVAILABILITY ACCESS (delegates to Moga_Availability)
     // ============================================================
 
     /**
-     * Block a date range for a listing in mg_moga_availability,
-     * linked to the given booking.
+     * Resolve the shared Moga_Availability instance, if available.
+     * Guarded with function_exists()/null-checks the same way
+     * trigger_reminder() resolves Moga_Notification, so this class
+     * degrades safely rather than fataling if boot order ever changes.
      *
      * @since  1.0.0
-     * @param  int    $listing_id   Property or tour post ID.
-     * @param  string $listing_type 'property'|'tour'.
-     * @param  string $check_in     Y-m-d.
-     * @param  string $check_out    Y-m-d (exclusive, matches moga_date_range()).
-     * @param  int    $booking_id   Booking ID to link.
-     * @return void
+     * @return Moga_Availability|null
      */
-    private function block_availability($listing_id, $listing_type, $check_in, $check_out, $booking_id)
+    private function get_availability_manager()
     {
-        global $wpdb;
-        $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
-
-        foreach (moga_date_range($check_in, $check_out) as $date) {
-            // Relies on the UNIQUE KEY idx_listing_date (listing_id, date)
-            // so this correctly upserts rather than duplicating rows.
-            $wpdb->replace(
-                "{$prefix}availability",
-                array(
-                    'listing_id'   => $listing_id,
-                    'listing_type' => $listing_type,
-                    'date'         => $date,
-                    'status'       => 'booked',
-                    'booking_id'   => $booking_id,
-                ),
-                array('%d', '%s', '%s', '%s', '%d')
-            );
-        }
-    }
-
-    /**
-     * Release a previously blocked date range back to 'available'.
-     * Only releases rows still linked to this specific booking_id,
-     * so it can't accidentally free dates another booking now holds.
-     *
-     * @since  1.0.0
-     * @param  int    $listing_id   Property or tour post ID.
-     * @param  string $listing_type 'property'|'tour'.
-     * @param  string $check_in     Y-m-d.
-     * @param  string $check_out    Y-m-d.
-     * @param  int    $booking_id   Booking ID that held these dates.
-     * @return void
-     */
-    private function release_availability($listing_id, $listing_type, $check_in, $check_out, $booking_id)
-    {
-        global $wpdb;
-        $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
-
-        $wpdb->query($wpdb->prepare(
-            "UPDATE {$prefix}availability
-             SET status = 'available', booking_id = NULL
-             WHERE listing_id = %d AND listing_type = %s
-             AND date >= %s AND date < %s AND booking_id = %d",
-            $listing_id,
-            $listing_type,
-            $check_in,
-            $check_out,
-            $booking_id
-        ));
+        $core = function_exists('moga_core') ? moga_core() : null;
+        return ($core && $core->availability) ? $core->availability : null;
     }
 }
