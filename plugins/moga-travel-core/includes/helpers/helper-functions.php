@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Global Helper Functions
  *
@@ -11,7 +12,7 @@
  * @since      1.0.0
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
     exit;
 }
 
@@ -29,9 +30,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since  1.0.0
  * @return string Unique booking number.
  */
-function moga_generate_booking_number() {
-    $date   = gmdate( 'Ymd' );
-    $random = strtoupper( substr( base_convert( bin2hex( random_bytes(4) ), 16, 36 ), 0, 5 ) );
+function moga_generate_booking_number()
+{
+    $date   = gmdate('Ymd');
+    $random = strtoupper(substr(base_convert(bin2hex(random_bytes(4)), 16, 36), 0, 5));
     return 'MB-' . $date . '-' . $random;
 }
 
@@ -49,24 +51,25 @@ function moga_generate_booking_number() {
  * @param  float  $score Rating score (0-10).
  * @return string        Label (Exceptional, Superb, etc.)
  */
-function moga_get_rating_label( $score ) {
-    $score = floatval( $score );
+function moga_get_rating_label($score)
+{
+    $score = floatval($score);
 
-    if ( $score >= 9.0 ) {
-        return __( 'Exceptional', 'moga-travel-core' );
-    } elseif ( $score >= 8.0 ) {
-        return __( 'Superb', 'moga-travel-core' );
-    } elseif ( $score >= 7.0 ) {
-        return __( 'Very Good', 'moga-travel-core' );
-    } elseif ( $score >= 6.0 ) {
-        return __( 'Good', 'moga-travel-core' );
-    } elseif ( $score >= 5.0 ) {
-        return __( 'Pleasant', 'moga-travel-core' );
-    } elseif ( $score > 0 ) {
-        return __( 'Reviewed', 'moga-travel-core' );
+    if ($score >= 9.0) {
+        return __('Exceptional', 'moga-travel-core');
+    } elseif ($score >= 8.0) {
+        return __('Superb', 'moga-travel-core');
+    } elseif ($score >= 7.0) {
+        return __('Very Good', 'moga-travel-core');
+    } elseif ($score >= 6.0) {
+        return __('Good', 'moga-travel-core');
+    } elseif ($score >= 5.0) {
+        return __('Pleasant', 'moga-travel-core');
+    } elseif ($score > 0) {
+        return __('Reviewed', 'moga-travel-core');
     }
 
-    return __( 'No Reviews', 'moga-travel-core' );
+    return __('No Reviews', 'moga-travel-core');
 }
 
 /**
@@ -76,14 +79,15 @@ function moga_get_rating_label( $score ) {
  * @param  float  $score Rating score (0-10).
  * @return string        CSS color class.
  */
-function moga_get_rating_color( $score ) {
-    $score = floatval( $score );
+function moga_get_rating_color($score)
+{
+    $score = floatval($score);
 
-    if ( $score >= 8.0 ) {
+    if ($score >= 8.0) {
         return 'moga-rating--excellent';
-    } elseif ( $score >= 7.0 ) {
+    } elseif ($score >= 7.0) {
         return 'moga-rating--good';
-    } elseif ( $score >= 6.0 ) {
+    } elseif ($score >= 6.0) {
         return 'moga-rating--average';
     }
 
@@ -98,16 +102,17 @@ function moga_get_rating_color( $score ) {
  * @param  bool   $echo    Whether to echo or return.
  * @return string|void
  */
-function moga_render_stars( $stars, $echo = true ) {
-    $stars  = max( 0, min( 5, intval( $stars ) ) );
+function moga_render_stars($stars, $echo = true)
+{
+    $stars  = max(0, min(5, intval($stars)));
     $html   = '<span class="moga-stars" aria-label="' . sprintf(
         /* translators: %d: number of stars */
-        esc_attr__( '%d out of 5 stars', 'moga-travel-core' ),
+        esc_attr__('%d out of 5 stars', 'moga-travel-core'),
         $stars
     ) . '">';
 
-    for ( $i = 1; $i <= 5; $i++ ) {
-        if ( $i <= $stars ) {
+    for ($i = 1; $i <= 5; $i++) {
+        if ($i <= $stars) {
             $html .= '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
         } else {
             $html .= '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="star-empty"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
@@ -116,7 +121,7 @@ function moga_render_stars( $stars, $echo = true ) {
 
     $html .= '</span>';
 
-    if ( $echo ) {
+    if ($echo) {
         echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         return;
     }
@@ -136,16 +141,17 @@ function moga_render_stars( $stars, $echo = true ) {
  * @param  array  $args Optional query parameters.
  * @return string       Full search URL.
  */
-function moga_search_url( $args = array() ) {
-    $base = get_option( 'moga_page_search_results' )
-        ? get_permalink( get_option( 'moga_page_search_results' ) )
-        : home_url( '/search-results/' );
+function moga_search_url($args = array())
+{
+    $base = get_option('moga_page_search_results')
+        ? get_permalink(get_option('moga_page_search_results'))
+        : home_url('/search-results/');
 
-    if ( empty( $args ) ) {
+    if (empty($args)) {
         return $base;
     }
 
-    return add_query_arg( $args, $base );
+    return add_query_arg($args, $base);
 }
 
 /**
@@ -155,16 +161,17 @@ function moga_search_url( $args = array() ) {
  * @param  array  $args Optional query parameters.
  * @return string       Full booking URL.
  */
-function moga_booking_url( $args = array() ) {
-    $base = get_option( 'moga_page_booking' )
-        ? get_permalink( get_option( 'moga_page_booking' ) )
-        : home_url( '/booking/' );
+function moga_booking_url($args = array())
+{
+    $base = get_option('moga_page_booking')
+        ? get_permalink(get_option('moga_page_booking'))
+        : home_url('/booking/');
 
-    if ( empty( $args ) ) {
+    if (empty($args)) {
         return $base;
     }
 
-    return add_query_arg( $args, $base );
+    return add_query_arg($args, $base);
 }
 
 /**
@@ -174,16 +181,17 @@ function moga_booking_url( $args = array() ) {
  * @param  array  $args Optional query parameters.
  * @return string       Full checkout URL.
  */
-function moga_checkout_url( $args = array() ) {
-    $base = get_option( 'moga_page_checkout' )
-        ? get_permalink( get_option( 'moga_page_checkout' ) )
-        : home_url( '/checkout/' );
+function moga_checkout_url($args = array())
+{
+    $base = get_option('moga_page_checkout')
+        ? get_permalink(get_option('moga_page_checkout'))
+        : home_url('/checkout/');
 
-    if ( empty( $args ) ) {
+    if (empty($args)) {
         return $base;
     }
 
-    return add_query_arg( $args, $base );
+    return add_query_arg($args, $base);
 }
 
 /**
@@ -192,10 +200,11 @@ function moga_checkout_url( $args = array() ) {
  * @since  1.0.0
  * @return string Full dashboard URL.
  */
-function moga_dashboard_url() {
-    return get_option( 'moga_page_dashboard' )
-        ? get_permalink( get_option( 'moga_page_dashboard' ) )
-        : home_url( '/dashboard/' );
+function moga_dashboard_url()
+{
+    return get_option('moga_page_dashboard')
+        ? get_permalink(get_option('moga_page_dashboard'))
+        : home_url('/dashboard/');
 }
 
 /**
@@ -204,10 +213,11 @@ function moga_dashboard_url() {
  * @since  1.0.0
  * @return string Full account URL.
  */
-function moga_account_url() {
-    return get_option( 'moga_page_my_account' )
-        ? get_permalink( get_option( 'moga_page_my_account' ) )
-        : home_url( '/my-account/' );
+function moga_account_url()
+{
+    return get_option('moga_page_my_account')
+        ? get_permalink(get_option('moga_page_my_account'))
+        : home_url('/my-account/');
 }
 
 
@@ -216,26 +226,98 @@ function moga_account_url() {
 // ============================================================
 
 /**
- * Check if current user is a property owner.
+ * Check if a user is specifically a Property Owner.
+ *
+ * BUG FIX (this session): previously only checked the legacy
+ * 'moga_owner' role, which class-moga-roles.php no longer assigns
+ * to anyone as of the ROLES_VERSION 2.0.0 split into distinct
+ * 'moga_property_owner' / 'moga_tour_organizer' roles — meaning
+ * this returned false for every real property owner account. The
+ * legacy role is still checked too, for any account not yet
+ * manually migrated (see Moga_Roles::maybe_show_legacy_owner_notice()).
  *
  * @since  1.0.0
  * @param  int|null $user_id Optional user ID. Defaults to current user.
  * @return bool
  */
-function moga_is_owner( $user_id = null ) {
-    if ( ! $user_id ) {
+function moga_is_owner($user_id = null)
+{
+    if (! $user_id) {
         $user_id = get_current_user_id();
     }
 
-    if ( ! $user_id ) {
+    if (! $user_id) {
         return false;
     }
 
-    $user = get_userdata( $user_id );
+    $user = get_userdata($user_id);
 
     return $user && (
-        in_array( 'moga_owner', (array) $user->roles, true )
-        || in_array( 'administrator', (array) $user->roles, true )
+        in_array('moga_property_owner', (array) $user->roles, true)
+        || in_array('moga_owner', (array) $user->roles, true) // Legacy, pre-2.0.0.
+        || in_array('administrator', (array) $user->roles, true)
+    );
+}
+
+/**
+ * Check if a user is specifically a Tour Organizer.
+ *
+ * @since  1.0.0
+ * @param  int|null $user_id Optional user ID. Defaults to current user.
+ * @return bool
+ */
+function moga_is_tour_organizer($user_id = null)
+{
+    if (! $user_id) {
+        $user_id = get_current_user_id();
+    }
+
+    if (! $user_id) {
+        return false;
+    }
+
+    $user = get_userdata($user_id);
+
+    return $user && (
+        in_array('moga_tour_organizer', (array) $user->roles, true)
+        || in_array('administrator', (array) $user->roles, true)
+    );
+}
+
+/**
+ * Check if a user is ANY kind of Moga vendor — Property Owner OR
+ * Tour Organizer (or an administrator). Use this for "can access
+ * vendor-facing features" checks (e.g. the owner/organizer
+ * dashboard), where it doesn't matter which specific vendor type
+ * the account is — as opposed to moga_is_owner() or
+ * moga_is_tour_organizer(), which are deliberately role-specific.
+ *
+ * Deliberately does NOT check Moga_Roles::is_vendor_approved() —
+ * that gate controls whether a vendor's LISTINGS can go live, not
+ * whether they can access their own dashboard. A still-pending
+ * vendor should still be able to log in and see their status.
+ *
+ * @since  1.0.0
+ * @param  int|null $user_id Optional user ID. Defaults to current user.
+ * @return bool
+ */
+function moga_is_vendor($user_id = null)
+{
+    if (! $user_id) {
+        $user_id = get_current_user_id();
+    }
+
+    if (! $user_id) {
+        return false;
+    }
+
+    $user = get_userdata($user_id);
+
+    return $user && (
+        in_array('moga_property_owner', (array) $user->roles, true)
+        || in_array('moga_tour_organizer', (array) $user->roles, true)
+        || in_array('moga_owner', (array) $user->roles, true) // Legacy, pre-2.0.0.
+        || in_array('administrator', (array) $user->roles, true)
     );
 }
 
@@ -246,18 +328,19 @@ function moga_is_owner( $user_id = null ) {
  * @param  int|null $user_id Optional user ID.
  * @return bool
  */
-function moga_is_guest( $user_id = null ) {
-    if ( ! $user_id ) {
+function moga_is_guest($user_id = null)
+{
+    if (! $user_id) {
         $user_id = get_current_user_id();
     }
 
-    if ( ! $user_id ) {
+    if (! $user_id) {
         return false;
     }
 
-    $user = get_userdata( $user_id );
+    $user = get_userdata($user_id);
 
-    return $user && in_array( 'moga_guest', (array) $user->roles, true );
+    return $user && in_array('moga_guest', (array) $user->roles, true);
 }
 
 /**
@@ -267,16 +350,17 @@ function moga_is_guest( $user_id = null ) {
  * @param  int $property_id Property post ID.
  * @return bool
  */
-function moga_can_manage_property( $property_id ) {
-    if ( ! is_user_logged_in() ) {
+function moga_can_manage_property($property_id)
+{
+    if (! is_user_logged_in()) {
         return false;
     }
 
-    if ( current_user_can( 'manage_options' ) ) {
+    if (current_user_can('manage_options')) {
         return true;
     }
 
-    return (int) get_post_field( 'post_author', $property_id ) === get_current_user_id();
+    return (int) get_post_field('post_author', $property_id) === get_current_user_id();
 }
 
 
@@ -291,16 +375,17 @@ function moga_can_manage_property( $property_id ) {
  * @param  int   $property_id Property post ID.
  * @return array Array of amenity keys.
  */
-function moga_get_property_amenities( $property_id ) {
-    $amenities = get_post_meta( $property_id, '_moga_amenities', true );
+function moga_get_property_amenities($property_id)
+{
+    $amenities = get_post_meta($property_id, '_moga_amenities', true);
 
-    if ( empty( $amenities ) ) {
+    if (empty($amenities)) {
         return array();
     }
 
-    $decoded = json_decode( $amenities, true );
+    $decoded = json_decode($amenities, true);
 
-    return is_array( $decoded ) ? $decoded : array();
+    return is_array($decoded) ? $decoded : array();
 }
 
 /**
@@ -311,8 +396,9 @@ function moga_get_property_amenities( $property_id ) {
  * @param  string $amenity_key Amenity key (e.g. 'wifi', 'pool').
  * @return bool
  */
-function moga_has_amenity( $property_id, $amenity_key ) {
-    return in_array( $amenity_key, moga_get_property_amenities( $property_id ), true );
+function moga_has_amenity($property_id, $amenity_key)
+{
+    return in_array($amenity_key, moga_get_property_amenities($property_id), true);
 }
 
 
@@ -330,12 +416,13 @@ function moga_has_amenity( $property_id, $amenity_key ) {
  * @param  string $listing_type Listing type (property, tour).
  * @return bool
  */
-function moga_is_available( $listing_id, $check_in, $check_out, $listing_type = 'property' ) {
+function moga_is_available($listing_id, $check_in, $check_out, $listing_type = 'property')
+{
     global $wpdb;
 
     $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
 
-    $blocked = $wpdb->get_var( $wpdb->prepare(
+    $blocked = $wpdb->get_var($wpdb->prepare(
         "SELECT COUNT(*) FROM {$prefix}availability
          WHERE listing_id = %d
          AND listing_type = %s
@@ -346,9 +433,9 @@ function moga_is_available( $listing_id, $check_in, $check_out, $listing_type = 
         $listing_type,
         $check_in,
         $check_out
-    ) );
+    ));
 
-    return intval( $blocked ) === 0;
+    return intval($blocked) === 0;
 }
 
 
@@ -363,8 +450,9 @@ function moga_is_available( $listing_id, $check_in, $check_out, $listing_type = 
  * @param  string $phone Raw phone number.
  * @return string        Sanitized phone number.
  */
-function moga_sanitize_phone( $phone ) {
-    return preg_replace( '/[^\d+\-\s()]/', '', $phone );
+function moga_sanitize_phone($phone)
+{
+    return preg_replace('/[^\d+\-\s()]/', '', $phone);
 }
 
 /**
@@ -374,8 +462,9 @@ function moga_sanitize_phone( $phone ) {
  * @param  mixed $value Raw coordinate.
  * @return float        Sanitized coordinate.
  */
-function moga_sanitize_coordinate( $value ) {
-    return floatval( preg_replace( '/[^\d.\-]/', '', $value ) );
+function moga_sanitize_coordinate($value)
+{
+    return floatval(preg_replace('/[^\d.\-]/', '', $value));
 }
 
 /**
@@ -385,8 +474,9 @@ function moga_sanitize_coordinate( $value ) {
  * @param  string $color Raw color string.
  * @return string        Sanitized hex color or empty string.
  */
-function moga_sanitize_hex_color( $color ) {
-    if ( preg_match( '/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/', $color ) ) {
+function moga_sanitize_hex_color($color)
+{
+    if (preg_match('/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/', $color)) {
         return $color;
     }
     return '';
@@ -405,8 +495,9 @@ function moga_sanitize_hex_color( $color ) {
  * @param  mixed  $default Default value if option not set.
  * @return mixed
  */
-function moga_option( $key, $default = '' ) {
-    return get_option( 'moga_' . $key, $default );
+function moga_option($key, $default = '')
+{
+    return get_option('moga_' . $key, $default);
 }
 
 /**
@@ -415,8 +506,9 @@ function moga_option( $key, $default = '' ) {
  * @since  1.0.0
  * @return bool
  */
-function moga_plugin_active() {
-    return defined( 'MOGA_CORE_VERSION' );
+function moga_plugin_active()
+{
+    return defined('MOGA_CORE_VERSION');
 }
 
 /**
@@ -425,8 +517,9 @@ function moga_plugin_active() {
  * @since  1.0.0
  * @return string
  */
-function moga_currency_symbol() {
-    return get_option( 'moga_currency_symbol', '$' );
+function moga_currency_symbol()
+{
+    return get_option('moga_currency_symbol', '$');
 }
 
 /**
@@ -435,8 +528,9 @@ function moga_currency_symbol() {
  * @since  1.0.0
  * @return string
  */
-function moga_currency() {
-    return get_option( 'moga_currency', 'USD' );
+function moga_currency()
+{
+    return get_option('moga_currency', 'USD');
 }
 
 /**
@@ -448,11 +542,12 @@ function moga_currency() {
  * @param  string $more   Suffix when truncated.
  * @return string
  */
-function moga_truncate( $text, $length = 120, $more = '...' ) {
-    if ( strlen( $text ) <= $length ) {
+function moga_truncate($text, $length = 120, $more = '...')
+{
+    if (strlen($text) <= $length) {
         return $text;
     }
-    return substr( $text, 0, $length ) . $more;
+    return substr($text, 0, $length) . $more;
 }
 
 /**
@@ -464,32 +559,33 @@ function moga_truncate( $text, $length = 120, $more = '...' ) {
  * @param  int $infants  Number of infants.
  * @return string
  */
-function moga_guest_label( $adults = 1, $children = 0, $infants = 0 ) {
+function moga_guest_label($adults = 1, $children = 0, $infants = 0)
+{
     $parts = array();
 
-    if ( $adults > 0 ) {
+    if ($adults > 0) {
         $parts[] = sprintf(
             /* translators: %d: number of adults */
-            _n( '%d adult', '%d adults', $adults, 'moga-travel-core' ),
+            _n('%d adult', '%d adults', $adults, 'moga-travel-core'),
             $adults
         );
     }
 
-    if ( $children > 0 ) {
+    if ($children > 0) {
         $parts[] = sprintf(
             /* translators: %d: number of children */
-            _n( '%d child', '%d children', $children, 'moga-travel-core' ),
+            _n('%d child', '%d children', $children, 'moga-travel-core'),
             $children
         );
     }
 
-    if ( $infants > 0 ) {
+    if ($infants > 0) {
         $parts[] = sprintf(
             /* translators: %d: number of infants */
-            _n( '%d infant', '%d infants', $infants, 'moga-travel-core' ),
+            _n('%d infant', '%d infants', $infants, 'moga-travel-core'),
             $infants
         );
     }
 
-    return implode( ', ', $parts );
+    return implode(', ', $parts);
 }

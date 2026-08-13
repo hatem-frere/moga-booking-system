@@ -65,6 +65,34 @@ class Moga_Admin_Metaboxes
     }
 
 
+    /**
+     * Days-of-week list for the Weekend Days checkboxes (Property
+     * Pricing and Tour Schedule boxes), keyed to match PHP's
+     * date('w')/gmdate('w') convention (0=Sunday..6=Saturday) —
+     * this must match exactly what moga_calculate_property_price()
+     * checks against in helper-price.php. Deliberately NOT reusing
+     * Moga_CPT_Tour::get_weekdays() (used for "Available Days" /
+     * tour departure days), since that method's day-numbering
+     * convention serves a different concept and hasn't been
+     * verified to use the same 0-indexed-Sunday scheme.
+     *
+     * @since  1.0.0
+     * @return array day_num (0-6) => translated day name.
+     */
+    private static function get_days_of_week()
+    {
+        return array(
+            0 => __('Sunday', 'moga-travel-core'),
+            1 => __('Monday', 'moga-travel-core'),
+            2 => __('Tuesday', 'moga-travel-core'),
+            3 => __('Wednesday', 'moga-travel-core'),
+            4 => __('Thursday', 'moga-travel-core'),
+            5 => __('Friday', 'moga-travel-core'),
+            6 => __('Saturday', 'moga-travel-core'),
+        );
+    }
+
+
     // ============================================================
     // REGISTER META BOXES
     // ============================================================
@@ -416,6 +444,12 @@ class Moga_Admin_Metaboxes
         $discount      = get_post_meta($post->ID, '_moga_price_discount',  true);
         $currency      = get_post_meta($post->ID, '_moga_currency',        true) ?: 'USD';
         $currencies    = moga_get_currencies();
+
+        $weekend_days  = get_post_meta($post->ID, '_moga_weekend_days', true);
+        $weekend_days  = $weekend_days ? json_decode($weekend_days, true) : array();
+        if (! is_array($weekend_days)) {
+            $weekend_days = array();
+        }
     ?>
         <div class="moga-metabox">
             <div class="moga-metabox__row">
@@ -435,7 +469,7 @@ class Moga_Admin_Metaboxes
 
                 <div class="moga-metabox__field">
                     <label for="moga_price_weekend">
-                        <?php esc_html_e('Weekend Price (Fri-Sat)', 'moga-travel-core'); ?>
+                        <?php esc_html_e('Weekend Price', 'moga-travel-core'); ?>
                     </label>
                     <input
                         type="number"
@@ -444,7 +478,26 @@ class Moga_Admin_Metaboxes
                         value="<?php echo esc_attr($weekend_price); ?>"
                         min="0" step="0.01" placeholder="0.00">
                     <p class="moga-metabox__hint">
-                        <?php esc_html_e('Leave empty to use the same price for weekends.', 'moga-travel-core'); ?>
+                        <?php esc_html_e('Leave empty to use the same price every night.', 'moga-travel-core'); ?>
+                    </p>
+                </div>
+
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e('Weekend Days', 'moga-travel-core'); ?></label>
+                    <div class="moga-weekdays" id="moga-weekend-days-wrap">
+                        <?php foreach (self::get_days_of_week() as $day_num => $day_label) : ?>
+                            <label class="moga-weekday">
+                                <input
+                                    type="checkbox"
+                                    name="moga_weekend_days[]"
+                                    value="<?php echo esc_attr($day_num); ?>"
+                                    <?php checked(in_array((string) $day_num, array_map('strval', $weekend_days), true)); ?>>
+                                <span><?php echo esc_html(substr($day_label, 0, 3)); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <p class="moga-metabox__hint">
+                        <?php esc_html_e('Enter a Weekend Price above first — these days only apply if a different weekend rate is set. Defaults to Saturday & Sunday if none selected.', 'moga-travel-core'); ?>
                     </p>
                 </div>
 
@@ -1083,9 +1136,15 @@ class Moga_Admin_Metaboxes
         $duration_nights = get_post_meta($post->ID, '_moga_duration_nights', true) ?: 0;
         $departure_time  = get_post_meta($post->ID, '_moga_departure_time',  true) ?: '08:00';
         $return_time     = get_post_meta($post->ID, '_moga_return_time',     true) ?: '18:00';
-        $available_days  = get_post_meta($post->ID, '_moga_available_days',  true);
-        $available_days  = $available_days ? json_decode($available_days, true) : array();
-        $weekdays        = Moga_CPT_Tour::get_weekdays();
+        $available_days = get_post_meta($post->ID, '_moga_available_days',  true);
+        $available_days = $available_days ? json_decode($available_days, true) : array();
+        $weekdays       = Moga_CPT_Tour::get_weekdays();
+
+        $weekend_days = get_post_meta($post->ID, '_moga_weekend_days', true);
+        $weekend_days = $weekend_days ? json_decode($weekend_days, true) : array();
+        if (! is_array($weekend_days)) {
+            $weekend_days = array();
+        }
     ?>
         <div class="moga-metabox">
 
@@ -1143,6 +1202,27 @@ class Moga_Admin_Metaboxes
                     </div>
                     <p class="moga-metabox__hint">
                         <?php esc_html_e('Days this tour departs. Leave all unchecked for custom dates only.', 'moga-travel-core'); ?>
+                    </p>
+                </div>
+            </div>
+
+            <div class="moga-metabox__row moga-metabox__row--full">
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e('Weekend Days', 'moga-travel-core'); ?></label>
+                    <div class="moga-weekdays">
+                        <?php foreach (self::get_days_of_week() as $day_num => $day_label) : ?>
+                            <label class="moga-weekday">
+                                <input
+                                    type="checkbox"
+                                    name="moga_weekend_days[]"
+                                    value="<?php echo esc_attr($day_num); ?>"
+                                    <?php checked(in_array((string) $day_num, array_map('strval', $weekend_days), true)); ?>>
+                                <span><?php echo esc_html(substr($day_label, 0, 3)); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <p class="moga-metabox__hint">
+                        <?php esc_html_e('Reserved for future date-based tour pricing — not yet used in price calculations.', 'moga-travel-core'); ?>
                     </p>
                 </div>
             </div>
@@ -2156,11 +2236,9 @@ class Moga_Admin_Metaboxes
                 '_moga_price_per_night',
                 isset($_POST['moga_price_per_night']) ? floatval($_POST['moga_price_per_night']) : 0
             );
-            update_post_meta(
-                $post_id,
-                '_moga_price_weekend',
-                isset($_POST['moga_price_weekend']) ? floatval($_POST['moga_price_weekend']) : 0
-            );
+            $weekend_price_value = isset($_POST['moga_price_weekend']) ? floatval($_POST['moga_price_weekend']) : 0;
+            update_post_meta($post_id, '_moga_price_weekend', $weekend_price_value);
+
             update_post_meta(
                 $post_id,
                 '_moga_price_discount',
@@ -2171,6 +2249,19 @@ class Moga_Admin_Metaboxes
                 '_moga_currency',
                 isset($_POST['moga_currency']) ? sanitize_text_field(wp_unslash($_POST['moga_currency'])) : 'USD'
             );
+
+            $weekend_days = isset($_POST['moga_weekend_days']) && is_array($_POST['moga_weekend_days'])
+                ? array_map('absint', $_POST['moga_weekend_days'])
+                : array();
+
+            // Weekend Days only mean something if a weekend price is set —
+            // enforced here even though the checkboxes are already disabled
+            // client-side, since a disabled attribute can be bypassed.
+            if ($weekend_price_value <= 0) {
+                $weekend_days = array();
+            }
+
+            update_post_meta($post_id, '_moga_weekend_days', wp_json_encode($weekend_days));
         }
 
         // ---- Location ----
@@ -2465,6 +2556,11 @@ class Moga_Admin_Metaboxes
                 ? array_map('absint', $_POST['moga_available_days'])
                 : array();
             update_post_meta($post_id, '_moga_available_days', wp_json_encode($available_days));
+
+            $weekend_days = isset($_POST['moga_weekend_days']) && is_array($_POST['moga_weekend_days'])
+                ? array_map('absint', $_POST['moga_weekend_days'])
+                : array();
+            update_post_meta($post_id, '_moga_weekend_days', wp_json_encode($weekend_days));
         }
 
         // ---- Location ----
@@ -3390,6 +3486,24 @@ class Moga_Admin_Metaboxes
                         });
                     }
                 });
+
+                // ================================================================
+                // WEEKEND DAYS — DISABLED UNTIL A WEEKEND PRICE IS ENTERED
+                // (Property Pricing box only — Tour's separate Weekend Days
+                // block has no price field to gate against, left as-is.)
+                // ================================================================
+
+                function toggleWeekendDaysState() {
+                    var priceVal = parseFloat($('#moga_price_weekend').val());
+                    var hasPrice = !isNaN(priceVal) && priceVal > 0;
+                    $('#moga-weekend-days-wrap input[type="checkbox"]').prop('disabled', !hasPrice);
+                    $('#moga-weekend-days-wrap').toggleClass('moga-weekdays--disabled', !hasPrice);
+                }
+
+                if ($('#moga_price_weekend').length) {
+                    toggleWeekendDaysState();
+                    $('#moga_price_weekend').on('input change', toggleWeekendDaysState);
+                }
 
             })(jQuery);
         </script>

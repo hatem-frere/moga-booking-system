@@ -313,21 +313,19 @@ function moga_calculate_property_price($property_id, $check_in, $check_out)
     // Which days count as "weekend" for THIS property. Per-property,
     // not global — the platform has no single primary market, so a
     // hardcoded region-specific weekend would be wrong for most
-    // owners. Stored as comma-separated day numbers (0=Sun..6=Sat),
-    // e.g. "5,6" for Friday/Saturday. Falls back to Saturday/Sunday
-    // (the most globally common weekend) when unset. NEW META KEY —
-    // '_moga_weekend_days' has no admin meta box UI yet, same
-    // situation as the deposit-type meta from earlier — functional
-    // via this fallback until that UI exists.
+    // owners. Stored as JSON (e.g. "[5,6]" for Friday/Saturday),
+    // matching the same wp_json_encode() convention used for
+    // '_moga_available_days' — saved via the Weekend Days checkboxes
+    // in class-moga-admin-metaboxes.php (Property Pricing box).
+    // Falls back to Saturday/Sunday (the most globally common
+    // weekend) when unset or empty.
     $weekend_days_meta = get_post_meta($property_id, '_moga_weekend_days', true);
+    $weekend_days       = $weekend_days_meta ? json_decode($weekend_days_meta, true) : array();
 
-    if ($weekend_days_meta) {
-        $weekend_days = array_map(
-            'intval',
-            array_filter(array_map('trim', explode(',', $weekend_days_meta)), 'strlen')
-        );
-    } else {
+    if (! is_array($weekend_days) || empty($weekend_days)) {
         $weekend_days = array(6, 0); // Saturday, Sunday.
+    } else {
+        $weekend_days = array_map('intval', $weekend_days);
     }
 
     $subtotal        = 0;
