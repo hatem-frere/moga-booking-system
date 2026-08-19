@@ -363,10 +363,93 @@ function moga_validate_dates( $check_in, $check_out ) {
     return true;
 }
 
+/**
+ * Validate that a check-in/check-out range satisfies a property's
+ * minimum/maximum stay length. Checks a Property Period's per-date
+ * override first (if check-in falls inside one), falling back to
+ * the property's flat '_moga_min_stay'/'_moga_max_stay' default.
+ *
+ * SECURITY FIX (Aug 19 session): min/max stay was previously
+ * enforced ONLY client-side, in booking.js via Flatpickr — a guest
+ * could bypass it entirely by submitting a booking request directly
+ * (e.g. via a modified form or a raw request), skipping the
+ * calendar's UI constraint altogether. This is the server-side
+ * enforcement that closes that gap, called from
+ * Moga_Booking::create_booking() for property/rental bookings.
+ * Not applicable to tours, which have no min/max-stay concept
+ * (matches the existing "min_stay is property-only" note in
+ * Moga_Availability::set_min_stay()'s docblock).
+ *
+ * @since  1.0.0
+ * @param  int    $listing_id Property post ID.
+ * @param  string $check_in   Y-m-d.
+ * @param  string $check_out  Y-m-d.
+ * @return true|WP_Error
+ */
+function moga_validate_stay_length( $listing_id, $check_in, $check_out ) {
 
-// ============================================================
-// DATE RANGE GENERATION
-// ============================================================
+    $nights = moga_calculate_nights( $check_in, $check_out );
+
+    // A Property Period's per-date min/max (set via
+    // Moga_Availability::apply_period()) takes precedence over the
+    // property's flat default when check-in falls inside one —
+    // mirrors exactly how price_override already takes precedence
+    // over the flat per-night price in moga_calculate_property_price().
+    // Without this check, a period's own min/max-stay rule (e.g. a
+    // shorter weekend minimum) would look correct in the admin UI
+    // but never actually be enforced here.
+    global $wpdb;
+    $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
+
+    $period_row = $wpdb->get_row( $wpdb->prepare(
+        "SELECT min_stay, max_stay FROM {$prefix}availability
+         WHERE listing_id = %d AND listing_type = 'property' AND date = %s",
+        $listing_id,
+        $check_in
+    ) );
+
+    $min_stay = ( $period_row && null !== $period_row->min_stay )
+        ? intval( $period_row->min_stay )
+        : ( intval( get_post_meta( $listing_id, '_moga_min_stay', true ) ) ?: 1 );
+
+    $max_stay = ( $period_row && null !== $period_row->max_stay )
+        ? intval( $period_row->max_stay )
+        : intval( get_post_meta( $listing_id, '_moga_max_stay', true ) );
+
+    if ( $nights < $min_stay ) {
+        return new WP_Error(
+            'stay_too_short',
+            sprintf(
+                /* translators: %d: minimum nights required */
+                _n(
+                    'This listing requires a minimum stay of %d night.',
+                    'This listing requires a minimum stay of %d nights.',
+                    $min_stay,
+                    'moga-travel-core'
+                ),
+                $min_stay
+            )
+        );
+    }
+
+    if ( $max_stay > 0 && $nights > $max_stay ) {
+        return new WP_Error(
+            'stay_too_long',
+            sprintf(
+                /* translators: %d: maximum nights allowed */
+                _n(
+                    'This listing allows a maximum stay of %d night.',
+                    'This listing allows a maximum stay of %d nights.',
+                    $max_stay,
+                    'moga-travel-core'
+                ),
+                $max_stay
+            )
+        );
+    }
+
+    return true;
+}
 
 /**
  * Get all dates between two dates as an array.

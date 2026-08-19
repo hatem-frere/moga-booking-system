@@ -317,16 +317,15 @@ function moga_calculate_property_price($property_id, $check_in, $check_out)
     // matching the same wp_json_encode() convention used for
     // '_moga_available_days' — saved via the Weekend Days checkboxes
     // in class-moga-admin-metaboxes.php (Property Pricing box).
-    // Falls back to Saturday/Sunday (the most globally common
-    // weekend) when unset or empty.
+    //
+    // NO DEFAULT (fixed this session, per explicit owner instruction):
+    // if the owner hasn't checked any days, there are NO weekend days
+    // for this property — full stop. Previously silently assumed
+    // Saturday/Sunday when unset, which was an unwanted, unrequested
+    // assumption on the owner's actual pricing intent.
     $weekend_days_meta = get_post_meta($property_id, '_moga_weekend_days', true);
     $weekend_days       = $weekend_days_meta ? json_decode($weekend_days_meta, true) : array();
-
-    if (! is_array($weekend_days) || empty($weekend_days)) {
-        $weekend_days = array(6, 0); // Saturday, Sunday.
-    } else {
-        $weekend_days = array_map('intval', $weekend_days);
-    }
+    $weekend_days       = is_array($weekend_days) ? array_map('intval', $weekend_days) : array();
 
     $subtotal        = 0;
     $weekend_nights  = 0;

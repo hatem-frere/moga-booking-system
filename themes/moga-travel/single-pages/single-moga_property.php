@@ -45,6 +45,32 @@ $display_price = function_exists('moga_get_property_display_price')
     ? moga_get_property_display_price($property_id)
     : array('price' => 0, 'original' => 0, 'currency' => 'USD', 'discount' => 0);
 
+// Date-aware badge price for the mobile sticky bar — mirrors the
+// same fix in template-parts/property/booking-form.php. When real
+// check-in/check-out dates are already known (from the URL), use
+// the actual average per-night rate for those dates (weekend-aware,
+// override-aware) instead of the generic, date-blind marketing
+// price. Kept as separate $mobile_bar_* variables rather than
+// reusing $display_price directly, since this file and
+// booking-form.php are two independent template files that each
+// compute their own local price display.
+$mobile_checkin_val  = isset($_GET['check_in'])  ? sanitize_text_field(wp_unslash($_GET['check_in']))  : '';
+$mobile_checkout_val = isset($_GET['check_out']) ? sanitize_text_field(wp_unslash($_GET['check_out'])) : '';
+
+if ($mobile_checkin_val && $mobile_checkout_val) {
+    $mobile_server_price = moga_calculate_property_price($property_id, $mobile_checkin_val, $mobile_checkout_val);
+    $mobile_nights        = max(1, intval($mobile_server_price['nights']));
+    $mobile_bar_currency   = $mobile_server_price['currency'];
+    $mobile_bar_price      = (float) $mobile_server_price['total'] / $mobile_nights;
+    $mobile_bar_original    = (float) $mobile_server_price['discount'] > 0
+        ? ((float) $mobile_server_price['subtotal'] / $mobile_nights)
+        : 0;
+} else {
+    $mobile_bar_currency = $display_price['currency'];
+    $mobile_bar_price    = $display_price['price'];
+    $mobile_bar_original = $display_price['original'];
+}
+
 // Rating.
 $rating       = floatval(get_post_meta($property_id, '_moga_rating',       true));
 $review_count = intval(get_post_meta($property_id, '_moga_review_count', true));
@@ -771,10 +797,10 @@ $section_nav['moga-reviews']     = __('Reviews', 'moga-travel');
 ?>
 <div class="moga-mobile-booking-bar" id="moga-mobile-booking-bar" aria-hidden="true">
     <div class="moga-mobile-booking-bar__price">
-        <?php if ($display_price['original'] > 0 && $display_price['original'] > $display_price['price']) : ?>
-            <span class="moga-mobile-booking-bar__price-old"><?php echo esc_html(moga_format_price($display_price['original'], $display_price['currency'])); ?></span>
+        <?php if ($mobile_bar_original > 0 && $mobile_bar_original > $mobile_bar_price) : ?>
+            <span class="moga-mobile-booking-bar__price-old" id="moga-mobile-badge-price-old"><?php echo esc_html(moga_format_price($mobile_bar_original, $mobile_bar_currency)); ?></span>
         <?php endif; ?>
-        <span class="moga-mobile-booking-bar__price-current"><?php echo esc_html(moga_format_price($display_price['price'], $display_price['currency'])); ?></span>
+        <span class="moga-mobile-booking-bar__price-current" id="moga-mobile-badge-price-current"><?php echo esc_html(moga_format_price($mobile_bar_price, $mobile_bar_currency)); ?></span>
         <span class="moga-mobile-booking-bar__price-label">/ <?php esc_html_e('night', 'moga-travel'); ?></span>
     </div>
     <a href="#moga-booking-sidebar" class="moga-btn moga-btn--primary moga-mobile-booking-bar__btn">

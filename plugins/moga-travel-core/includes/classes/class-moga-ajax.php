@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AJAX Handlers
  *
@@ -23,14 +24,15 @@
  * @since      1.0.0
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
+if (! defined('ABSPATH')) {
     exit;
 }
 
 /**
  * Class Moga_Ajax
  */
-class Moga_Ajax {
+class Moga_Ajax
+{
 
     /**
      * Register all AJAX hooks.
@@ -39,27 +41,28 @@ class Moga_Ajax {
      * @since  1.0.0
      * @return void
      */
-    public static function init() {
+    public static function init()
+    {
 
         // Province dropdown loader — country → provinces cascade.
-        add_action( 'wp_ajax_moga_get_provinces',         array( __CLASS__, 'get_provinces' ) );
-        add_action( 'wp_ajax_nopriv_moga_get_provinces',  array( __CLASS__, 'get_provinces' ) );
+        add_action('wp_ajax_moga_get_provinces',         array(__CLASS__, 'get_provinces'));
+        add_action('wp_ajax_nopriv_moga_get_provinces',  array(__CLASS__, 'get_provinces'));
 
         // City dropdown loader — province → cities cascade.
-        add_action( 'wp_ajax_moga_get_cities',            array( __CLASS__, 'get_cities' ) );
-        add_action( 'wp_ajax_nopriv_moga_get_cities',     array( __CLASS__, 'get_cities' ) );
+        add_action('wp_ajax_moga_get_cities',            array(__CLASS__, 'get_cities'));
+        add_action('wp_ajax_nopriv_moga_get_cities',     array(__CLASS__, 'get_cities'));
 
         // District dropdown loader — city → districts cascade.
-        add_action( 'wp_ajax_moga_get_districts',         array( __CLASS__, 'get_districts' ) );
-        add_action( 'wp_ajax_nopriv_moga_get_districts',  array( __CLASS__, 'get_districts' ) );
+        add_action('wp_ajax_moga_get_districts',         array(__CLASS__, 'get_districts'));
+        add_action('wp_ajax_nopriv_moga_get_districts',  array(__CLASS__, 'get_districts'));
 
         // Availability checker.
-        add_action( 'wp_ajax_moga_check_availability',        array( __CLASS__, 'check_availability' ) );
-        add_action( 'wp_ajax_nopriv_moga_check_availability', array( __CLASS__, 'check_availability' ) );
+        add_action('wp_ajax_moga_check_availability',        array(__CLASS__, 'check_availability'));
+        add_action('wp_ajax_nopriv_moga_check_availability', array(__CLASS__, 'check_availability'));
 
         // Price calculator.
-        add_action( 'wp_ajax_moga_calculate_price',        array( __CLASS__, 'calculate_price' ) );
-        add_action( 'wp_ajax_nopriv_moga_calculate_price', array( __CLASS__, 'calculate_price' ) );
+        add_action('wp_ajax_moga_calculate_price',        array(__CLASS__, 'calculate_price'));
+        add_action('wp_ajax_nopriv_moga_calculate_price', array(__CLASS__, 'calculate_price'));
     }
 
 
@@ -85,44 +88,46 @@ class Moga_Ajax {
      * @since  1.0.0
      * @return void Sends JSON response.
      */
-    public static function get_provinces() {
+    public static function get_provinces()
+    {
 
-        if ( ! isset( $_POST['nonce'] )
+        if (
+            ! isset($_POST['nonce'])
             || ! wp_verify_nonce(
-                sanitize_text_field( wp_unslash( $_POST['nonce'] ) ),
+                sanitize_text_field(wp_unslash($_POST['nonce'])),
                 'moga_nonce'
             )
         ) {
-            wp_send_json_error( array( 'message' => 'Invalid nonce.' ) );
+            wp_send_json_error(array('message' => 'Invalid nonce.'));
         }
 
         global $wpdb;
         $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
 
-        $country_id   = isset( $_POST['country_id'] )   ? absint( $_POST['country_id'] )                                     : 0;
-        $country_code = isset( $_POST['country_code'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_POST['country_code'] ) ) ) : '';
+        $country_id   = isset($_POST['country_id'])   ? absint($_POST['country_id'])                                     : 0;
+        $country_code = isset($_POST['country_code']) ? strtoupper(sanitize_text_field(wp_unslash($_POST['country_code']))) : '';
 
         // Resolve country_id from iso_code if not provided directly.
-        if ( ! $country_id && $country_code ) {
-            $country_id = (int) $wpdb->get_var( $wpdb->prepare(
+        if (! $country_id && $country_code) {
+            $country_id = (int) $wpdb->get_var($wpdb->prepare(
                 "SELECT id FROM {$prefix}loc_countries WHERE iso_code = %s LIMIT 1",
                 $country_code
-            ) );
+            ));
         }
 
-        if ( ! $country_id ) {
-            wp_send_json_error( array( 'message' => 'country_id or country_code required.' ) );
+        if (! $country_id) {
+            wp_send_json_error(array('message' => 'country_id or country_code required.'));
         }
 
-        $rows = $wpdb->get_results( $wpdb->prepare(
+        $rows = $wpdb->get_results($wpdb->prepare(
             "SELECT id, name FROM {$prefix}loc_provinces WHERE country_id = %d ORDER BY name ASC",
             $country_id
-        ), ARRAY_A );
+        ), ARRAY_A);
 
-        wp_send_json_success( array(
+        wp_send_json_success(array(
             'provinces'  => $rows ?: array(),
             'country_id' => $country_id,
-        ) );
+        ));
     }
 
 
@@ -147,48 +152,50 @@ class Moga_Ajax {
      * @since  1.0.0
      * @return void Sends JSON response.
      */
-    public static function get_cities() {
+    public static function get_cities()
+    {
 
-        if ( ! isset( $_POST['nonce'] )
+        if (
+            ! isset($_POST['nonce'])
             || ! wp_verify_nonce(
-                sanitize_text_field( wp_unslash( $_POST['nonce'] ) ),
+                sanitize_text_field(wp_unslash($_POST['nonce'])),
                 'moga_nonce'
             )
         ) {
-            wp_send_json_error( array( 'message' => 'Invalid nonce.' ) );
+            wp_send_json_error(array('message' => 'Invalid nonce.'));
         }
 
         global $wpdb;
         $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
 
-        $province_id = isset( $_POST['province_id'] ) ? absint( $_POST['province_id'] ) : 0;
+        $province_id = isset($_POST['province_id']) ? absint($_POST['province_id']) : 0;
 
-        if ( ! $province_id ) {
-            wp_send_json_error( array( 'message' => 'province_id required.' ) );
+        if (! $province_id) {
+            wp_send_json_error(array('message' => 'province_id required.'));
         }
 
         // Query cities from the DB.
-        $rows = $wpdb->get_results( $wpdb->prepare(
+        $rows = $wpdb->get_results($wpdb->prepare(
             "SELECT id, name, lat, lng FROM {$prefix}loc_cities WHERE province_id = %d ORDER BY name ASC",
             $province_id
-        ), ARRAY_A );
+        ), ARRAY_A);
 
         // Fallback: if DB is empty (import not yet run), use static data.
         // This keeps the system functional even before the import wizard is used.
-        if ( empty( $rows ) ) {
-            $static = moga_get_cities_by_country( '' ); // empty — returns nothing, graceful
-            wp_send_json_success( array(
+        if (empty($rows)) {
+            $static = moga_get_cities_by_country(''); // empty — returns nothing, graceful
+            wp_send_json_success(array(
                 'cities'      => array(),
                 'province_id' => $province_id,
                 'source'      => 'empty',
-            ) );
+            ));
         }
 
-        wp_send_json_success( array(
+        wp_send_json_success(array(
             'cities'      => $rows,
             'province_id' => $province_id,
             'source'      => 'db',
-        ) );
+        ));
     }
 
 
@@ -218,40 +225,42 @@ class Moga_Ajax {
      * @since  1.0.0
      * @return void Sends JSON response.
      */
-    public static function get_districts() {
+    public static function get_districts()
+    {
 
-        if ( ! isset( $_POST['nonce'] )
+        if (
+            ! isset($_POST['nonce'])
             || ! wp_verify_nonce(
-                sanitize_text_field( wp_unslash( $_POST['nonce'] ) ),
+                sanitize_text_field(wp_unslash($_POST['nonce'])),
                 'moga_nonce'
             )
         ) {
-            wp_send_json_error( array( 'message' => 'Invalid nonce.' ) );
+            wp_send_json_error(array('message' => 'Invalid nonce.'));
         }
 
-        $city_id = isset( $_POST['city_id'] ) ? absint( $_POST['city_id'] ) : 0;
+        $city_id = isset($_POST['city_id']) ? absint($_POST['city_id']) : 0;
 
-        if ( ! $city_id ) {
+        if (! $city_id) {
             // No city_id — return empty, frontend shows text input.
-            wp_send_json_success( array(
+            wp_send_json_success(array(
                 'districts' => array(),
                 'city_id'   => 0,
-            ) );
+            ));
         }
 
         global $wpdb;
         $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
 
-        $rows = $wpdb->get_results( $wpdb->prepare(
+        $rows = $wpdb->get_results($wpdb->prepare(
             "SELECT id, name FROM {$prefix}loc_districts WHERE city_id = %d ORDER BY name ASC",
             $city_id
-        ), ARRAY_A );
+        ), ARRAY_A);
 
         // Always return success — empty array signals text input fallback.
-        wp_send_json_success( array(
+        wp_send_json_success(array(
             'districts' => $rows ?: array(),
             'city_id'   => $city_id,
-        ) );
+        ));
     }
 
 
@@ -265,35 +274,37 @@ class Moga_Ajax {
      * @since  1.0.0
      * @return void Sends JSON response.
      */
-    public static function check_availability() {
+    public static function check_availability()
+    {
 
         // Verify nonce.
-        if ( ! isset( $_POST['nonce'] )
+        if (
+            ! isset($_POST['nonce'])
             || ! wp_verify_nonce(
-                sanitize_text_field( wp_unslash( $_POST['nonce'] ) ),
+                sanitize_text_field(wp_unslash($_POST['nonce'])),
                 'moga_nonce'
             )
         ) {
-            wp_send_json_error( array( 'message' => 'Invalid nonce.' ) );
+            wp_send_json_error(array('message' => 'Invalid nonce.'));
         }
 
-        $listing_id   = isset( $_POST['listing_id'] )   ? absint( $_POST['listing_id'] )                                    : 0;
-        $listing_type = isset( $_POST['listing_type'] ) ? sanitize_text_field( wp_unslash( $_POST['listing_type'] ) )       : 'property';
-        $check_in     = isset( $_POST['check_in'] )     ? sanitize_text_field( wp_unslash( $_POST['check_in'] ) )           : '';
-        $check_out    = isset( $_POST['check_out'] )    ? sanitize_text_field( wp_unslash( $_POST['check_out'] ) )          : '';
+        $listing_id   = isset($_POST['listing_id'])   ? absint($_POST['listing_id'])                                    : 0;
+        $listing_type = isset($_POST['listing_type']) ? sanitize_text_field(wp_unslash($_POST['listing_type']))       : 'property';
+        $check_in     = isset($_POST['check_in'])     ? sanitize_text_field(wp_unslash($_POST['check_in']))           : '';
+        $check_out    = isset($_POST['check_out'])    ? sanitize_text_field(wp_unslash($_POST['check_out']))          : '';
 
-        if ( ! $listing_id || ! $check_in || ! $check_out ) {
-            wp_send_json_error( array( 'message' => 'Missing required fields.' ) );
+        if (! $listing_id || ! $check_in || ! $check_out) {
+            wp_send_json_error(array('message' => 'Missing required fields.'));
         }
 
         // Validate dates.
-        $validation = moga_validate_dates( $check_in, $check_out );
-        if ( is_wp_error( $validation ) ) {
-            wp_send_json_error( array( 'message' => $validation->get_error_message() ) );
+        $validation = moga_validate_dates($check_in, $check_out);
+        if (is_wp_error($validation)) {
+            wp_send_json_error(array('message' => $validation->get_error_message()));
         }
 
         // Check availability.
-        $available = moga_is_available( $listing_id, $check_in, $check_out, $listing_type );
+        $available = moga_is_available($listing_id, $check_in, $check_out, $listing_type);
 
         $response = array(
             'available'    => $available,
@@ -303,26 +314,26 @@ class Moga_Ajax {
         );
 
         // If available, include price.
-        if ( $available ) {
-            if ( 'property' === $listing_type ) {
-                $price_data = moga_calculate_property_price( $listing_id, $check_in, $check_out );
+        if ($available) {
+            if ('property' === $listing_type) {
+                $price_data = moga_calculate_property_price($listing_id, $check_in, $check_out);
             } else {
-                $price_data = moga_calculate_tour_price( $listing_id );
+                $price_data = moga_calculate_tour_price($listing_id);
             }
 
-            $currency = isset( $price_data['currency'] ) ? $price_data['currency'] : moga_currency();
+            $currency = isset($price_data['currency']) ? $price_data['currency'] : moga_currency();
 
             // Add formatted prices.
-            $price_data['price_formatted']    = moga_format_price( $price_data['price_per_night'] ?? $price_data['price_adult'] ?? 0, $currency );
-            $price_data['subtotal_formatted'] = moga_format_price( $price_data['subtotal'] ?? 0, $currency );
-            $price_data['discount_formatted'] = moga_format_price( $price_data['discount']  ?? 0, $currency );
-            $price_data['taxes_formatted']    = moga_format_price( $price_data['taxes']     ?? 0, $currency );
-            $price_data['total_formatted']    = moga_format_price( $price_data['total']     ?? 0, $currency );
+            $price_data['price_formatted']    = moga_format_price($price_data['price_per_night'] ?? $price_data['price_adult'] ?? 0, $currency);
+            $price_data['subtotal_formatted'] = moga_format_price($price_data['subtotal'] ?? 0, $currency);
+            $price_data['discount_formatted'] = moga_format_price($price_data['discount']  ?? 0, $currency);
+            $price_data['taxes_formatted']    = moga_format_price($price_data['taxes']     ?? 0, $currency);
+            $price_data['total_formatted']    = moga_format_price($price_data['total']     ?? 0, $currency);
 
             $response['price'] = $price_data;
         }
 
-        wp_send_json_success( $response );
+        wp_send_json_success($response);
     }
 
 
@@ -336,53 +347,67 @@ class Moga_Ajax {
      * @since  1.0.0
      * @return void Sends JSON response.
      */
-    public static function calculate_price() {
+    public static function calculate_price()
+    {
 
         // Verify nonce.
-        if ( ! isset( $_POST['nonce'] )
+        if (
+            ! isset($_POST['nonce'])
             || ! wp_verify_nonce(
-                sanitize_text_field( wp_unslash( $_POST['nonce'] ) ),
+                sanitize_text_field(wp_unslash($_POST['nonce'])),
                 'moga_nonce'
             )
         ) {
-            wp_send_json_error( array( 'message' => 'Invalid nonce.' ) );
+            wp_send_json_error(array('message' => 'Invalid nonce.'));
         }
 
-        $listing_id   = isset( $_POST['listing_id'] )   ? absint( $_POST['listing_id'] )                              : 0;
-        $listing_type = isset( $_POST['listing_type'] ) ? sanitize_text_field( wp_unslash( $_POST['listing_type'] ) ) : 'property';
-        $check_in     = isset( $_POST['check_in'] )     ? sanitize_text_field( wp_unslash( $_POST['check_in'] ) )     : '';
-        $check_out    = isset( $_POST['check_out'] )    ? sanitize_text_field( wp_unslash( $_POST['check_out'] ) )    : '';
-        $adults       = isset( $_POST['adults'] )       ? absint( $_POST['adults'] )                                  : 1;
-        $children     = isset( $_POST['children'] )     ? absint( $_POST['children'] )                                : 0;
-        $infants      = isset( $_POST['infants'] )      ? absint( $_POST['infants'] )                                 : 0;
+        $listing_id   = isset($_POST['listing_id'])   ? absint($_POST['listing_id'])                              : 0;
+        $listing_type = isset($_POST['listing_type']) ? sanitize_text_field(wp_unslash($_POST['listing_type'])) : 'property';
+        $check_in     = isset($_POST['check_in'])     ? sanitize_text_field(wp_unslash($_POST['check_in']))     : '';
+        $check_out    = isset($_POST['check_out'])    ? sanitize_text_field(wp_unslash($_POST['check_out']))    : '';
+        $adults       = isset($_POST['adults'])       ? absint($_POST['adults'])                                  : 1;
+        $children     = isset($_POST['children'])     ? absint($_POST['children'])                                : 0;
+        $infants      = isset($_POST['infants'])      ? absint($_POST['infants'])                                 : 0;
 
-        if ( ! $listing_id ) {
-            wp_send_json_error( array( 'message' => 'Listing ID required.' ) );
+        if (! $listing_id) {
+            wp_send_json_error(array('message' => 'Listing ID required.'));
         }
 
         // Calculate price based on listing type.
-        if ( 'property' === $listing_type ) {
-            if ( ! $check_in || ! $check_out ) {
-                wp_send_json_error( array( 'message' => 'Dates required for property pricing.' ) );
+        if ('property' === $listing_type) {
+            if (! $check_in || ! $check_out) {
+                wp_send_json_error(array('message' => 'Dates required for property pricing.'));
             }
-            $price_data = moga_calculate_property_price( $listing_id, $check_in, $check_out );
+            $price_data = moga_calculate_property_price($listing_id, $check_in, $check_out);
         } else {
-            $price_data = moga_calculate_tour_price( $listing_id, $adults, $children, $infants );
+            $price_data = moga_calculate_tour_price($listing_id, $adults, $children, $infants);
         }
 
-        $currency = isset( $price_data['currency'] ) ? $price_data['currency'] : moga_currency();
+        $currency = isset($price_data['currency']) ? $price_data['currency'] : moga_currency();
 
         // Add formatted prices for JavaScript rendering.
-        $price_data['price_formatted']         = moga_format_price( $price_data['price_per_night']  ?? $price_data['price_adult'] ?? 0, $currency );
-        $price_data['subtotal_formatted']      = moga_format_price( $price_data['subtotal']         ?? 0, $currency );
-        $price_data['discount_formatted']      = moga_format_price( $price_data['discount']         ?? 0, $currency );
-        $price_data['taxes_formatted']         = moga_format_price( $price_data['taxes']            ?? 0, $currency );
-        $price_data['total_formatted']         = moga_format_price( $price_data['total']            ?? 0, $currency );
-        $price_data['adults_total_formatted']  = moga_format_price( $price_data['adults_total']     ?? 0, $currency );
-        $price_data['price_adult_formatted']   = moga_format_price( $price_data['price_adult']      ?? 0, $currency );
-        $price_data['price_child_formatted']   = moga_format_price( $price_data['price_child']      ?? 0, $currency );
+        $price_data['price_formatted']         = moga_format_price($price_data['price_per_night']  ?? $price_data['price_adult'] ?? 0, $currency);
+        $price_data['subtotal_formatted']      = moga_format_price($price_data['subtotal']         ?? 0, $currency);
+        $price_data['discount_formatted']      = moga_format_price($price_data['discount']         ?? 0, $currency);
+        $price_data['taxes_formatted']         = moga_format_price($price_data['taxes']            ?? 0, $currency);
+        $price_data['total_formatted']         = moga_format_price($price_data['total']            ?? 0, $currency);
+        $price_data['adults_total_formatted']  = moga_format_price($price_data['adults_total']     ?? 0, $currency);
+        $price_data['price_adult_formatted']   = moga_format_price($price_data['price_adult']      ?? 0, $currency);
+        $price_data['price_child_formatted']   = moga_format_price($price_data['price_child']      ?? 0, $currency);
         $price_data['discount_percent']        = $price_data['discount_percent'] ?? $price_data['group_discount'] ?? 0;
 
-        wp_send_json_success( array( 'price' => $price_data ) );
+        // Per-night AVERAGE, pre- and post-discount — for the top
+        // price badge (desktop + mobile sticky bar), which shows a
+        // single "starting from / night" figure even when the stay
+        // spans a mix of weekday/weekend/override rates. Only
+        // meaningful for property bookings, which have a real
+        // nights count; tours have no equivalent concept.
+        if ('property' === $listing_type && ! empty($price_data['nights'])) {
+            $nights = max(1, intval($price_data['nights']));
+            $price_data['price_per_night_avg_formatted']          = moga_format_price(($price_data['total']    ?? 0) / $nights, $currency);
+            $price_data['price_per_night_avg_original_formatted'] = moga_format_price(($price_data['subtotal'] ?? 0) / $nights, $currency);
+        }
+
+        wp_send_json_success(array('price' => $price_data));
     }
 }

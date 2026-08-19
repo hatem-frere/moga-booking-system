@@ -351,6 +351,174 @@ class Moga_Availability
         );
     }
 
+    /**
+     * Set a maximum-stay override for a specific date. Mirrors
+     * set_min_stay() exactly.
+     *
+     * @since  1.0.0
+     * @param  int    $listing_id   Property post ID.
+     * @param  string $listing_type 'property'|'tour'.
+     * @param  string $date         Y-m-d.
+     * @param  int    $max_stay     Maximum nights allowed if check-in falls on this date.
+     * @return void
+     */
+    public function set_max_stay($listing_id, $listing_type, $date, $max_stay)
+    {
+        global $wpdb;
+        $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
+
+        $existing_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM {$prefix}availability WHERE listing_id = %d AND listing_type = %s AND date = %s",
+            $listing_id,
+            $listing_type,
+            $date
+        ));
+
+        if ($existing_id) {
+            $wpdb->update(
+                "{$prefix}availability",
+                array('max_stay' => absint($max_stay)),
+                array('id' => $existing_id),
+                array('%d'),
+                array('%d')
+            );
+            return;
+        }
+
+        $wpdb->insert(
+            "{$prefix}availability",
+            array(
+                'listing_id'   => $listing_id,
+                'listing_type' => $listing_type,
+                'date'         => $date,
+                'status'       => 'available',
+                'max_stay'     => absint($max_stay),
+            ),
+            array('%d', '%s', '%s', '%s', '%d')
+        );
+    }
+
+
+    // ============================================================
+    // PROPERTY PERIODS (bulk "Add Another Period" apply/clear)
+    // ============================================================
+
+    /**
+     * Apply a Property Period across a whole date range in one
+     * action — the actual "Add Another Period" feature. Writes
+     * price_override, min_stay, and max_stay onto every date in the
+     * range with a single upsert per date.
+     *
+     * WEEKEND LAYERING, RESOLVED HERE, ONCE: if a date in the range
+     * is one of the property's owner-configured weekend days
+     * ('_moga_weekend_days' meta) AND this period defines its own
+     * weekend price, that weekend price is written for that date;
+     * otherwise the period's base price is written. This is
+     * deliberately resolved once, at apply (save) time, rather than
+     * as runtime precedence logic — moga_calculate_property_price()
+     * never needs to know "periods" exist at all; it already just
+     * reads whatever ends up in price_override, exactly as it does
+     * today for any other override.
+     *
+     * @since  1.0.0
+     * @param  int         $listing_id    Property post ID.
+     * @param  string      $listing_type  'property' (tours don't use this method).
+     * @param  string      $date_from     Y-m-d.
+     * @param  string      $date_to       Y-m-d (exclusive, matches moga_date_range()).
+     * @param  float       $price         Base price/night for this period.
+     * @param  float|null  $weekend_price Optional weekend rate for this period.
+     * @param  int|null    $min_stay      Optional minimum nights for this period.
+     * @param  int|null    $max_stay      Optional maximum nights for this period.
+     * @return void
+     */
+    public function apply_period($listing_id, $listing_type, $date_from, $date_to, $price, $weekend_price = null, $min_stay = null, $max_stay = null)
+    {
+        global $wpdb;
+        $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
+
+        $weekend_days = array();
+        if ($weekend_price > 0) {
+            $weekend_days_meta = get_post_meta($listing_id, '_moga_weekend_days', true);
+            $weekend_days      = $weekend_days_meta ? json_decode($weekend_days_meta, true) : array();
+            $weekend_days      = is_array($weekend_days) ? array_map('intval', $weekend_days) : array();
+        }
+
+        foreach (moga_date_range($date_from, $date_to) as $date) {
+            $day_of_week = intval(gmdate('w', strtotime($date)));
+            $is_weekend  = in_array($day_of_week, $weekend_days, true);
+            $date_price  = ($is_weekend && $weekend_price > 0) ? $weekend_price : $price;
+
+            $existing_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$prefix}availability WHERE listing_id = %d AND listing_type = %s AND date = %s",
+                $listing_id,
+                $listing_type,
+                $date
+            ));
+
+            $row_data   = array('price_override' => (float) $date_price);
+            $row_format = array('%f');
+
+            if (null !== $min_stay) {
+                $row_data['min_stay'] = absint($min_stay);
+                $row_format[]         = '%d';
+            }
+            if (null !== $max_stay) {
+                $row_data['max_stay'] = absint($max_stay);
+                $row_format[]         = '%d';
+            }
+
+            if ($existing_id) {
+                $wpdb->update("{$prefix}availability", $row_data, array('id' => $existing_id), $row_format, array('%d'));
+                continue;
+            }
+
+            $row_data = array_merge(
+                array(
+                    'listing_id'   => $listing_id,
+                    'listing_type' => $listing_type,
+                    'date'         => $date,
+                    'status'       => 'available',
+                ),
+                $row_data
+            );
+            $row_format = array_merge(array('%d', '%s', '%s', '%s'), $row_format);
+
+            $wpdb->insert("{$prefix}availability", $row_data, $row_format);
+        }
+    }
+
+    /**
+     * Clear a Property Period — resets price_override, min_stay,
+     * and max_stay back to NULL (plain property default) across the
+     * given date range. Called when a period is deleted or its
+     * range shrinks. Deliberately touches ONLY these three columns
+     * — status and booking_id are never modified, so a real guest
+     * booking on one of these dates is completely unaffected.
+     *
+     * @since  1.0.0
+     * @param  int    $listing_id   Property post ID.
+     * @param  string $listing_type 'property'.
+     * @param  string $date_from    Y-m-d.
+     * @param  string $date_to      Y-m-d (exclusive).
+     * @return void
+     */
+    public function clear_period($listing_id, $listing_type, $date_from, $date_to)
+    {
+        global $wpdb;
+        $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
+
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$prefix}availability
+             SET price_override = NULL, min_stay = NULL, max_stay = NULL
+             WHERE listing_id = %d AND listing_type = %s
+             AND date >= %s AND date < %s",
+            $listing_id,
+            $listing_type,
+            $date_from,
+            $date_to
+        ));
+    }
+
 
     // ============================================================
     // CALENDAR VIEW
@@ -365,7 +533,7 @@ class Moga_Availability
      * @param  string $listing_type 'property'|'tour'.
      * @param  int    $month        1-12.
      * @param  int    $year         e.g. 2026.
-     * @return array Y-m-d => associative row (status, price_override, min_stay, booking_id).
+     * @return array Y-m-d => associative row (status, price_override, min_stay, max_stay, booking_id).
      */
     public function get_calendar($listing_id, $listing_type, $month, $year)
     {
@@ -376,7 +544,7 @@ class Moga_Availability
         $end   = gmdate('Y-m-d', strtotime($start . ' +1 month'));
 
         $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT date, status, price_override, min_stay, booking_id
+            "SELECT date, status, price_override, min_stay, max_stay, booking_id
              FROM {$prefix}availability
              WHERE listing_id = %d AND listing_type = %s
              AND date >= %s AND date < %s

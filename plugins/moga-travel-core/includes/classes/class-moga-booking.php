@@ -18,6 +18,7 @@
  * Deliberately reuses existing verified helpers rather than
  * reimplementing their logic:
  *   - moga_validate_dates()          (helper-date.php)
+ *   - moga_validate_stay_length()    (helper-date.php)
  *   - moga_is_available()            (helper-functions.php)
  *   - moga_calculate_property_price() / moga_calculate_tour_price()
  *                                     (helper-price.php)
@@ -137,6 +138,18 @@ class Moga_Booking
                 'not_available',
                 __('These dates are no longer available for this listing.', 'moga-travel-core')
             );
+        }
+
+        // SECURITY FIX (Aug 19 session): min/max stay was previously
+        // enforced only client-side (booking.js/Flatpickr) — a real
+        // gap, since a guest could bypass the calendar entirely by
+        // submitting a booking request directly. Property/rental
+        // only — tours have no min/max-stay concept.
+        if ('property' === $availability_type) {
+            $stay_check = moga_validate_stay_length($listing_id, $check_in, $check_out);
+            if (is_wp_error($stay_check)) {
+                return $stay_check;
+            }
         }
 
         $adults   = isset($data['guests_adults']) ? max(1, absint($data['guests_adults'])) : 1;

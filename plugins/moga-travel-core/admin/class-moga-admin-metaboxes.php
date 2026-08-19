@@ -497,7 +497,7 @@ class Moga_Admin_Metaboxes
                         <?php endforeach; ?>
                     </div>
                     <p class="moga-metabox__hint">
-                        <?php esc_html_e('Enter a Weekend Price above first — these days only apply if a different weekend rate is set. Defaults to Saturday & Sunday if none selected.', 'moga-travel-core'); ?>
+                        <?php esc_html_e('Enter a Weekend Price above first — these days only apply if a different weekend rate is set. No weekend days apply until you select them here.', 'moga-travel-core'); ?>
                     </p>
                 </div>
 

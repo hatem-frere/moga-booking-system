@@ -21,371 +21,552 @@
  * @since   1.0.0
  */
 
-( function () {
-    'use strict';
-
+(function () {
+    "use strict";
 
     // ============================================================
     // READ CONFIG FROM JSON BLOCK
     // ============================================================
 
     function getConfig() {
-        var el = document.getElementById( 'moga-booking-config' );
-        if ( ! el ) return null;
-        try { return JSON.parse( el.textContent ); } catch ( e ) { return null; }
+        var el = document.getElementById("moga-booking-config");
+        if (!el) return null;
+        try {
+            return JSON.parse(el.textContent);
+        } catch (e) {
+            return null;
+        }
     }
 
     // Tour booking config — separate JSON block, separate ID.
     // Property and tour singles never load on the same page, but this
     // keeps the two config objects (and their shapes) fully independent.
     function getTourConfig() {
-        var el = document.getElementById( 'moga-tour-booking-config' );
-        if ( ! el ) return null;
-        try { return JSON.parse( el.textContent ); } catch ( e ) { return null; }
+        var el = document.getElementById("moga-tour-booking-config");
+        if (!el) return null;
+        try {
+            return JSON.parse(el.textContent);
+        } catch (e) {
+            return null;
+        }
     }
-
 
     // ============================================================
     // 01. GLIGHTBOX
     // ============================================================
 
     function initGallery() {
-        if ( typeof GLightbox === 'undefined' ) return;
+        if (typeof GLightbox === "undefined") return;
 
-        var first = document.querySelector( '[data-gallery]' );
-        if ( ! first ) return;
+        var first = document.querySelector("[data-gallery]");
+        if (!first) return;
 
-        var key = first.getAttribute( 'data-gallery' );
+        var key = first.getAttribute("data-gallery");
 
         // ---- Image gallery ----
-        GLightbox( {
-            selector:        '[data-gallery="' + key + '"]',
+        GLightbox({
+            selector: '[data-gallery="' + key + '"]',
             touchNavigation: true,
-            loop:            true,
-            autoplayVideos:  false,
-            openEffect:      'fade',
-            closeEffect:     'fade',
-        } );
+            loop: true,
+            autoplayVideos: false,
+            openEffect: "fade",
+            closeEffect: "fade",
+        });
 
         // ---- Video gallery (sidebar) ----
         // Videos use a separate gallery key (property-{id}-videos) so they
         // open in their own GLightbox sequence independent of the image gallery.
         // autoplayVideos is true here so local and embedded videos play on open.
-        var videoKey = key + '-videos';
-        var videoEl  = document.querySelector( '[data-gallery="' + videoKey + '"]' );
+        var videoKey = key + "-videos";
+        var videoEl = document.querySelector(
+            '[data-gallery="' + videoKey + '"]',
+        );
 
-        if ( videoEl ) {
-            GLightbox( {
-                selector:        '[data-gallery="' + videoKey + '"]',
+        if (videoEl) {
+            GLightbox({
+                selector: '[data-gallery="' + videoKey + '"]',
                 touchNavigation: true,
-                loop:            false,
-                autoplayVideos:  true,
-                openEffect:      'fade',
-                closeEffect:     'fade',
-                videosWidth:     '90vw',
-            } );
+                loop: false,
+                autoplayVideos: true,
+                openEffect: "fade",
+                closeEffect: "fade",
+                videosWidth: "90vw",
+            });
         }
 
         // "View all" button — mobile.
-        var btn = document.getElementById( 'moga-gallery-view-all' );
-        if ( btn ) {
-            btn.addEventListener( 'click', function () {
-                var link = document.querySelector( '[data-gallery="' + key + '"]' );
-                if ( link ) link.click();
-            } );
+        var btn = document.getElementById("moga-gallery-view-all");
+        if (btn) {
+            btn.addEventListener("click", function () {
+                var link = document.querySelector(
+                    '[data-gallery="' + key + '"]',
+                );
+                if (link) link.click();
+            });
         }
     }
-
 
     // ============================================================
     // 02. FLATPICKR DATE PICKERS
     // ============================================================
 
-    function initDatePickers( config ) {
-        if ( typeof flatpickr === 'undefined' || ! config ) return;
+    function initDatePickers(config) {
+        if (typeof flatpickr === "undefined" || !config) return;
 
-        var checkinEl  = document.getElementById( 'moga-checkin' );
-        var checkoutEl = document.getElementById( 'moga-checkout' );
-        if ( ! checkinEl || ! checkoutEl ) return;
+        var checkinEl = document.getElementById("moga-checkin");
+        var checkoutEl = document.getElementById("moga-checkout");
+        if (!checkinEl || !checkoutEl) return;
 
         var today = new Date();
-        today.setHours( 0, 0, 0, 0 );
+        today.setHours(0, 0, 0, 0);
 
         var shared = {
-            dateFormat:    'Y-m-d',
-            altInput:      true,
-            altFormat:     'M j, Y',
-            minDate:       today,
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "M j, Y",
+            minDate: today,
             disableMobile: false,
         };
 
-        if ( config.maxStay > 0 ) {
-            var maxD = new Date( today.getTime() + config.maxStay * 86400000 );
+        if (config.maxStay > 0) {
+            var maxD = new Date(today.getTime() + config.maxStay * 86400000);
             shared.maxDate = maxD;
         }
 
-        var checkoutPicker = flatpickr( checkoutEl, Object.assign( {}, shared, {
-            onClose: function () {
-                updatePriceBreakdown( config );
-            },
-        } ) );
+        var checkoutPicker = flatpickr(
+            checkoutEl,
+            Object.assign({}, shared, {
+                onClose: function () {
+                    updatePriceBreakdown(config);
+                },
+            }),
+        );
 
-        flatpickr( checkinEl, Object.assign( {}, shared, {
-            onClose: function ( dates ) {
-                if ( ! dates[0] ) return;
-                var minOut = new Date( dates[0].getTime() );
-                minOut.setDate( minOut.getDate() + ( config.minStay || 1 ) );
-                checkoutPicker.set( 'minDate', minOut );
-                if ( ! checkoutEl.value ) checkoutPicker.open();
-                updatePriceBreakdown( config );
-            },
-        } ) );
+        flatpickr(
+            checkinEl,
+            Object.assign({}, shared, {
+                onClose: function (dates) {
+                    if (!dates[0]) return;
+                    var minOut = new Date(dates[0].getTime());
+                    minOut.setDate(minOut.getDate() + (config.minStay || 1));
+                    checkoutPicker.set("minDate", minOut);
+                    if (!checkoutEl.value) checkoutPicker.open();
+                    updatePriceBreakdown(config);
+                },
+            }),
+        );
 
         // If dates pre-filled from URL, update immediately.
-        if ( checkinEl.value && checkoutEl.value ) {
-            updatePriceBreakdown( config );
+        if (checkinEl.value && checkoutEl.value) {
+            updatePriceBreakdown(config);
         }
     }
-
 
     // ============================================================
     // 03. PRICE BREAKDOWN
     // ============================================================
 
-    function calcNights( inStr, outStr ) {
-        if ( ! inStr || ! outStr ) return 0;
-        var diff = new Date( outStr ) - new Date( inStr );
-        return Math.max( 0, Math.round( diff / 86400000 ) );
+    function calcNights(inStr, outStr) {
+        if (!inStr || !outStr) return 0;
+        var diff = new Date(outStr) - new Date(inStr);
+        return Math.max(0, Math.round(diff / 86400000));
     }
 
-    function fmt( amount, currency ) {
-        var sym = ( window.mogaData && window.mogaData.currencySymbol )
-            ? window.mogaData.currencySymbol
-            : currency + ' ';
-        return sym + amount.toLocaleString( undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 } );
+    function fmt(amount, currency) {
+        var sym =
+            window.mogaData && window.mogaData.currencySymbol
+                ? window.mogaData.currencySymbol
+                : currency + " ";
+        return (
+            sym +
+            amount.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            })
+        );
     }
 
-    function updatePriceBreakdown( config ) {
-        var inEl  = document.getElementById( 'moga-checkin' );
-        var outEl = document.getElementById( 'moga-checkout' );
-        if ( ! inEl || ! outEl ) return;
+    function updatePriceBreakdown(config) {
+        var inEl = document.getElementById("moga-checkin");
+        var outEl = document.getElementById("moga-checkout");
+        if (!inEl || !outEl || !config) return;
 
-        var nights = calcNights( inEl.value, outEl.value );
-        // Fall back to 1 night default when no dates selected.
-        if ( nights <= 0 ) nights = 1;
+        var checkIn = inEl.value;
+        var checkOut = outEl.value;
 
-        var ppn      = config.pricePerNight || 0;
-        var discount = config.discount      || 0;
-        var currency = config.currency      || '';
-        var subtotal = ppn * nights;
-        var disc     = discount > 0 ? subtotal * ( discount / 100 ) : 0;
-        var total    = subtotal - disc;
-
-        var label = document.getElementById( 'moga-nights-label' );
-        if ( label ) {
-            label.textContent = fmt( ppn, currency ) + ' \u00d7 '
-                + nights + ( nights === 1 ? ' night' : ' nights' );
+        // No real dates selected yet — show a simple "starting from"
+        // placeholder using the page's default per-night price. This
+        // is intentionally NOT a real calculation (no weekend/override
+        // awareness) — there is nothing meaningful to send the price
+        // AJAX endpoint without real check-in/check-out values, and
+        // class-moga-ajax.php's calculate_price handler explicitly
+        // requires them for property pricing.
+        if (!checkIn || !checkOut) {
+            renderPlaceholderBreakdown(config);
+            return;
         }
 
-        var subEl = document.getElementById( 'moga-breakdown-subtotal' );
-        if ( subEl ) subEl.textContent = fmt( subtotal, currency );
-
-        var discEl = document.getElementById( 'moga-breakdown-discount' );
-        if ( discEl ) discEl.textContent = '\u2212' + fmt( disc, currency );
-
-        var totEl = document.getElementById( 'moga-breakdown-total' );
-        if ( totEl ) totEl.textContent = fmt( total, currency );
-
-        // Always visible — remove hidden if present.
-        var bd = document.getElementById( 'moga-price-breakdown' );
-        if ( bd ) bd.removeAttribute( 'hidden' );
+        // BUG FIX (Aug 15 session): this function used to compute the
+        // breakdown itself, in JS, from config.pricePerNight — which
+        // is an ALREADY-DISCOUNTED, date-blind value baked into the
+        // page by PHP's moga_get_property_display_price(). Multiplying
+        // that by the night count and then subtracting the discount
+        // percentage AGAIN compounded it, and weekend pricing was never
+        // applied at all. Fixed: with real dates known, always defer to
+        // the server's authoritative calculation — the same
+        // moga_calculate_property_price() the AJAX handler already
+        // uses correctly — rather than duplicating that logic here.
+        fetchServerPrice(config, checkIn, checkOut);
     }
 
+    function renderPlaceholderBreakdown(config) {
+        var ppn = config.pricePerNight || 0;
+        var discount = config.discount || 0;
+        var currency = config.currency || "";
+        var subtotal = ppn;
+        var disc = discount > 0 ? subtotal * (discount / 100) : 0;
+        var total = subtotal - disc;
+
+        renderBreakdown({
+            nightsLabel: "1 night",
+            subtotal: subtotal,
+            discount: disc,
+            total: total,
+            currency: currency,
+        });
+    }
+
+    function fetchServerPrice(config, checkIn, checkOut) {
+        if (!config.ajaxUrl || !config.nonce || !config.propertyId) return;
+
+        var body = new URLSearchParams({
+            action: "moga_calculate_price",
+            nonce: config.nonce,
+            listing_id: config.propertyId,
+            listing_type: "property",
+            check_in: checkIn,
+            check_out: checkOut,
+        });
+
+        fetch(config.ajaxUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString(),
+        })
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (json) {
+                if (!json.success || !json.data || !json.data.price) return;
+
+                var p = json.data.price;
+                var nights = p.nights || 1;
+
+                // Use the server's own pre-formatted strings
+                // (moga_format_price() via class-moga-ajax.php) rather
+                // than reformatting raw numbers here — sidesteps
+                // fmt()'s currency-symbol bug entirely for this path,
+                // and guarantees this always matches what the top
+                // price badge (also server-formatted, in PHP) shows.
+                renderBreakdownFormatted({
+                    nightsLabel: nights + (nights === 1 ? " night" : " nights"),
+                    subtotal:
+                        p.subtotal_formatted ||
+                        fmt(p.subtotal || 0, p.currency),
+                    discount:
+                        p.discount_formatted ||
+                        fmt(p.discount || 0, p.currency),
+                    total: p.total_formatted || fmt(p.total || 0, p.currency),
+                });
+
+                // Also update the top price badges (desktop + mobile
+                // sticky bar) — these were previously only set once,
+                // on initial page load, and never refreshed when the
+                // guest picked dates live via the date picker.
+                updatePriceBadges(p);
+            })
+            .catch(function () {
+                // Network/server error — leave the last known-good
+                // display in place rather than showing broken numbers.
+            });
+    }
+
+    function renderBreakdown(data) {
+        var label = document.getElementById("moga-nights-label");
+        if (label) label.textContent = data.nightsLabel;
+
+        var subEl = document.getElementById("moga-breakdown-subtotal");
+        if (subEl) subEl.textContent = fmt(data.subtotal, data.currency);
+
+        var discEl = document.getElementById("moga-breakdown-discount");
+        if (discEl)
+            discEl.textContent = "\u2212" + fmt(data.discount, data.currency);
+
+        var totEl = document.getElementById("moga-breakdown-total");
+        if (totEl) totEl.textContent = fmt(data.total, data.currency);
+
+        var bd = document.getElementById("moga-price-breakdown");
+        if (bd) bd.removeAttribute("hidden");
+    }
+
+    /**
+     * Same DOM targets as renderBreakdown(), but for already-formatted
+     * price strings (e.g. "E£700.00") coming straight from the server
+     * via moga_format_price() — no client-side currency-symbol
+     * formatting involved at all, so this can't disagree with the
+     * server on which symbol to use.
+     */
+    function renderBreakdownFormatted(data) {
+        var label = document.getElementById("moga-nights-label");
+        if (label) label.textContent = data.nightsLabel;
+
+        var subEl = document.getElementById("moga-breakdown-subtotal");
+        if (subEl) subEl.textContent = data.subtotal;
+
+        var discEl = document.getElementById("moga-breakdown-discount");
+        if (discEl) discEl.textContent = "\u2212" + data.discount;
+
+        var totEl = document.getElementById("moga-breakdown-total");
+        if (totEl) totEl.textContent = data.total;
+
+        var bd = document.getElementById("moga-price-breakdown");
+        if (bd) bd.removeAttribute("hidden");
+    }
+
+    /**
+     * Update the top price badges (desktop card + mobile sticky bar)
+     * with the real per-night average for the selected dates. Uses
+     * price_per_night_avg_formatted / price_per_night_avg_original_formatted
+     * from the AJAX response — server-formatted, so no client-side
+     * currency-symbol guessing. Both 'old' (struck-through) spans are
+     * guarded with if(el), since they don't exist in the DOM at all
+     * when the property has no discount configured (nothing to show).
+     */
+    function updatePriceBadges(p) {
+        if (!p.price_per_night_avg_formatted) return; // Tour pricing has no per-night concept.
+
+        var current = document.getElementById("moga-badge-price-current");
+        if (current) current.textContent = p.price_per_night_avg_formatted;
+
+        var old = document.getElementById("moga-badge-price-old");
+        if (old && p.price_per_night_avg_original_formatted) {
+            old.textContent = p.price_per_night_avg_original_formatted;
+        }
+
+        var mobileCurrent = document.getElementById(
+            "moga-mobile-badge-price-current",
+        );
+        if (mobileCurrent)
+            mobileCurrent.textContent = p.price_per_night_avg_formatted;
+
+        var mobileOld = document.getElementById("moga-mobile-badge-price-old");
+        if (mobileOld && p.price_per_night_avg_original_formatted) {
+            mobileOld.textContent = p.price_per_night_avg_original_formatted;
+        }
+    }
 
     // ============================================================
     // 04. GUEST COUNTER
     // ============================================================
 
-    function initGuestCounter( config ) {
-        var minus   = document.getElementById( 'moga-guests-minus' );
-        var plus    = document.getElementById( 'moga-guests-plus' );
-        var display = document.getElementById( 'moga-guests-display' );
-        var input   = document.getElementById( 'moga-guests-input' );
-        if ( ! minus || ! plus || ! display || ! input ) return;
+    function initGuestCounter(config) {
+        var minus = document.getElementById("moga-guests-minus");
+        var plus = document.getElementById("moga-guests-plus");
+        var display = document.getElementById("moga-guests-display");
+        var input = document.getElementById("moga-guests-input");
+        if (!minus || !plus || !display || !input) return;
 
-        var max   = config ? ( config.maxGuests || 10 ) : 10;
-        var count = parseInt( input.value, 10 ) || 1;
+        var max = config ? config.maxGuests || 10 : 10;
+        var count = parseInt(input.value, 10) || 1;
 
         function render() {
-            display.textContent = count + ( count === 1 ? ' guest' : ' guests' );
-            input.value         = count;
-            minus.disabled      = ( count <= 1 );
-            plus.disabled       = ( count >= max );
+            display.textContent = count + (count === 1 ? " guest" : " guests");
+            input.value = count;
+            minus.disabled = count <= 1;
+            plus.disabled = count >= max;
         }
 
-        minus.addEventListener( 'click', function () { if ( count > 1 )   { count--; render(); } } );
-        plus.addEventListener(  'click', function () { if ( count < max ) { count++; render(); } } );
+        minus.addEventListener("click", function () {
+            if (count > 1) {
+                count--;
+                render();
+            }
+        });
+        plus.addEventListener("click", function () {
+            if (count < max) {
+                count++;
+                render();
+            }
+        });
 
         render();
     }
-
 
     // ============================================================
     // 05. DESCRIPTION READ MORE
     // ============================================================
 
     function initDescriptionToggle() {
-        var btn     = document.getElementById( 'moga-description-toggle' );
-        var content = document.getElementById( 'moga-description-content' );
-        if ( ! btn || ! content ) return;
+        var btn = document.getElementById("moga-description-toggle");
+        var content = document.getElementById("moga-description-content");
+        if (!btn || !content) return;
 
-        btn.addEventListener( 'click', function () {
-            var open = btn.getAttribute( 'aria-expanded' ) === 'true';
-            if ( open ) {
-                content.classList.remove( 'moga-property-description--expanded' );
-                content.classList.add( 'moga-property-description--collapsed' );
-                btn.setAttribute( 'aria-expanded', 'false' );
-                btn.querySelector( 'svg' ).style.transform = '';
+        btn.addEventListener("click", function () {
+            var open = btn.getAttribute("aria-expanded") === "true";
+            if (open) {
+                content.classList.remove("moga-property-description--expanded");
+                content.classList.add("moga-property-description--collapsed");
+                btn.setAttribute("aria-expanded", "false");
+                btn.querySelector("svg").style.transform = "";
             } else {
-                content.classList.remove( 'moga-property-description--collapsed' );
-                content.classList.add( 'moga-property-description--expanded' );
-                btn.setAttribute( 'aria-expanded', 'true' );
-                btn.querySelector( 'svg' ).style.transform = 'rotate(180deg)';
+                content.classList.remove(
+                    "moga-property-description--collapsed",
+                );
+                content.classList.add("moga-property-description--expanded");
+                btn.setAttribute("aria-expanded", "true");
+                btn.querySelector("svg").style.transform = "rotate(180deg)";
             }
             // Update button text node (first text node).
-            var textNode = Array.from( btn.childNodes ).find( function( n ) { return n.nodeType === 3; } );
-            if ( textNode ) textNode.textContent = open ? ' Show more ' : ' Show less ';
-        } );
+            var textNode = Array.from(btn.childNodes).find(function (n) {
+                return n.nodeType === 3;
+            });
+            if (textNode)
+                textNode.textContent = open ? " Show more " : " Show less ";
+        });
     }
-
 
     // ============================================================
     // 06. AMENITIES SHOW ALL
     // ============================================================
 
     function initAmenitiesToggle() {
-        var btn  = document.getElementById( 'moga-amenities-toggle' );
-        var grid = document.getElementById( 'moga-amenities-grid' );
-        if ( ! btn || ! grid ) return;
+        var btn = document.getElementById("moga-amenities-toggle");
+        var grid = document.getElementById("moga-amenities-grid");
+        if (!btn || !grid) return;
 
-        btn.addEventListener( 'click', function () {
-            var open   = btn.getAttribute( 'aria-expanded' ) === 'true';
-            var hidden = grid.querySelectorAll( '.moga-amenity-item--hidden' );
-            hidden.forEach( function( el ) {
-                el.classList.toggle( 'is-visible', ! open );
-            } );
-            btn.setAttribute( 'aria-expanded', open ? 'false' : 'true' );
-        } );
+        btn.addEventListener("click", function () {
+            var open = btn.getAttribute("aria-expanded") === "true";
+            var hidden = grid.querySelectorAll(".moga-amenity-item--hidden");
+            hidden.forEach(function (el) {
+                el.classList.toggle("is-visible", !open);
+            });
+            btn.setAttribute("aria-expanded", open ? "false" : "true");
+        });
     }
-
 
     // ============================================================
     // 07. MOBILE STICKY BAR
     // ============================================================
 
     function initMobileStickyBar() {
-        var bar     = document.getElementById( 'moga-mobile-booking-bar' );
-        var sidebar = document.getElementById( 'moga-booking-sidebar' );
-        if ( ! bar ) return;
+        var bar = document.getElementById("moga-mobile-booking-bar");
+        var sidebar = document.getElementById("moga-booking-sidebar");
+        if (!bar) return;
 
         var threshold = 300;
 
-        if ( sidebar ) {
+        if (sidebar) {
             var rect = sidebar.getBoundingClientRect();
             threshold = rect.bottom + window.pageYOffset;
         }
 
         function onScroll() {
-            if ( window.pageYOffset > threshold ) {
-                bar.style.display = 'flex';
-                bar.removeAttribute( 'aria-hidden' );
+            if (window.pageYOffset > threshold) {
+                bar.style.display = "flex";
+                bar.removeAttribute("aria-hidden");
             } else {
-                bar.style.display = 'none';
-                bar.setAttribute( 'aria-hidden', 'true' );
+                bar.style.display = "none";
+                bar.setAttribute("aria-hidden", "true");
             }
         }
 
-        window.addEventListener( 'scroll', onScroll, { passive: true } );
+        window.addEventListener("scroll", onScroll, { passive: true });
         onScroll();
     }
-
 
     // ============================================================
     // 08. SECTION NAV — ACTIVE ON SCROLL
     // ============================================================
 
     function initSectionNav() {
-        var links    = document.querySelectorAll( '.moga-section-nav__link' );
+        var links = document.querySelectorAll(".moga-section-nav__link");
         var sections = [];
 
-        links.forEach( function ( link ) {
-            var href = link.getAttribute( 'href' );
-            if ( href && href.startsWith( '#' ) ) {
-                var el = document.getElementById( href.slice(1) );
-                if ( el ) sections.push( { link: link, el: el } );
+        links.forEach(function (link) {
+            var href = link.getAttribute("href");
+            if (href && href.startsWith("#")) {
+                var el = document.getElementById(href.slice(1));
+                if (el) sections.push({ link: link, el: el });
             }
-        } );
+        });
 
-        if ( sections.length === 0 ) return;
+        if (sections.length === 0) return;
 
         function onScroll() {
             var scrollY = window.pageYOffset + 120; // offset for sticky header + nav
-            var active  = null;
+            var active = null;
 
-            sections.forEach( function ( item ) {
-                if ( item.el.offsetTop <= scrollY ) {
+            sections.forEach(function (item) {
+                if (item.el.offsetTop <= scrollY) {
                     active = item;
                 }
-            } );
+            });
 
-            links.forEach( function ( l ) { l.classList.remove( 'is-active' ); } );
-            if ( active ) active.link.classList.add( 'is-active' );
+            links.forEach(function (l) {
+                l.classList.remove("is-active");
+            });
+            if (active) active.link.classList.add("is-active");
         }
 
-        window.addEventListener( 'scroll', onScroll, { passive: true } );
+        window.addEventListener("scroll", onScroll, { passive: true });
         onScroll();
 
         // Smooth scroll on click.
-        links.forEach( function ( link ) {
-            link.addEventListener( 'click', function ( e ) {
-                var href = link.getAttribute( 'href' );
-                if ( href && href.startsWith( '#' ) ) {
+        links.forEach(function (link) {
+            link.addEventListener("click", function (e) {
+                var href = link.getAttribute("href");
+                if (href && href.startsWith("#")) {
                     e.preventDefault();
-                    var target = document.getElementById( href.slice(1) );
-                    if ( target ) {
+                    var target = document.getElementById(href.slice(1));
+                    if (target) {
                         var top = target.offsetTop - 120;
-                        window.scrollTo( { top: top, behavior: 'smooth' } );
+                        window.scrollTo({ top: top, behavior: "smooth" });
                     }
                 }
-            } );
-        } );
+            });
+        });
     }
-
 
     // ============================================================
     // 09. SHARE BUTTON
     // ============================================================
 
     function initShareButton() {
-        var btn = document.getElementById( 'moga-share-btn' );
-        if ( ! btn ) return;
+        var btn = document.getElementById("moga-share-btn");
+        if (!btn) return;
 
-        btn.addEventListener( 'click', function () {
-            var url   = window.location.href;
+        btn.addEventListener("click", function () {
+            var url = window.location.href;
             var title = document.title;
 
-            if ( navigator.share ) {
-                navigator.share( { title: title, url: url } ).catch( function () {} );
-            } else if ( navigator.clipboard ) {
-                navigator.clipboard.writeText( url ).then( function () {
-                    var original = btn.innerHTML;
-                    btn.textContent = 'Link copied!';
-                    setTimeout( function () { btn.innerHTML = original; }, 2000 );
-                } ).catch( function () {} );
+            if (navigator.share) {
+                navigator
+                    .share({ title: title, url: url })
+                    .catch(function () {});
+            } else if (navigator.clipboard) {
+                navigator.clipboard
+                    .writeText(url)
+                    .then(function () {
+                        var original = btn.innerHTML;
+                        btn.textContent = "Link copied!";
+                        setTimeout(function () {
+                            btn.innerHTML = original;
+                        }, 2000);
+                    })
+                    .catch(function () {});
             }
-        } );
+        });
     }
-
 
     // ============================================================
     // 10. TOUR DATE PICKER
@@ -397,167 +578,179 @@
     //   - Otherwise, dates are enabled by weekday according to availableDays
     //     (0=Sun .. 6=Sat). An empty availableDays array means "no
     //     restriction" — every day from today onward is enabled.
-    function initTourDatePicker( config ) {
-        if ( typeof flatpickr === 'undefined' || ! config ) return;
+    function initTourDatePicker(config) {
+        if (typeof flatpickr === "undefined" || !config) return;
 
-        var dateEl = document.getElementById( 'moga-tour-date' );
-        if ( ! dateEl ) return;
+        var dateEl = document.getElementById("moga-tour-date");
+        if (!dateEl) return;
 
         var today = new Date();
-        today.setHours( 0, 0, 0, 0 );
+        today.setHours(0, 0, 0, 0);
 
         var opts = {
-            dateFormat:    'Y-m-d',
-            altInput:      true,
-            altFormat:     'D, M j, Y',
-            minDate:       today,
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "D, M j, Y",
+            minDate: today,
             disableMobile: false,
         };
 
-        var startDates = ( config.startDates || [] ).filter( Boolean );
+        var startDates = (config.startDates || []).filter(Boolean);
 
-        if ( startDates.length > 0 ) {
+        if (startDates.length > 0) {
             // Specific scheduled departure dates only.
             opts.enable = startDates;
-        } else if ( config.availableDays && config.availableDays.length > 0 ) {
+        } else if (config.availableDays && config.availableDays.length > 0) {
             // Weekday whitelist.
             var allowedDays = config.availableDays;
             opts.disable = [
-                function ( date ) {
-                    return allowedDays.indexOf( date.getDay() ) === -1;
+                function (date) {
+                    return allowedDays.indexOf(date.getDay()) === -1;
                 },
             ];
         }
         // If neither is set, every future date is bookable — no restriction.
 
-        flatpickr( dateEl, opts );
+        flatpickr(dateEl, opts);
     }
-
 
     // ============================================================
     // 11. TOUR PARTICIPANT COUNTERS
     // ============================================================
 
-    function initParticipantCounters( config ) {
-        var maxTotal = config ? ( config.maxParticipants || 20 ) : 20;
+    function initParticipantCounters(config) {
+        var maxTotal = config ? config.maxParticipants || 20 : 20;
 
         var groups = [
-            { key: 'adults',   min: 1 },
-            { key: 'children', min: 0 },
-            { key: 'infants',  min: 0 },
+            { key: "adults", min: 1 },
+            { key: "children", min: 0 },
+            { key: "infants", min: 0 },
         ];
 
-        function getCount( key ) {
-            var input = document.getElementById( 'moga-' + key + '-input' );
-            return input ? ( parseInt( input.value, 10 ) || 0 ) : 0;
+        function getCount(key) {
+            var input = document.getElementById("moga-" + key + "-input");
+            return input ? parseInt(input.value, 10) || 0 : 0;
         }
 
         function totalCount() {
-            return groups.reduce( function ( sum, g ) { return sum + getCount( g.key ); }, 0 );
+            return groups.reduce(function (sum, g) {
+                return sum + getCount(g.key);
+            }, 0);
         }
 
-        function render( key, min ) {
-            var display = document.getElementById( 'moga-' + key + '-display' );
-            var input   = document.getElementById( 'moga-' + key + '-input' );
-            var minus   = document.getElementById( 'moga-' + key + '-minus' );
-            var plus    = document.getElementById( 'moga-' + key + '-plus' );
-            if ( ! display || ! input || ! minus || ! plus ) return;
+        function render(key, min) {
+            var display = document.getElementById("moga-" + key + "-display");
+            var input = document.getElementById("moga-" + key + "-input");
+            var minus = document.getElementById("moga-" + key + "-minus");
+            var plus = document.getElementById("moga-" + key + "-plus");
+            if (!display || !input || !minus || !plus) return;
 
-            var count = getCount( key );
+            var count = getCount(key);
             display.textContent = count;
-            minus.disabled = ( count <= min );
-            plus.disabled  = ( totalCount() >= maxTotal );
+            minus.disabled = count <= min;
+            plus.disabled = totalCount() >= maxTotal;
         }
 
-        groups.forEach( function ( g ) {
-            var input = document.getElementById( 'moga-' + g.key + '-input' );
-            var minus = document.getElementById( 'moga-' + g.key + '-minus' );
-            var plus  = document.getElementById( 'moga-' + g.key + '-plus' );
-            if ( ! input || ! minus || ! plus ) return;
+        groups.forEach(function (g) {
+            var input = document.getElementById("moga-" + g.key + "-input");
+            var minus = document.getElementById("moga-" + g.key + "-minus");
+            var plus = document.getElementById("moga-" + g.key + "-plus");
+            if (!input || !minus || !plus) return;
 
-            minus.addEventListener( 'click', function () {
-                var count = getCount( g.key );
-                if ( count > g.min ) {
+            minus.addEventListener("click", function () {
+                var count = getCount(g.key);
+                if (count > g.min) {
                     input.value = count - 1;
-                    groups.forEach( function ( gg ) { render( gg.key, gg.min ); } );
-                    updateTourPriceBreakdown( config );
+                    groups.forEach(function (gg) {
+                        render(gg.key, gg.min);
+                    });
+                    updateTourPriceBreakdown(config);
                 }
-            } );
+            });
 
-            plus.addEventListener( 'click', function () {
-                if ( totalCount() < maxTotal ) {
-                    input.value = getCount( g.key ) + 1;
-                    groups.forEach( function ( gg ) { render( gg.key, gg.min ); } );
-                    updateTourPriceBreakdown( config );
+            plus.addEventListener("click", function () {
+                if (totalCount() < maxTotal) {
+                    input.value = getCount(g.key) + 1;
+                    groups.forEach(function (gg) {
+                        render(gg.key, gg.min);
+                    });
+                    updateTourPriceBreakdown(config);
                 }
-            } );
+            });
 
-            render( g.key, g.min );
-        } );
+            render(g.key, g.min);
+        });
     }
-
 
     // ============================================================
     // 12. TOUR PRICE BREAKDOWN
     // ============================================================
 
-    function updateTourPriceBreakdown( config ) {
-        if ( ! config ) return;
+    function updateTourPriceBreakdown(config) {
+        if (!config) return;
 
-        var adultsEl   = document.getElementById( 'moga-adults-input' );
-        var childrenEl = document.getElementById( 'moga-children-input' );
-        var infantsEl  = document.getElementById( 'moga-infants-input' );
+        var adultsEl = document.getElementById("moga-adults-input");
+        var childrenEl = document.getElementById("moga-children-input");
+        var infantsEl = document.getElementById("moga-infants-input");
 
-        var adults   = adultsEl   ? ( parseInt( adultsEl.value, 10 )   || 1 ) : 1;
-        var children = childrenEl ? ( parseInt( childrenEl.value, 10 ) || 0 ) : 0;
-        var infants  = infantsEl  ? ( parseInt( infantsEl.value, 10 )  || 0 ) : 0;
+        var adults = adultsEl ? parseInt(adultsEl.value, 10) || 1 : 1;
+        var children = childrenEl ? parseInt(childrenEl.value, 10) || 0 : 0;
+        var infants = infantsEl ? parseInt(infantsEl.value, 10) || 0 : 0;
 
-        var priceAdult   = config.pricePerPerson || 0;
-        var priceChild   = config.priceChild     || 0;
-        var priceInfant  = config.priceInfant    || 0;
+        var priceAdult = config.pricePerPerson || 0;
+        var priceChild = config.priceChild || 0;
+        var priceInfant = config.priceInfant || 0;
         var groupDiscount = config.groupDiscount || 0;
-        var currency      = config.currency      || '';
+        var currency = config.currency || "";
 
-        var subtotal = ( priceAdult * adults ) + ( priceChild * children ) + ( priceInfant * infants );
-        var disc     = groupDiscount > 0 ? subtotal * ( groupDiscount / 100 ) : 0;
-        var total    = subtotal - disc;
+        var subtotal =
+            priceAdult * adults + priceChild * children + priceInfant * infants;
+        var disc = groupDiscount > 0 ? subtotal * (groupDiscount / 100) : 0;
+        var total = subtotal - disc;
 
         var totalParticipants = adults + children + infants;
 
-        var label = document.getElementById( 'moga-participants-label' );
-        if ( label ) {
+        var label = document.getElementById("moga-participants-label");
+        if (label) {
             var parts = [];
-            if ( adults   > 0 ) parts.push( adults   + ( adults   === 1 ? ' adult'   : ' adults' ) );
-            if ( children > 0 ) parts.push( children + ( children === 1 ? ' child'   : ' children' ) );
-            if ( infants  > 0 ) parts.push( infants  + ( infants  === 1 ? ' infant'  : ' infants' ) );
-            label.textContent = fmt( priceAdult, currency ) + ' \u00d7 ' + ( parts.join( ', ' ) || ( totalParticipants + ' participants' ) );
+            if (adults > 0)
+                parts.push(adults + (adults === 1 ? " adult" : " adults"));
+            if (children > 0)
+                parts.push(
+                    children + (children === 1 ? " child" : " children"),
+                );
+            if (infants > 0)
+                parts.push(infants + (infants === 1 ? " infant" : " infants"));
+            label.textContent =
+                fmt(priceAdult, currency) +
+                " \u00d7 " +
+                (parts.join(", ") || totalParticipants + " participants");
         }
 
-        var subEl = document.getElementById( 'moga-breakdown-subtotal' );
-        if ( subEl ) subEl.textContent = fmt( subtotal, currency );
+        var subEl = document.getElementById("moga-breakdown-subtotal");
+        if (subEl) subEl.textContent = fmt(subtotal, currency);
 
-        var discEl = document.getElementById( 'moga-breakdown-discount' );
-        if ( discEl ) discEl.textContent = '\u2212' + fmt( disc, currency );
+        var discEl = document.getElementById("moga-breakdown-discount");
+        if (discEl) discEl.textContent = "\u2212" + fmt(disc, currency);
 
-        var totEl = document.getElementById( 'moga-breakdown-total' );
-        if ( totEl ) totEl.textContent = fmt( total, currency );
+        var totEl = document.getElementById("moga-breakdown-total");
+        if (totEl) totEl.textContent = fmt(total, currency);
 
-        var bd = document.getElementById( 'moga-price-breakdown' );
-        if ( bd ) bd.removeAttribute( 'hidden' );
+        var bd = document.getElementById("moga-price-breakdown");
+        if (bd) bd.removeAttribute("hidden");
     }
-
 
     // ============================================================
     // BOOT
     // ============================================================
 
-    document.addEventListener( 'DOMContentLoaded', function () {
+    document.addEventListener("DOMContentLoaded", function () {
         var config = getConfig();
 
         initGallery();
-        initDatePickers( config );
-        initGuestCounter( config );
-        updatePriceBreakdown( config ); // Show default 1-night price on load.
+        initDatePickers(config);
+        initGuestCounter(config);
+        updatePriceBreakdown(config); // Show default 1-night price on load.
         initDescriptionToggle();
         initAmenitiesToggle();
         initMobileStickyBar();
@@ -567,9 +760,8 @@
         // Tour page — elements are absent on property pages, so each
         // function below early-returns harmlessly if its DOM isn't found.
         var tourConfig = getTourConfig();
-        initTourDatePicker( tourConfig );
-        initParticipantCounters( tourConfig );
-        updateTourPriceBreakdown( tourConfig ); // Show default 1-adult price on load.
-    } );
-
-} )();
+        initTourDatePicker(tourConfig);
+        initParticipantCounters(tourConfig);
+        updateTourPriceBreakdown(tourConfig); // Show default 1-adult price on load.
+    });
+})();
