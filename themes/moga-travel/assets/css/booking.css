@@ -839,6 +839,41 @@
     text-decoration: line-through !important;
 }
 
+/* Available period days — tagged by booking.js's onDayCreate hook
+   for every date covered by one of the property's Pricing Periods.
+   Gives a guest an immediate visual sense of which days are
+   actually bookable before clicking anything, rather than only
+   discovering it by trial and error. */
+.flatpickr-day.moga-flatpickr-available {
+    background-color: color-mix(
+        in srgb,
+        var(--moga-success) 12%,
+        transparent
+    ) !important;
+    border-color: color-mix(
+        in srgb,
+        var(--moga-success) 35%,
+        transparent
+    ) !important;
+    color: var(--moga-success) !important;
+    font-weight: 600 !important;
+}
+
+.flatpickr-day.moga-flatpickr-available:hover {
+    background-color: var(--moga-success) !important;
+    border-color: var(--moga-success) !important;
+    color: var(--moga-white) !important;
+}
+
+.flatpickr-day.moga-flatpickr-available.selected,
+.flatpickr-day.moga-flatpickr-available.startRange,
+.flatpickr-day.moga-flatpickr-available.endRange,
+.flatpickr-day.moga-flatpickr-available.inRange {
+    background-color: var(--moga-primary) !important;
+    border-color: var(--moga-primary) !important;
+    color: var(--moga-white) !important;
+}
+
 /* ============================================================
    13. Guest Counter
    ============================================================ */
@@ -906,6 +941,26 @@
     color: var(--moga-gray-500);
     margin-top: 4px;
     margin-bottom: 0;
+}
+
+/* ============================================================
+   GLOBAL SAFEGUARD — [hidden] always wins
+   Several elements in this file (.moga-price-breakdown,
+   .moga-booking-form-card__discount, .moga-price-breakdown__row,
+   and likely others not yet found) set 'display' directly on their
+   own class. Without this rule, the browser's built-in
+   "[hidden] { display: none }" loses the specificity tie against
+   those more specific/later-loaded rules, silently keeping an
+   element visible even with the 'hidden' attribute present — this
+   exact bug pattern has hit three different elements today alone.
+   !important guarantees this always wins, from the very first
+   paint (a pure-CSS fix, not dependent on JS running first) —
+   and correctly stops applying the instant 'hidden' is removed,
+   so showing an element again via JS still works normally.
+   ============================================================ */
+
+[hidden] {
+    display: none !important;
 }
 
 /* ============================================================

@@ -5,8 +5,10 @@
  *
  * Path: themes/moga-travel/template-parts/property/booking-form.php
  *
- * Shows price breakdown immediately on page load with 1 night default.
- * Updates live when dates or guests change.
+ * Top price badge always shows a "starting from" figure. The price
+ * breakdown box stays hidden until the guest actually picks real
+ * dates (or arrives with dates already in the URL) — nothing but
+ * the badge is shown before that.
  *
  * @package MogaTravel
  * @since   1.0.0
@@ -27,12 +29,47 @@ $original_price  = $display_price['original'];
 $currency        = $display_price['currency'];
 $discount        = $display_price['discount'];
 
-$min_stay      = intval(get_post_meta($property_id, '_moga_min_stay',      true)) ?: 1;
-$max_stay      = intval(get_post_meta($property_id, '_moga_max_stay',      true));
+// Resolved currency SYMBOL ("E£"), not just the code ("EGP") — for
+// booking.js's fmt(), which previously only had the code available
+// and had to fall back to printing "EGP 4,500.00" instead of a
+// proper "E£4,500.00" to match the top badge. Reuses
+// moga_format_price() (the same function already proven correct
+// for the badge) rather than guessing at the currency data
+// structure — strips all digits/punctuation/whitespace from a
+// zero-amount format, leaving just the symbol regardless of
+// whether it's a prefix or suffix currency.
+$currency_symbol = trim(preg_replace('/[\d.,\s]/', '', moga_format_price(0, $currency)));
+
+// Booking rules — pulled from the SAME period used for the
+// displayed price above (see helper-price.php's
+// moga_get_property_display_price() docblock), not the old flat
+// fields, which can hold stale leftover data from before the
+// period-only pricing model.
+$reference_period = $display_price['period'];
+$min_stay          = $reference_period && isset($reference_period['min_stay']) ? intval($reference_period['min_stay']) : 1;
+$max_stay          = $reference_period && isset($reference_period['max_stay']) ? intval($reference_period['max_stay']) : 0;
 $max_guests    = intval(get_post_meta($property_id, '_moga_max_guests',    true)) ?: 10;
-$checkin_time  = get_post_meta($property_id, '_moga_checkin_time',  true) ?: '14:00';
-$checkout_time = get_post_meta($property_id, '_moga_checkout_time', true) ?: '11:00';
+$checkin_time      = $reference_period && ! empty($reference_period['checkin_time'])  ? $reference_period['checkin_time']  : '14:00';
+$checkout_time     = $reference_period && ! empty($reference_period['checkout_time']) ? $reference_period['checkout_time'] : '11:00';
 $instant       = get_post_meta($property_id, '_moga_instant_booking', true);
+
+// Pricing Periods — only the fields booking.js needs for date-picker
+// min/max-stay enforcement (Gap 1: the calendar previously only knew
+// the property's flat min/max, so it could visually allow (or block)
+// a stay length the server would then disagree with once a period's
+// own, different min/max applied). Price fields aren't included here
+// yet — that's a separate, later piece (in-calendar price display).
+$pricing_periods_json   = get_post_meta($property_id, '_moga_pricing_periods', true);
+$pricing_periods_raw    = $pricing_periods_json ? json_decode($pricing_periods_json, true) : array();
+$pricing_periods_raw    = is_array($pricing_periods_raw) ? $pricing_periods_raw : array();
+$pricing_periods_for_js = array_map(function ($period) {
+    return array(
+        'start'    => isset($period['start']) ? $period['start'] : '',
+        'end'      => isset($period['end']) ? $period['end'] : '',
+        'min_stay' => isset($period['min_stay']) ? intval($period['min_stay']) : null,
+        'max_stay' => isset($period['max_stay']) ? intval($period['max_stay']) : null,
+    );
+}, $pricing_periods_raw);
 
 $rating       = floatval(get_post_meta($property_id, '_moga_rating',       true));
 $review_count = intval(get_post_meta($property_id, '_moga_review_count', true));
@@ -96,22 +133,18 @@ if ($checkin_val && $checkout_val) {
     <?php // ---- Price Header ----
     ?>
     <div class="moga-booking-form-card__price">
-        <?php if ($badge_original_price > 0 && $badge_original_price > $badge_price_per_night) : ?>
-            <span class="moga-booking-form-card__price-old" id="moga-badge-price-old">
-                <?php echo esc_html(moga_format_price($badge_original_price, $currency)); ?>
-            </span>
-        <?php endif; ?>
+        <span class="moga-booking-form-card__price-old" id="moga-badge-price-old" <?php echo ($badge_original_price > 0 && $badge_original_price > $badge_price_per_night) ? '' : 'hidden'; ?>>
+            <?php echo esc_html(moga_format_price($badge_original_price, $currency)); ?>
+        </span>
         <span class="moga-booking-form-card__price-current" id="moga-badge-price-current">
             <?php echo esc_html(moga_format_price($badge_price_per_night, $currency)); ?>
         </span>
         <span class="moga-booking-form-card__price-label">
             <?php esc_html_e('/ night', 'moga-travel'); ?>
         </span>
-        <?php if ($discount > 0) : ?>
-            <span class="moga-booking-form-card__discount">
-                -<?php echo esc_html(intval($discount)); ?>%
-            </span>
-        <?php endif; ?>
+        <span class="moga-booking-form-card__discount" id="moga-badge-discount" <?php echo $discount > 0 ? '' : 'hidden'; ?>>
+            -<?php echo esc_html(intval($discount)); ?>%
+        </span>
     </div>
 
     <?php // ---- Rating Summary ----
@@ -129,6 +162,38 @@ if ($checkin_val && $checkout_val) {
                     ); ?>
                 </a>
             <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
+    <?php // ---- Available Periods — so a guest browsing a month with
+    // zero availability (e.g. August, when everything is in
+    // September) knows real dates exist elsewhere, instead of
+    // silently wondering why the calendar looks empty. Clicking an
+    // item fills in both date fields via event delegation in
+    // booking.js.
+    ?>
+    <?php if (! empty($pricing_periods_raw)) : ?>
+        <div class="moga-available-periods" id="moga-available-periods">
+            <p class="moga-available-periods__label">
+                <?php esc_html_e('Available dates', 'moga-travel'); ?>
+            </p>
+            <?php foreach ($pricing_periods_raw as $period) :
+                if (empty($period['start']) || empty($period['end']) || empty($period['price'])) {
+                    continue;
+                }
+            ?>
+                <button type="button" class="moga-available-periods__item"
+                    data-start="<?php echo esc_attr($period['start']); ?>"
+                    data-end="<?php echo esc_attr($period['end']); ?>">
+                    <span class="moga-available-periods__dates">
+                        <?php echo esc_html(moga_format_date_range($period['start'], $period['end'])); ?>
+                    </span>
+                    <span class="moga-available-periods__price">
+                        <?php echo esc_html(moga_format_price($period['price'], $currency)); ?>
+                        <?php esc_html_e('/ night', 'moga-travel'); ?>
+                    </span>
+                </button>
+            <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
@@ -192,9 +257,14 @@ if ($checkin_val && $checkout_val) {
             </p>
         </div>
 
-        <?php // ---- Price Breakdown — shown immediately with 1 night default ----
+        <?php // ---- Price Breakdown — hidden until the guest actually
+        // picks real dates (per explicit request: "the price should
+        // be the only thing displayed... until dates have been set").
+        // Only shown immediately when real dates already arrived via
+        // the URL (e.g. from search results), matching how the top
+        // badge and this box's own numbers are already computed above.
         ?>
-        <div class="moga-price-breakdown" id="moga-price-breakdown">
+        <div class="moga-price-breakdown" id="moga-price-breakdown" <?php echo ($checkin_val && $checkout_val) ? '' : 'hidden'; ?>>
 
             <div class="moga-price-breakdown__row">
                 <span class="moga-price-breakdown__label" id="moga-nights-label">
@@ -211,16 +281,14 @@ if ($checkin_val && $checkout_val) {
                 </span>
             </div>
 
-            <?php if ($discount > 0) : ?>
-                <div class="moga-price-breakdown__row moga-price-breakdown__row--discount">
-                    <span class="moga-price-breakdown__label">
-                        <?php printf(esc_html__('Discount (%d%%)', 'moga-travel'), intval($discount)); ?>
-                    </span>
-                    <span class="moga-price-breakdown__value moga-price-breakdown__value--discount" id="moga-breakdown-discount">
-                        &minus;<?php echo esc_html(moga_format_price($default_discount, $currency)); ?>
-                    </span>
-                </div>
-            <?php endif; ?>
+            <div class="moga-price-breakdown__row moga-price-breakdown__row--discount" id="moga-breakdown-discount-row" <?php echo $discount > 0 ? '' : 'hidden'; ?>>
+                <span class="moga-price-breakdown__label" id="moga-breakdown-discount-label">
+                    <?php printf(esc_html__('Discount (%d%%)', 'moga-travel'), intval($discount)); ?>
+                </span>
+                <span class="moga-price-breakdown__value moga-price-breakdown__value--discount" id="moga-breakdown-discount">
+                    &minus;<?php echo esc_html(moga_format_price($default_discount, $currency)); ?>
+                </span>
+            </div>
 
             <div class="moga-price-breakdown__row moga-price-breakdown__row--total">
                 <span class="moga-price-breakdown__label moga-price-breakdown__label--total">
@@ -291,8 +359,10 @@ if ($checkin_val && $checkout_val) {
             "originalPrice": <?php echo floatval($original_price); ?>,
             "discount": <?php echo floatval($discount); ?>,
             "currency": "<?php echo esc_js($currency); ?>",
+            "currencySymbol": "<?php echo esc_js($currency_symbol); ?>",
             "minStay": <?php echo intval($min_stay); ?>,
             "maxStay": <?php echo intval($max_stay); ?>,
+            "pricingPeriods": <?php echo wp_json_encode($pricing_periods_for_js); ?>,
             "maxGuests": <?php echo intval($max_guests); ?>,
             "checkinTime": "<?php echo esc_js($checkin_time); ?>",
             "checkoutTime": "<?php echo esc_js($checkout_time); ?>",

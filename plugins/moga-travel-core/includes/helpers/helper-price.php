@@ -280,25 +280,71 @@ function moga_calculate_savings_percent($original_price, $sale_price)
 function moga_calculate_property_price($property_id, $check_in, $check_out)
 {
 
-    $nights           = moga_calculate_nights($check_in, $check_out);
-    $price_per_night  = floatval(get_post_meta($property_id, '_moga_price_per_night', true));
-    $weekend_price    = floatval(get_post_meta($property_id, '_moga_price_weekend', true));
-    $discount_percent = floatval(get_post_meta($property_id, '_moga_price_discount', true));
+    $nights = moga_calculate_nights($check_in, $check_out);
 
-    if ($nights <= 0 || $price_per_night <= 0) {
-        return array(
-            'nights'          => 0,
-            'price_per_night' => 0,
-            'subtotal'        => 0,
-            'discount'        => 0,
-            'taxes'           => 0,
-            'total'           => 0,
-        );
+    $currency = get_post_meta($property_id, '_moga_currency', true)
+        ?: get_option('moga_currency', 'USD');
+
+    $empty_result = array(
+        'nights'           => 0,
+        'weekend_nights'   => 0,
+        'weekday_nights'   => 0,
+        'price_per_night'  => 0,
+        'subtotal'         => 0,
+        'discount_percent' => 0,
+        'discount'         => 0,
+        'tax_rate'         => 0,
+        'taxes'            => 0,
+        'total'            => 0,
+        'currency'         => $currency,
+    );
+
+    if ($nights <= 0) {
+        return $empty_result;
     }
 
-    // Calculate subtotal considering weekend pricing and any
-    // per-date price overrides set via Moga_Availability::set_price_override().
-    // A single batch query avoids one query per date in the loop.
+    // REBUILT (Aug 2026 session — Period-only pricing model): a
+    // property has no flat rate of its own anymore. Previously this
+    // function bailed out immediately whenever '_moga_price_per_night'
+    // was 0 — which is now ALWAYS true, since nothing saves that
+    // field anymore (moved entirely into Pricing Periods). That gate
+    // was silently returning all-zeros for every single request,
+    // discarding the correctly-calculated $nights value above and
+    // never even reaching the (already-correct) per-date pricing
+    // logic below.
+    //
+    // Every night's real price now comes from price_override,
+    // written by Moga_Availability::apply_period() for every date
+    // inside a defined Pricing Period — including that period's own
+    // weekend-day resolution, already baked in at save time. Neither
+    // '_moga_price_per_night', '_moga_price_weekend', nor
+    // '_moga_weekend_days' (property-wide) are read here anymore.
+
+    // Find the single period covering check-in — a valid request
+    // must have its ENTIRE range inside one period
+    // (moga_is_available() already enforces this before a real
+    // booking can be created). Used here for that period's own
+    // discount % and weekend_days, for the nights breakdown.
+    $periods_json = get_post_meta($property_id, '_moga_pricing_periods', true);
+    $periods      = $periods_json ? json_decode($periods_json, true) : array();
+    $periods      = is_array($periods) ? $periods : array();
+
+    $covering_period = null;
+    foreach ($periods as $period) {
+        if (
+            ! empty($period['start']) && ! empty($period['end'])
+            && $check_in >= $period['start'] && $check_in < $period['end']
+        ) {
+            $covering_period = $period;
+            break;
+        }
+    }
+
+    $discount_percent    = ($covering_period && isset($covering_period['discount'])) ? floatval($covering_period['discount']) : 0;
+    $period_weekend_days = ($covering_period && is_array($covering_period['weekend_days'] ?? null))
+        ? array_map('intval', $covering_period['weekend_days'])
+        : array();
+
     global $wpdb;
     $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
 
@@ -310,70 +356,37 @@ function moga_calculate_property_price($property_id, $check_in, $check_out)
         $check_out
     ), OBJECT_K);
 
-    // Which days count as "weekend" for THIS property. Per-property,
-    // not global — the platform has no single primary market, so a
-    // hardcoded region-specific weekend would be wrong for most
-    // owners. Stored as JSON (e.g. "[5,6]" for Friday/Saturday),
-    // matching the same wp_json_encode() convention used for
-    // '_moga_available_days' — saved via the Weekend Days checkboxes
-    // in class-moga-admin-metaboxes.php (Property Pricing box).
-    //
-    // NO DEFAULT (fixed this session, per explicit owner instruction):
-    // if the owner hasn't checked any days, there are NO weekend days
-    // for this property — full stop. Previously silently assumed
-    // Saturday/Sunday when unset, which was an unwanted, unrequested
-    // assumption on the owner's actual pricing intent.
-    $weekend_days_meta = get_post_meta($property_id, '_moga_weekend_days', true);
-    $weekend_days       = $weekend_days_meta ? json_decode($weekend_days_meta, true) : array();
-    $weekend_days       = is_array($weekend_days) ? array_map('intval', $weekend_days) : array();
-
-    $subtotal        = 0;
-    $weekend_nights  = 0;
-    $weekday_nights  = 0;
-    $override_nights = 0;
-    $dates           = moga_date_range($check_in, $check_out);
+    $dates          = moga_date_range($check_in, $check_out);
+    $subtotal       = 0;
+    $weekend_nights = 0;
+    $weekday_nights = 0;
 
     foreach ($dates as $date) {
-        $day_of_week = intval(gmdate('w', strtotime($date)));
-        $is_weekend  = in_array($day_of_week, $weekend_days, true);
-
-        // A per-date override always takes precedence over both the
-        // weekend rate and the standard nightly rate.
-        if (isset($overrides[$date]) && null !== $overrides[$date]->price_override) {
-            $subtotal += (float) $overrides[$date]->price_override;
-            $override_nights++;
-
-            // Still tracked for the nights label, based on the
-            // actual calendar day — an overridden Friday is still
-            // a "weekend night" for display purposes, just priced
-            // differently.
-            if ($is_weekend) {
-                $weekend_nights++;
-            } else {
-                $weekday_nights++;
-            }
-            continue;
+        // A valid request should have 100% period coverage — every
+        // date in a real booking belongs to the SAME single period.
+        // A date with no override here means no period covers it —
+        // an invalid or incomplete request, not something to
+        // silently price at zero for just that one night.
+        if (! isset($overrides[$date]) || null === $overrides[$date]->price_override) {
+            return $empty_result;
         }
 
-        if ($weekend_price > 0 && $is_weekend) {
-            $subtotal += $weekend_price;
+        $subtotal += (float) $overrides[$date]->price_override;
+
+        $day_of_week = intval(gmdate('w', strtotime($date)));
+        if (in_array($day_of_week, $period_weekend_days, true)) {
             $weekend_nights++;
         } else {
-            $subtotal += $price_per_night;
             $weekday_nights++;
         }
     }
 
-    // Apply discount.
     $discount = 0;
     if ($discount_percent > 0) {
         $discount = moga_calculate_discount_amount($subtotal, $discount_percent);
-        $subtotal_after_discount = $subtotal - $discount;
-    } else {
-        $subtotal_after_discount = $subtotal;
     }
+    $subtotal_after_discount = $subtotal - $discount;
 
-    // Calculate taxes (no tax by default — can be configured).
     $tax_rate = floatval(get_option('moga_tax_rate', 0));
     $taxes    = $tax_rate > 0
         ? round($subtotal_after_discount * ($tax_rate / 100), 2)
@@ -385,17 +398,14 @@ function moga_calculate_property_price($property_id, $check_in, $check_out)
         'nights'           => $nights,
         'weekend_nights'   => $weekend_nights,
         'weekday_nights'   => $weekday_nights,
-        'override_nights'  => $override_nights,
-        'price_per_night'  => $price_per_night,
-        'weekend_price'    => $weekend_price,
+        'price_per_night'  => round($subtotal / $nights, 2),
         'subtotal'         => round($subtotal, 2),
         'discount_percent' => $discount_percent,
         'discount'         => round($discount, 2),
         'tax_rate'         => $tax_rate,
         'taxes'            => $taxes,
         'total'            => $total,
-        'currency'         => get_post_meta($property_id, '_moga_currency', true)
-            ?: get_option('moga_currency', 'USD'),
+        'currency'         => $currency,
     );
 }
 
@@ -563,29 +573,77 @@ function moga_render_price($price, $original_price = 0, $currency = '', $suffix 
 }
 
 /**
- * Get property price with discount applied for display.
+ * Get property price with discount applied for display — the
+ * "starting from" figure shown on search cards and the property
+ * page before any dates are picked.
+ *
+ * REBUILT (Period-only pricing model): a property has no flat
+ * default rate of its own anymore — every price lives inside a
+ * Pricing Period. This finds the period with the LOWEST effective
+ * (post-discount) nightly rate and uses it, matching standard
+ * Booking.com/Airbnb "from" pricing on search cards.
+ *
+ * Returns the full winning period under 'period' too, so callers
+ * (single-moga_property.php, booking-form.php) can pull that SAME
+ * period's check-in/out time and min/max stay for display —
+ * otherwise those would show mismatched information from a
+ * different period than the one whose price is actually shown.
  *
  * @since  1.0.0
  * @param  int $property_id Property post ID.
- * @return array            Array with 'price', 'original', 'currency'.
+ * @return array Array with 'price', 'original', 'currency', 'discount', 'period' (full period array, or null if no periods exist).
  */
 function moga_get_property_display_price($property_id)
 {
+    $periods_json = get_post_meta($property_id, '_moga_pricing_periods', true);
+    $periods      = $periods_json ? json_decode($periods_json, true) : array();
+    $periods      = is_array($periods) ? $periods : array();
 
-    $price_per_night  = floatval(get_post_meta($property_id, '_moga_price_per_night', true));
-    $discount_percent = floatval(get_post_meta($property_id, '_moga_price_discount', true));
-    $currency         = get_post_meta($property_id, '_moga_currency', true)
+    $currency = get_post_meta($property_id, '_moga_currency', true)
         ?: get_option('moga_currency', 'USD');
 
-    $display_price = $discount_percent > 0
-        ? moga_apply_discount($price_per_night, $discount_percent)
-        : $price_per_night;
+    $empty_result = array(
+        'price'    => 0,
+        'original' => 0,
+        'currency' => $currency,
+        'discount' => 0,
+        'period'   => null,
+    );
+
+    if (empty($periods)) {
+        return $empty_result;
+    }
+
+    $lowest = null;
+
+    foreach ($periods as $period) {
+        if (empty($period['price']) || $period['price'] <= 0) {
+            continue;
+        }
+
+        $discount  = isset($period['discount']) ? floatval($period['discount']) : 0;
+        $effective = $discount > 0 ? moga_apply_discount($period['price'], $discount) : (float) $period['price'];
+
+        if (null === $lowest || $effective < $lowest['effective']) {
+            $lowest = array(
+                'effective' => $effective,
+                'original'  => (float) $period['price'],
+                'discount'  => $discount,
+                'data'      => $period,
+            );
+        }
+    }
+
+    if (! $lowest) {
+        return $empty_result;
+    }
 
     return array(
-        'price'    => $display_price,
-        'original' => $discount_percent > 0 ? $price_per_night : 0,
+        'price'    => round($lowest['effective'], 2),
+        'original' => $lowest['discount'] > 0 ? $lowest['original'] : 0,
         'currency' => $currency,
-        'discount' => $discount_percent,
+        'discount' => $lowest['discount'],
+        'period'   => $lowest['data'],
     );
 }
 

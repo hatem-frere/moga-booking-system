@@ -410,15 +410,16 @@ class Moga_Availability
      * range with a single upsert per date.
      *
      * WEEKEND LAYERING, RESOLVED HERE, ONCE: if a date in the range
-     * is one of the property's owner-configured weekend days
-     * ('_moga_weekend_days' meta) AND this period defines its own
-     * weekend price, that weekend price is written for that date;
-     * otherwise the period's base price is written. This is
-     * deliberately resolved once, at apply (save) time, rather than
-     * as runtime precedence logic — moga_calculate_property_price()
-     * never needs to know "periods" exist at all; it already just
-     * reads whatever ends up in price_override, exactly as it does
-     * today for any other override.
+     * is one of THIS PERIOD's own weekend days (passed in via
+     * $weekend_days — weekend days are per-period now, not a single
+     * property-wide setting) AND this period defines its own weekend
+     * price, that weekend price is written for that date; otherwise
+     * the period's base price is written. This is deliberately
+     * resolved once, at apply (save) time, rather than as runtime
+     * precedence logic — moga_calculate_property_price() never needs
+     * to know "periods" exist at all; it already just reads whatever
+     * ends up in price_override, exactly as it does today for any
+     * other override.
      *
      * @since  1.0.0
      * @param  int         $listing_id    Property post ID.
@@ -429,19 +430,15 @@ class Moga_Availability
      * @param  float|null  $weekend_price Optional weekend rate for this period.
      * @param  int|null    $min_stay      Optional minimum nights for this period.
      * @param  int|null    $max_stay      Optional maximum nights for this period.
+     * @param  array       $weekend_days  This period's own weekend day numbers (0=Sun..6=Sat).
      * @return void
      */
-    public function apply_period($listing_id, $listing_type, $date_from, $date_to, $price, $weekend_price = null, $min_stay = null, $max_stay = null)
+    public function apply_period($listing_id, $listing_type, $date_from, $date_to, $price, $weekend_price = null, $min_stay = null, $max_stay = null, $weekend_days = array())
     {
         global $wpdb;
         $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
 
-        $weekend_days = array();
-        if ($weekend_price > 0) {
-            $weekend_days_meta = get_post_meta($listing_id, '_moga_weekend_days', true);
-            $weekend_days      = $weekend_days_meta ? json_decode($weekend_days_meta, true) : array();
-            $weekend_days      = is_array($weekend_days) ? array_map('intval', $weekend_days) : array();
-        }
+        $weekend_days = is_array($weekend_days) ? array_map('intval', $weekend_days) : array();
 
         foreach (moga_date_range($date_from, $date_to) as $date) {
             $day_of_week = intval(gmdate('w', strtotime($date)));

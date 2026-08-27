@@ -82,11 +82,23 @@ $bedrooms   = intval(get_post_meta($property_id, '_moga_bedrooms',   true));
 $bathrooms  = floatval(get_post_meta($property_id, '_moga_bathrooms',  true));
 $area       = floatval(get_post_meta($property_id, '_moga_area',       true));
 
-// Booking rules.
-$min_stay      = intval(get_post_meta($property_id, '_moga_min_stay',      true)) ?: 1;
-$max_stay      = intval(get_post_meta($property_id, '_moga_max_stay',      true));
-$checkin_time  = get_post_meta($property_id, '_moga_checkin_time',  true) ?: '14:00';
-$checkout_time = get_post_meta($property_id, '_moga_checkout_time', true) ?: '11:00';
+// Booking rules — pulled from the SAME period used for the
+// displayed price above, not the old flat '_moga_min_stay' etc.
+// fields. Those fields still exist in the CPT's meta registration
+// and can hold stale leftover values from before the period-only
+// pricing model — reading them here would show information from a
+// period that isn't even the one whose price is on screen. No
+// periods defined yet means these fall back to sane defaults.
+$reference_period = $display_price['period'];
+$min_stay          = $reference_period && isset($reference_period['min_stay']) ? intval($reference_period['min_stay']) : 1;
+$max_stay          = $reference_period && isset($reference_period['max_stay']) ? intval($reference_period['max_stay']) : 0;
+$checkin_time_raw  = $reference_period && ! empty($reference_period['checkin_time'])  ? $reference_period['checkin_time']  : '14:00';
+$checkout_time_raw = $reference_period && ! empty($reference_period['checkout_time']) ? $reference_period['checkout_time'] : '11:00';
+
+// Displayed as 12-hour time ("2:00 PM") — the raw 24-hour value
+// ("14:00") was being echoed directly with no formatting at all.
+$checkin_time  = date_i18n('g:i A', strtotime($checkin_time_raw));
+$checkout_time = date_i18n('g:i A', strtotime($checkout_time_raw));
 $cancellation  = get_post_meta($property_id, '_moga_cancellation',  true) ?: 'moderate';
 
 $cancellation_policies = class_exists('Moga_CPT_Property')

@@ -110,6 +110,90 @@
     // 02. FLATPICKR DATE PICKERS
     // ============================================================
 
+    function addDaysToDateString(dateStr, days) {
+        var d = new Date(dateStr + "T00:00:00");
+        d.setDate(d.getDate() + days);
+        return flatpickr.formatDate(d, "Y-m-d");
+    }
+
+    // Builds Flatpickr's `enable` ranges from the property's periods —
+    // switches the calendar into whitelist mode, so every date NOT
+    // covered by any period is automatically greyed out and
+    // unclickable. If there are no periods at all, this correctly
+    // returns an empty array, meaning nothing is bookable at all —
+    // matches the locked rule that a property is only bookable within
+    // a defined period.
+    //
+    // Check-in and check-out need slightly different ranges because
+    // a period's 'end' date is exclusive (checkout day, not a
+    // covered night — matches moga_date_range() throughout the
+    // backend): a guest can CHECK OUT on that end date, but can't
+    // CHECK IN on it (their first night would be the excluded day).
+    function buildEnableRanges(periods, forCheckout) {
+        var ranges = [];
+        for (var i = 0; i < periods.length; i++) {
+            var p = periods[i];
+            if (!p.start || !p.end) continue;
+
+            if (forCheckout) {
+                ranges.push({
+                    from: addDaysToDateString(p.start, 1),
+                    to: p.end,
+                });
+            } else {
+                ranges.push({
+                    from: p.start,
+                    to: addDaysToDateString(p.end, -1),
+                });
+            }
+        }
+        return ranges;
+    }
+
+    // Inclusive check (unlike findPeriodForDate's exclusive-end
+    // check-in logic) — for VISUAL highlighting purposes, a period's
+    // full span including its end date should read as "available"
+    // to a guest looking at the calendar, regardless of the
+    // check-in/check-out boundary nuance that only matters once a
+    // specific date is actually being selected.
+    function isDateInAnyPeriod(periods, dateStr) {
+        for (var i = 0; i < periods.length; i++) {
+            var p = periods[i];
+            if (p.start && p.end && dateStr >= p.start && dateStr <= p.end) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function findEarliestPeriodStart(periods) {
+        var earliest = null;
+        for (var i = 0; i < periods.length; i++) {
+            if (
+                periods[i].start &&
+                (!earliest || periods[i].start < earliest)
+            ) {
+                earliest = periods[i].start;
+            }
+        }
+        return earliest;
+    }
+
+    function findPeriodForDate(periods, dateStr) {
+        if (!periods || !periods.length) return null;
+        for (var i = 0; i < periods.length; i++) {
+            var p = periods[i];
+            // Matches the exact exclusive-end convention used
+            // throughout the backend (moga_date_range()) — the
+            // period's own 'end' date is checkout day, not a
+            // covered night, so it's excluded here too.
+            if (p.start && p.end && dateStr >= p.start && dateStr < p.end) {
+                return p;
+            }
+        }
+        return null;
+    }
+
     function initDatePickers(config) {
         if (typeof flatpickr === "undefined" || !config) return;
 
@@ -120,41 +204,148 @@
         var today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        var periods = config.pricingPeriods || [];
+
         var shared = {
             dateFormat: "Y-m-d",
             altInput: true,
             altFormat: "M j, Y",
             minDate: today,
             disableMobile: false,
+            onDayCreate: function (dObj, dStr, fp, dayElem) {
+                var dateStr = flatpickr.formatDate(dayElem.dateObj, "Y-m-d");
+                if (isDateInAnyPeriod(periods, dateStr)) {
+                    dayElem.classList.add("moga-flatpickr-available");
+                }
+            },
         };
 
-        if (config.maxStay > 0) {
-            var maxD = new Date(today.getTime() + config.maxStay * 86400000);
-            shared.maxDate = maxD;
-        }
+        // BUG FIX: previously set shared.maxDate to today + config.maxStay
+        // days — but maxStay is now a PER-PERIOD number (each period can
+        // have its own), not a single flat property-wide limit. Using it
+        // as a cap on how far into the future the ENTIRE calendar could
+        // even show meant a property with periods months away (like
+        // September, with a period max of 6 nights) had its whole
+        // calendar capped at roughly today+6 days — hiding real,
+        // bookable periods entirely, unclickable and invisible. The
+        // enable whitelist below already correctly restricts which
+        // dates are pickable; no separate cap is needed at all.
 
         var checkoutPicker = flatpickr(
             checkoutEl,
             Object.assign({}, shared, {
+                enable: buildEnableRanges(periods, true),
                 onClose: function () {
                     updatePriceBreakdown(config);
                 },
             }),
         );
 
-        flatpickr(
+        // Extracted so the periods-list click handler (below) can
+        // apply the exact same checkin-selected logic as actually
+        // picking a date on the calendar — setDate() doesn't fire
+        // onClose, so this can't just live inline inside it.
+        function applyCheckinConstraints(dateStr) {
+            var period = findPeriodForDate(periods, dateStr);
+
+            // A period's own min/max stay (if it sets one) takes
+            // precedence over the property's flat default — mirrors
+            // exactly how the server (moga_validate_stay_length())
+            // already resolves this, so the calendar and the
+            // actually-enforced rule can never disagree.
+            var minStay = (period && period.min_stay) || config.minStay || 1;
+            var maxStay =
+                period && period.max_stay ? period.max_stay : config.maxStay;
+
+            var minOut = new Date(dateStr + "T00:00:00");
+            minOut.setDate(minOut.getDate() + minStay);
+            checkoutPicker.set("minDate", minOut);
+
+            // BUG FIX: maxDate was computed purely from "check-in +
+            // maxStay days", never checking whether that landed past
+            // the period's own actual end date. A period's Max
+            // Nights value can be inconsistent with its real span
+            // (e.g. Max Nights = 6 on a period that only covers 5
+            // real nights) — when that happens, the period's own
+            // boundary must always win. Max Nights can only narrow
+            // the allowed range further, never extend past the
+            // period it belongs to — otherwise the calendar lets a
+            // guest select a checkout date reaching into the NEXT
+            // period, which is never allowed (a booking can never
+            // straddle two periods, even adjacent ones).
+            var periodEnd =
+                period && period.end
+                    ? new Date(period.end + "T00:00:00")
+                    : null;
+
+            if (maxStay > 0) {
+                var maxOut = new Date(dateStr + "T00:00:00");
+                maxOut.setDate(maxOut.getDate() + maxStay);
+                if (periodEnd && maxOut > periodEnd) {
+                    maxOut = periodEnd;
+                }
+                checkoutPicker.set("maxDate", maxOut);
+            } else if (periodEnd) {
+                checkoutPicker.set("maxDate", periodEnd);
+            } else {
+                checkoutPicker.set("maxDate", null);
+            }
+
+            return minOut;
+        }
+
+        var checkinPicker = flatpickr(
             checkinEl,
             Object.assign({}, shared, {
+                enable: buildEnableRanges(periods, false),
                 onClose: function (dates) {
                     if (!dates[0]) return;
-                    var minOut = new Date(dates[0].getTime());
-                    minOut.setDate(minOut.getDate() + (config.minStay || 1));
-                    checkoutPicker.set("minDate", minOut);
+
+                    var checkinStr = flatpickr.formatDate(dates[0], "Y-m-d");
+                    applyCheckinConstraints(checkinStr);
+
                     if (!checkoutEl.value) checkoutPicker.open();
                     updatePriceBreakdown(config);
                 },
             }),
         );
+
+        // Calendar opens on whichever month actually has availability
+        // instead of always showing "today"'s month — e.g. if every
+        // period is in September, the calendar opens on September,
+        // not a blank August. Only when no dates are already known
+        // from the URL, so it doesn't override a real pre-filled
+        // selection.
+        if (!checkinEl.value) {
+            var earliestStart = findEarliestPeriodStart(periods);
+            if (earliestStart) {
+                checkinPicker.jumpToDate(earliestStart);
+                checkoutPicker.jumpToDate(earliestStart);
+            }
+        }
+
+        // Available Periods list — clicking an item fills in both
+        // date fields, applying the exact same constraint logic a
+        // real calendar click would, then suggests a checkout date
+        // matching that period's own minimum stay, so a guest gets a
+        // ready-to-book pair of dates in one click rather than a
+        // second decision to make immediately after.
+        var periodsListEl = document.getElementById("moga-available-periods");
+        if (periodsListEl) {
+            periodsListEl.addEventListener("click", function (e) {
+                var btn = e.target.closest(".moga-available-periods__item");
+                if (!btn) return;
+
+                var start = btn.getAttribute("data-start");
+                if (!start) return;
+
+                checkinPicker.setDate(start, true);
+                var minOut = applyCheckinConstraints(start);
+                checkoutPicker.setDate(minOut, true);
+
+                updatePriceBreakdown(config);
+            });
+        }
 
         // If dates pre-filled from URL, update immediately.
         if (checkinEl.value && checkoutEl.value) {
@@ -172,11 +363,18 @@
         return Math.max(0, Math.round(diff / 86400000));
     }
 
-    function fmt(amount, currency) {
-        var sym =
-            window.mogaData && window.mogaData.currencySymbol
+    function fmt(amount, currency, currencySymbol) {
+        // Prefer the real resolved symbol ("E£") when available —
+        // matches the top badge exactly. Falls back to the raw
+        // currency code ("EGP ") if no symbol was passed, and only
+        // as a last resort to the generic site-wide default.
+        var sym = currencySymbol
+            ? currencySymbol
+            : currency
+              ? currency + " "
+              : window.mogaData && window.mogaData.currencySymbol
                 ? window.mogaData.currencySymbol
-                : currency + " ";
+                : "";
         return (
             sym +
             amount.toLocaleString(undefined, {
@@ -194,15 +392,15 @@
         var checkIn = inEl.value;
         var checkOut = outEl.value;
 
-        // No real dates selected yet — show a simple "starting from"
-        // placeholder using the page's default per-night price. This
-        // is intentionally NOT a real calculation (no weekend/override
-        // awareness) — there is nothing meaningful to send the price
-        // AJAX endpoint without real check-in/check-out values, and
-        // class-moga-ajax.php's calculate_price handler explicitly
-        // requires them for property pricing.
+        // No real dates selected yet (or only check-in picked so
+        // far, check-out still pending) — keep the breakdown box
+        // hidden entirely rather than showing a guessed placeholder.
+        // Per explicit request: "the price should be the only thing
+        // displayed... until dates have been set" — nothing else
+        // should compete for attention before there's something real
+        // to show.
         if (!checkIn || !checkOut) {
-            renderPlaceholderBreakdown(config);
+            hidePriceBreakdown();
             return;
         }
 
@@ -219,21 +417,20 @@
         fetchServerPrice(config, checkIn, checkOut);
     }
 
-    function renderPlaceholderBreakdown(config) {
-        var ppn = config.pricePerNight || 0;
-        var discount = config.discount || 0;
-        var currency = config.currency || "";
-        var subtotal = ppn;
-        var disc = discount > 0 ? subtotal * (discount / 100) : 0;
-        var total = subtotal - disc;
-
-        renderBreakdown({
-            nightsLabel: "1 night",
-            subtotal: subtotal,
-            discount: disc,
-            total: total,
-            currency: currency,
-        });
+    /**
+     * Hides the price breakdown box entirely. Sets style.display
+     * directly, not just the 'hidden' attribute — booking.css may
+     * set 'display' directly on '.moga-price-breakdown' (the same
+     * specificity-conflict pattern already found and fixed on the
+     * discount badge/row), which would otherwise silently keep the
+     * box visible despite the 'hidden' attribute being present.
+     */
+    function hidePriceBreakdown() {
+        var bd = document.getElementById("moga-price-breakdown");
+        if (bd) {
+            bd.setAttribute("hidden", "");
+            bd.style.display = "none";
+        }
     }
 
     function fetchServerPrice(config, checkIn, checkOut) {
@@ -277,6 +474,7 @@
                         p.discount_formatted ||
                         fmt(p.discount || 0, p.currency),
                     total: p.total_formatted || fmt(p.total || 0, p.currency),
+                    discountPercent: p.discount_percent || 0,
                 });
 
                 // Also update the top price badges (desktop + mobile
@@ -296,17 +494,32 @@
         if (label) label.textContent = data.nightsLabel;
 
         var subEl = document.getElementById("moga-breakdown-subtotal");
-        if (subEl) subEl.textContent = fmt(data.subtotal, data.currency);
+        if (subEl)
+            subEl.textContent = fmt(
+                data.subtotal,
+                data.currency,
+                data.currencySymbol,
+            );
 
         var discEl = document.getElementById("moga-breakdown-discount");
         if (discEl)
-            discEl.textContent = "\u2212" + fmt(data.discount, data.currency);
+            discEl.textContent =
+                "\u2212" +
+                fmt(data.discount, data.currency, data.currencySymbol);
 
         var totEl = document.getElementById("moga-breakdown-total");
-        if (totEl) totEl.textContent = fmt(data.total, data.currency);
+        if (totEl)
+            totEl.textContent = fmt(
+                data.total,
+                data.currency,
+                data.currencySymbol,
+            );
 
         var bd = document.getElementById("moga-price-breakdown");
-        if (bd) bd.removeAttribute("hidden");
+        if (bd) {
+            bd.removeAttribute("hidden");
+            bd.style.display = "";
+        }
     }
 
     /**
@@ -323,14 +536,52 @@
         var subEl = document.getElementById("moga-breakdown-subtotal");
         if (subEl) subEl.textContent = data.subtotal;
 
+        var discRow = document.getElementById("moga-breakdown-discount-row");
         var discEl = document.getElementById("moga-breakdown-discount");
+        var discLabel = document.getElementById(
+            "moga-breakdown-discount-label",
+        );
+        var hasDiscount = (data.discountPercent || 0) > 0;
+
+        // BUG FIX: the 'hidden' attribute alone wasn't enough here —
+        // booking.css's ".moga-price-breakdown__row { display: flex; }"
+        // rule sets display directly on this same element, and wins
+        // the specificity tie against the browser's built-in
+        // "[hidden] { display: none; }" rule (same specificity,
+        // theme stylesheet loads later). Setting style.display
+        // directly via JS always wins over any external stylesheet,
+        // regardless of what it says.
+        if (discRow) {
+            if (hasDiscount) {
+                discRow.removeAttribute("hidden");
+                discRow.style.display = "";
+            } else {
+                discRow.setAttribute("hidden", "");
+                discRow.style.display = "none";
+            }
+        }
         if (discEl) discEl.textContent = "\u2212" + data.discount;
+        if (discLabel && hasDiscount) {
+            discLabel.textContent =
+                "Discount (" + Math.round(data.discountPercent) + "%)";
+        }
 
         var totEl = document.getElementById("moga-breakdown-total");
         if (totEl) totEl.textContent = data.total;
 
         var bd = document.getElementById("moga-price-breakdown");
-        if (bd) bd.removeAttribute("hidden");
+        if (bd) {
+            // BUG FIX: hidePriceBreakdown() sets style.display = "none"
+            // directly (needed to beat booking.css's own display rule
+            // on this element). An inline style like that persists
+            // independently of the 'hidden' attribute — removing just
+            // the attribute was NOT enough to actually reveal the box
+            // again, since the leftover inline style kept silently
+            // overriding everything, even with correct data and a
+            // removed attribute. Both must be cleared together.
+            bd.removeAttribute("hidden");
+            bd.style.display = "";
+        }
     }
 
     /**
@@ -338,19 +589,56 @@
      * with the real per-night average for the selected dates. Uses
      * price_per_night_avg_formatted / price_per_night_avg_original_formatted
      * from the AJAX response — server-formatted, so no client-side
-     * currency-symbol guessing. Both 'old' (struck-through) spans are
-     * guarded with if(el), since they don't exist in the DOM at all
-     * when the property has no discount configured (nothing to show).
+     * currency-symbol guessing.
+     *
+     * BUG FIX: previously only ever updated TEXT content, never
+     * toggled visibility — so picking a period with a different (or
+     * zero) discount than whatever the page happened to load with
+     * left a stale discount chip and strikethrough price visible,
+     * showing the WRONG percentage next to a correctly-recalculated
+     * (and correctly zero, when applicable) dollar amount. Discount
+     * is a per-period value, not a fixed page-load constant — every
+     * element here now explicitly shows/hides based on this specific
+     * response's real discount_percent, not whatever was true when
+     * the page first rendered.
      */
     function updatePriceBadges(p) {
         if (!p.price_per_night_avg_formatted) return; // Tour pricing has no per-night concept.
 
+        var hasDiscount = (p.discount_percent || 0) > 0;
+
         var current = document.getElementById("moga-badge-price-current");
         if (current) current.textContent = p.price_per_night_avg_formatted;
 
+        // BUG FIX: 'hidden' attribute alone wasn't enough — booking.css
+        // sets 'display' directly on these classes (e.g.
+        // ".moga-booking-form-card__discount { display: inline-flex; }"),
+        // which wins the specificity tie against the browser's
+        // built-in "[hidden] { display: none; }" rule. Setting
+        // style.display directly via JS always wins regardless.
         var old = document.getElementById("moga-badge-price-old");
-        if (old && p.price_per_night_avg_original_formatted) {
-            old.textContent = p.price_per_night_avg_original_formatted;
+        if (old) {
+            if (hasDiscount && p.price_per_night_avg_original_formatted) {
+                old.textContent = p.price_per_night_avg_original_formatted;
+                old.removeAttribute("hidden");
+                old.style.display = "";
+            } else {
+                old.setAttribute("hidden", "");
+                old.style.display = "none";
+            }
+        }
+
+        var discountChip = document.getElementById("moga-badge-discount");
+        if (discountChip) {
+            if (hasDiscount) {
+                discountChip.textContent =
+                    "-" + Math.round(p.discount_percent) + "%";
+                discountChip.removeAttribute("hidden");
+                discountChip.style.display = "";
+            } else {
+                discountChip.setAttribute("hidden", "");
+                discountChip.style.display = "none";
+            }
         }
 
         var mobileCurrent = document.getElementById(
@@ -360,8 +648,16 @@
             mobileCurrent.textContent = p.price_per_night_avg_formatted;
 
         var mobileOld = document.getElementById("moga-mobile-badge-price-old");
-        if (mobileOld && p.price_per_night_avg_original_formatted) {
-            mobileOld.textContent = p.price_per_night_avg_original_formatted;
+        if (mobileOld) {
+            if (hasDiscount && p.price_per_night_avg_original_formatted) {
+                mobileOld.textContent =
+                    p.price_per_night_avg_original_formatted;
+                mobileOld.removeAttribute("hidden");
+                mobileOld.style.display = "";
+            } else {
+                mobileOld.setAttribute("hidden", "");
+                mobileOld.style.display = "none";
+            }
         }
     }
 
@@ -737,7 +1033,10 @@
         if (totEl) totEl.textContent = fmt(total, currency);
 
         var bd = document.getElementById("moga-price-breakdown");
-        if (bd) bd.removeAttribute("hidden");
+        if (bd) {
+            bd.removeAttribute("hidden");
+            bd.style.display = "";
+        }
     }
 
     // ============================================================

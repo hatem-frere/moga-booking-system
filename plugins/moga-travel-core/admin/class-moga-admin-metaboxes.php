@@ -62,6 +62,7 @@ class Moga_Admin_Metaboxes
         add_filter('wp_insert_post_data', array(__CLASS__, 'require_contact_email'), 10, 2);
         add_filter('redirect_post_location', array(__CLASS__, 'flag_email_required_redirect'), 10, 2);
         add_action('admin_notices', array(__CLASS__, 'show_email_required_notice'));
+        add_action('admin_notices', array(__CLASS__, 'show_rejected_periods_notice'));
     }
 
 
@@ -107,13 +108,17 @@ class Moga_Admin_Metaboxes
     {
 
         // ---- Property Meta Boxes ----
+        // Ordered to match a natural "describe the listing" flow:
+        // what it is -> where -> what's included -> how much it costs
+        // -> the booking rules around it (kept next to Pricing, since
+        // Pricing Periods also set their own stay-length rules) ->
+        // how to reach the owner -> publish status.
         $property_boxes = array(
-            array('moga_property_pricing',   __('💰 Pricing',             'moga-travel-core'), 'render_property_pricing'),
-            array('moga_property_location',  __('📍 Location',            'moga-travel-core'), 'render_property_location'),
-            array('moga_property_contact',   __('📞 Contact',             'moga-travel-core'), 'render_property_contact'),
             array('moga_property_details',   __('🏠 Property Details',    'moga-travel-core'), 'render_property_details'),
+            array('moga_property_location',  __('📍 Location',            'moga-travel-core'), 'render_property_location'),
             array('moga_property_amenities', __('✨ Amenities',           'moga-travel-core'), 'render_property_amenities'),
-            array('moga_property_booking',   __('📅 Booking Rules',       'moga-travel-core'), 'render_property_booking'),
+            array('moga_property_pricing',   __('💰 Rules and Prices',    'moga-travel-core'), 'render_property_pricing'),
+            array('moga_property_contact',   __('📞 Contact',             'moga-travel-core'), 'render_property_contact'),
             array('moga_property_status',    __('⚙️ Status & Visibility', 'moga-travel-core'), 'render_property_status'),
         );
 
@@ -439,81 +444,17 @@ class Moga_Admin_Metaboxes
     {
         wp_nonce_field('moga_property_pricing_nonce', 'moga_property_pricing_nonce');
 
-        $price         = get_post_meta($post->ID, '_moga_price_per_night', true);
-        $weekend_price = get_post_meta($post->ID, '_moga_price_weekend',   true);
-        $discount      = get_post_meta($post->ID, '_moga_price_discount',  true);
-        $currency      = get_post_meta($post->ID, '_moga_currency',        true) ?: 'USD';
-        $currencies    = moga_get_currencies();
+        $currency   = get_post_meta($post->ID, '_moga_currency', true) ?: 'USD';
+        $currencies = moga_get_currencies();
 
-        $weekend_days  = get_post_meta($post->ID, '_moga_weekend_days', true);
-        $weekend_days  = $weekend_days ? json_decode($weekend_days, true) : array();
-        if (! is_array($weekend_days)) {
-            $weekend_days = array();
-        }
+        $periods_json = get_post_meta($post->ID, '_moga_pricing_periods', true);
+        $periods      = $periods_json ? json_decode($periods_json, true) : array();
+        $periods      = is_array($periods) ? $periods : array();
     ?>
         <div class="moga-metabox">
+
             <div class="moga-metabox__row">
-
-                <div class="moga-metabox__field">
-                    <label for="moga_price_per_night">
-                        <?php esc_html_e('Price Per Night', 'moga-travel-core'); ?>
-                        <span class="required">*</span>
-                    </label>
-                    <input
-                        type="number"
-                        id="moga_price_per_night"
-                        name="moga_price_per_night"
-                        value="<?php echo esc_attr($price); ?>"
-                        min="0" step="0.01" placeholder="0.00">
-                </div>
-
-                <div class="moga-metabox__field">
-                    <label for="moga_price_weekend">
-                        <?php esc_html_e('Weekend Price', 'moga-travel-core'); ?>
-                    </label>
-                    <input
-                        type="number"
-                        id="moga_price_weekend"
-                        name="moga_price_weekend"
-                        value="<?php echo esc_attr($weekend_price); ?>"
-                        min="0" step="0.01" placeholder="0.00">
-                    <p class="moga-metabox__hint">
-                        <?php esc_html_e('Leave empty to use the same price every night.', 'moga-travel-core'); ?>
-                    </p>
-                </div>
-
-                <div class="moga-metabox__field">
-                    <label><?php esc_html_e('Weekend Days', 'moga-travel-core'); ?></label>
-                    <div class="moga-weekdays" id="moga-weekend-days-wrap">
-                        <?php foreach (self::get_days_of_week() as $day_num => $day_label) : ?>
-                            <label class="moga-weekday">
-                                <input
-                                    type="checkbox"
-                                    name="moga_weekend_days[]"
-                                    value="<?php echo esc_attr($day_num); ?>"
-                                    <?php checked(in_array((string) $day_num, array_map('strval', $weekend_days), true)); ?>>
-                                <span><?php echo esc_html(substr($day_label, 0, 3)); ?></span>
-                            </label>
-                        <?php endforeach; ?>
-                    </div>
-                    <p class="moga-metabox__hint">
-                        <?php esc_html_e('Enter a Weekend Price above first — these days only apply if a different weekend rate is set. No weekend days apply until you select them here.', 'moga-travel-core'); ?>
-                    </p>
-                </div>
-
-                <div class="moga-metabox__field">
-                    <label for="moga_price_discount">
-                        <?php esc_html_e('Discount %', 'moga-travel-core'); ?>
-                    </label>
-                    <input
-                        type="number"
-                        id="moga_price_discount"
-                        name="moga_price_discount"
-                        value="<?php echo esc_attr($discount); ?>"
-                        min="0" max="100" step="1" placeholder="0">
-                </div>
-
-                <div class="moga-metabox__field">
+                <div class="moga-metabox__field" style="max-width:260px;">
                     <label for="moga_currency">
                         <?php esc_html_e('Currency', 'moga-travel-core'); ?>
                     </label>
@@ -524,14 +465,348 @@ class Moga_Admin_Metaboxes
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    <p class="moga-metabox__hint">
+                        <?php esc_html_e('Applies to every period below.', 'moga-travel-core'); ?>
+                    </p>
                 </div>
-
             </div>
+
+            <div class="moga-metabox__row moga-metabox__row--full" style="margin-top:20px;border-top:1px solid #e2e4e7;padding-top:20px;">
+                <div class="moga-metabox__field">
+                    <p class="moga-metabox__hint">
+                        <?php esc_html_e('Every price and booking rule lives inside a period — start and end dates, nightly rate, weekend rate, discount, stay length, and check-in/out times. Guests can book any sub-range within a period, subject to that period\'s own rules. Periods cannot overlap each other — you\'ll see an error naming the conflicting dates if you try.', 'moga-travel-core'); ?>
+                    </p>
+
+                    <div id="moga-periods-list">
+                        <?php foreach ($periods as $index => $period) : ?>
+                            <?php echo self::render_pricing_period_row($index, $period); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                            ?>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <button type="button" id="moga-periods-add" class="moga-metabox__btn button">
+                        + <span id="moga-periods-add-label"><?php echo empty($periods)
+                                                                ? esc_html__('Add Period', 'moga-travel-core')
+                                                                : esc_html__('Add Another Period', 'moga-travel-core'); ?></span>
+                    </button>
+
+                    <?php // Hidden template for new rows — JS replaces __INDEX__ on insert.
+                    ?>
+                    <script type="text/template" id="moga-periods-row-template"><?php echo self::render_pricing_period_row('__INDEX__', array()); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                                                                                    ?></script>
+                </div>
+            </div>
+
         </div>
     <?php
     }
 
     /**
+     * Render a single Pricing Period card (used for both initial
+     * render and as the markup JS clones for new rows — see
+     * moga-periods-row-template in meta_box_scripts()).
+     *
+     * Every booking rule that used to be a flat, property-wide
+     * setting (price, weekend price, weekend days, discount, min/max
+     * stay, check-in/out times) now lives HERE, per period — a
+     * property has no default rate of its own anymore; every price
+     * comes from whichever period covers the guest's chosen dates.
+     *
+     * @since  1.0.0
+     * @param  int|string $index  Row index (numeric on render, '__INDEX__' placeholder for the JS template).
+     * @param  array      $period Period data — empty array for a blank card.
+     * @return string HTML for the card.
+     */
+    private static function render_pricing_period_row($index, $period)
+    {
+        $start         = isset($period['start'])         ? $period['start']         : '';
+        $end           = isset($period['end'])           ? $period['end']           : '';
+        $price         = isset($period['price'])         ? $period['price']         : '';
+        $weekend_price = isset($period['weekend_price']) ? $period['weekend_price'] : '';
+        $discount      = isset($period['discount'])      ? $period['discount']      : '';
+        $checkin_time  = isset($period['checkin_time'])  ? $period['checkin_time']  : '14:00';
+        $checkout_time = isset($period['checkout_time']) ? $period['checkout_time'] : '11:00';
+        // Min Nights gets a REAL default value of 1, not just a
+        // placeholder — a placeholder LOOKS like a value but isn't
+        // submitted unless actually typed (this caused a real bug
+        // earlier — an owner saw grey "1" text, assumed it was
+        // already set, and it saved as empty instead).
+        $min_stay      = isset($period['min_stay']) && '' !== $period['min_stay'] ? $period['min_stay'] : '1';
+        $max_stay      = isset($period['max_stay'])      ? $period['max_stay']      : '';
+
+        $weekend_days     = isset($period['weekend_days']) && is_array($period['weekend_days']) ? $period['weekend_days'] : array();
+        $has_weekend_days = ! empty($weekend_days);
+
+        // Header title shows the actual date range once both dates
+        // are set, reusing the same smart date-range formatter used
+        // everywhere else in the codebase — falls back to a generic
+        // label for a brand-new, still-empty card.
+        $title_text = ($start && $end)
+            ? moga_format_date_range($start, $end)
+            : __('New Period', 'moga-travel-core');
+
+        ob_start();
+    ?>
+        <div class="moga-period-card">
+            <div class="moga-period-card__header">
+                <button type="button" class="moga-period-card__toggle" aria-label="<?php esc_attr_e('Expand or collapse', 'moga-travel-core'); ?>">▾</button>
+                <span class="moga-period-card__title" data-default-label="<?php esc_attr_e('New Period', 'moga-travel-core'); ?>"><?php echo esc_html($title_text); ?></span>
+                <button type="button" class="moga-period-card__remove" title="<?php esc_attr_e('Remove', 'moga-travel-core'); ?>">✕</button>
+            </div>
+
+            <div class="moga-period-card__body">
+
+            <div class="moga-metabox__field" style="margin-bottom:16px;">
+                <label><?php esc_html_e('Weekend Days', 'moga-travel-core'); ?></label>
+                <div class="moga-weekdays">
+                    <?php foreach (self::get_days_of_week() as $day_num => $day_label) : ?>
+                        <label class="moga-weekday">
+                            <input
+                                type="checkbox"
+                                class="moga-period-weekday-checkbox"
+                                name="moga_pricing_periods[<?php echo esc_attr($index); ?>][weekend_days][]"
+                                value="<?php echo esc_attr($day_num); ?>"
+                                <?php checked(in_array((string) $day_num, array_map('strval', $weekend_days), true)); ?>>
+                            <span><?php echo esc_html(substr($day_label, 0, 3)); ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <div class="moga-period-card__grid">
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e('Start Date', 'moga-travel-core'); ?></label>
+                    <input type="date" class="moga-period-start" name="moga_pricing_periods[<?php echo esc_attr($index); ?>][start]"
+                        value="<?php echo esc_attr($start); ?>">
+                </div>
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e('End Date', 'moga-travel-core'); ?></label>
+                    <input type="date" class="moga-period-end" name="moga_pricing_periods[<?php echo esc_attr($index); ?>][end]"
+                        value="<?php echo esc_attr($end); ?>">
+                </div>
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e('Price/Night', 'moga-travel-core'); ?></label>
+                    <input type="number" min="0" step="0.01" placeholder="0.00"
+                        name="moga_pricing_periods[<?php echo esc_attr($index); ?>][price]"
+                        value="<?php echo esc_attr($price); ?>">
+                </div>
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e('Weekend Price', 'moga-travel-core'); ?></label>
+                    <input type="number" min="0" step="0.01" class="moga-period-weekend-price"
+                        placeholder="<?php esc_attr_e('optional', 'moga-travel-core'); ?>"
+                        name="moga_pricing_periods[<?php echo esc_attr($index); ?>][weekend_price]"
+                        value="<?php echo esc_attr($weekend_price); ?>"
+                        <?php disabled(! $has_weekend_days); ?>>
+                    <p class="moga-metabox__hint">
+                        <?php esc_html_e('Check at least one Weekend Day above first.', 'moga-travel-core'); ?>
+                    </p>
+                </div>
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e('Discount %', 'moga-travel-core'); ?></label>
+                    <input type="number" min="0" max="100" step="1" placeholder="0"
+                        name="moga_pricing_periods[<?php echo esc_attr($index); ?>][discount]"
+                        value="<?php echo esc_attr($discount); ?>">
+                </div>
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e('Min Nights', 'moga-travel-core'); ?></label>
+                    <input type="number" min="1" step="1"
+                        name="moga_pricing_periods[<?php echo esc_attr($index); ?>][min_stay]"
+                        value="<?php echo esc_attr($min_stay); ?>">
+                </div>
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e('Max Nights', 'moga-travel-core'); ?></label>
+                    <input type="number" min="1" step="1" placeholder="<?php esc_attr_e('optional', 'moga-travel-core'); ?>"
+                        name="moga_pricing_periods[<?php echo esc_attr($index); ?>][max_stay]"
+                        value="<?php echo esc_attr($max_stay); ?>">
+                    <p class="moga-metabox__hint">
+                        <?php esc_html_e('Leave empty for no maximum.', 'moga-travel-core'); ?>
+                    </p>
+                </div>
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e('Check-in Time', 'moga-travel-core'); ?></label>
+                    <input type="time" name="moga_pricing_periods[<?php echo esc_attr($index); ?>][checkin_time]"
+                        value="<?php echo esc_attr($checkin_time); ?>">
+                </div>
+                <div class="moga-metabox__field">
+                    <label><?php esc_html_e('Check-out Time', 'moga-travel-core'); ?></label>
+                    <input type="time" name="moga_pricing_periods[<?php echo esc_attr($index); ?>][checkout_time]"
+                        value="<?php echo esc_attr($checkout_time); ?>">
+                </div>
+            </div>
+
+            </div>
+        </div>
+    <?php
+        return ob_get_clean();
+    }
+
+    /**
+     * Save the Pricing Periods repeater.
+     *
+     * Validates each submitted row, REJECTS (does not save) any
+     * period that overlaps an already-accepted one in the same
+     * submission — deliberately never guesses a winner for
+     * overlapping dates. An automatic "last one wins" rule was
+     * considered and rejected: it would ask the owner to trust an
+     * invisible save-order rule with no on-screen indication, and a
+     * bug in that logic could silently apply the wrong (often
+     * cheaper) rate to every future booking touching those dates —
+     * a real, ongoing revenue loss rather than one visible mistake.
+     * Rejected periods are surfaced as a clear one-time admin
+     * notice naming the exact conflicting dates.
+     *
+     * Clears the OLD periods' own date ranges (via
+     * Moga_Availability::clear_period(), which never touches
+     * status/booking_id) before applying the newly-accepted set —
+     * so editing or deleting a period cleanly resets its old dates
+     * rather than leaving stale price/stay-length data behind.
+     *
+     * @since  1.0.0
+     * @param  int $post_id Property post ID.
+     * @return void
+     */
+    private static function save_pricing_periods($post_id)
+    {
+        $core = function_exists('moga_core') ? moga_core() : null;
+        if (! $core || ! $core->availability) {
+            return;
+        }
+
+        // ---- Clear whatever the OLD periods used to cover ----
+        $old_periods_json = get_post_meta($post_id, '_moga_pricing_periods', true);
+        $old_periods       = $old_periods_json ? json_decode($old_periods_json, true) : array();
+        if (is_array($old_periods)) {
+            foreach ($old_periods as $old_period) {
+                if (! empty($old_period['start']) && ! empty($old_period['end'])) {
+                    $core->availability->clear_period($post_id, 'property', $old_period['start'], $old_period['end']);
+                }
+            }
+        }
+
+        // ---- Parse and sanitize submitted rows ----
+        $input = isset($_POST['moga_pricing_periods']) && is_array($_POST['moga_pricing_periods'])
+            ? wp_unslash($_POST['moga_pricing_periods'])
+            : array();
+
+        $candidates    = array();
+        $incomplete    = array();
+
+        foreach ($input as $row_number => $row) {
+            $start = isset($row['start']) ? sanitize_text_field($row['start']) : '';
+            $end   = isset($row['end'])   ? sanitize_text_field($row['end'])   : '';
+            $price = isset($row['price']) ? floatval($row['price']) : 0;
+
+            // A genuinely blank row — added, then left completely
+            // untouched. Silently ignored — there's nothing to
+            // report, since nothing was ever attempted.
+            if ('' === $start && '' === $end && $price <= 0) {
+                continue;
+            }
+
+            // Someone started filling this row in, but it's missing
+            // something required — reported by name, not silently
+            // dropped, so it can never look like data just vanished.
+            $missing = array();
+            if (! moga_is_valid_date($start)) {
+                $missing[] = __('Start Date', 'moga-travel-core');
+            }
+            if (! moga_is_valid_date($end)) {
+                $missing[] = __('End Date', 'moga-travel-core');
+            }
+            if (moga_is_valid_date($start) && moga_is_valid_date($end) && strtotime($end) <= strtotime($start)) {
+                $missing[] = __('End Date must be after Start Date', 'moga-travel-core');
+            }
+            if ($price <= 0) {
+                $missing[] = __('Price/Night', 'moga-travel-core');
+            }
+
+            if (! empty($missing)) {
+                $incomplete[] = sprintf(
+                    /* translators: 1: row number, 2: comma-separated list of missing/invalid fields */
+                    __('Period row %1$d was not saved — missing or invalid: %2$s.', 'moga-travel-core'),
+                    $row_number + 1,
+                    implode(', ', $missing)
+                );
+                continue;
+            }
+
+            $weekend_days_input = isset($row['weekend_days']) && is_array($row['weekend_days'])
+                ? array_map('absint', $row['weekend_days'])
+                : array();
+
+            $candidates[] = array(
+                'start'         => $start,
+                'end'           => $end,
+                'price'         => $price,
+                'weekend_price' => (isset($row['weekend_price']) && '' !== $row['weekend_price']) ? floatval($row['weekend_price']) : null,
+                'min_stay'      => (isset($row['min_stay']) && '' !== $row['min_stay']) ? absint($row['min_stay']) : null,
+                'max_stay'      => (isset($row['max_stay']) && '' !== $row['max_stay']) ? absint($row['max_stay']) : null,
+                'weekend_days'  => $weekend_days_input,
+                'discount'      => (isset($row['discount']) && '' !== $row['discount']) ? floatval($row['discount']) : 0,
+                'checkin_time'  => isset($row['checkin_time'])  ? sanitize_text_field($row['checkin_time'])  : '14:00',
+                'checkout_time' => isset($row['checkout_time']) ? sanitize_text_field($row['checkout_time']) : '11:00',
+            );
+        }
+
+        // ---- Reject overlaps against already-accepted periods ----
+        $accepted = array();
+        $rejected = array();
+
+        foreach ($candidates as $candidate) {
+            $conflict = null;
+
+            foreach ($accepted as $existing) {
+                if (moga_dates_overlap($candidate['start'], $candidate['end'], $existing['start'], $existing['end'])) {
+                    $conflict = $existing;
+                    break;
+                }
+            }
+
+            if ($conflict) {
+                $rejected[] = array(
+                    'period'   => $candidate,
+                    'conflict' => $conflict,
+                );
+                continue;
+            }
+
+            $accepted[] = $candidate;
+        }
+
+        // ---- Apply accepted periods ----
+        foreach ($accepted as $period) {
+            $core->availability->apply_period(
+                $post_id,
+                'property',
+                $period['start'],
+                $period['end'],
+                $period['price'],
+                $period['weekend_price'],
+                $period['min_stay'],
+                $period['max_stay'],
+                $period['weekend_days']
+            );
+        }
+
+        update_post_meta($post_id, '_moga_pricing_periods', wp_json_encode($accepted));
+
+        // ---- Surface incomplete rows + overlap rejections as one combined admin notice ----
+        $messages = $incomplete;
+
+        foreach ($rejected as $r) {
+            $messages[] = sprintf(
+                /* translators: 1: new period's dates, 2: conflicting existing period's dates */
+                __('%1$s overlaps with an existing period (%2$s) and was NOT saved. Adjust the dates so periods don\'t overlap, then try again.', 'moga-travel-core'),
+                moga_format_date($r['period']['start']) . ' – ' . moga_format_date($r['period']['end']),
+                moga_format_date($r['conflict']['start']) . ' – ' . moga_format_date($r['conflict']['end'])
+            );
+        }
+
+        if (! empty($messages)) {
+            set_transient('moga_periods_rejected_' . $post_id . '_' . get_current_user_id(), $messages, 60);
+        }
+    }
+
     /**
      * Render property location meta box.
      *
@@ -925,65 +1200,6 @@ class Moga_Admin_Metaboxes
                     </div>
                 </div>
             <?php endforeach; ?>
-        </div>
-    <?php
-    }
-
-    /**
-     * Render property booking rules meta box.
-     *
-     * @since  1.0.0
-     * @param  WP_Post $post Current post object.
-     * @return void
-     */
-    public static function render_property_booking($post)
-    {
-        wp_nonce_field('moga_property_booking_nonce', 'moga_property_booking_nonce');
-
-        $min_stay      = get_post_meta($post->ID, '_moga_min_stay',      true) ?: 1;
-        $max_stay      = get_post_meta($post->ID, '_moga_max_stay',      true) ?: 0;
-        $checkin_time  = get_post_meta($post->ID, '_moga_checkin_time',  true) ?: '14:00';
-        $checkout_time = get_post_meta($post->ID, '_moga_checkout_time', true) ?: '11:00';
-    ?>
-        <div class="moga-metabox">
-            <div class="moga-metabox__row">
-
-                <div class="moga-metabox__field">
-                    <label for="moga_min_stay">
-                        <?php esc_html_e('Minimum Stay (nights)', 'moga-travel-core'); ?>
-                    </label>
-                    <input type="number" id="moga_min_stay" name="moga_min_stay"
-                        value="<?php echo esc_attr($min_stay); ?>" min="1" step="1">
-                </div>
-
-                <div class="moga-metabox__field">
-                    <label for="moga_max_stay">
-                        <?php esc_html_e('Maximum Stay (nights)', 'moga-travel-core'); ?>
-                    </label>
-                    <input type="number" id="moga_max_stay" name="moga_max_stay"
-                        value="<?php echo esc_attr($max_stay); ?>" min="0" step="1">
-                    <p class="moga-metabox__hint">
-                        <?php esc_html_e('0 = No maximum limit', 'moga-travel-core'); ?>
-                    </p>
-                </div>
-
-                <div class="moga-metabox__field">
-                    <label for="moga_checkin_time">
-                        <?php esc_html_e('Check-in Time', 'moga-travel-core'); ?>
-                    </label>
-                    <input type="time" id="moga_checkin_time" name="moga_checkin_time"
-                        value="<?php echo esc_attr($checkin_time); ?>">
-                </div>
-
-                <div class="moga-metabox__field">
-                    <label for="moga_checkout_time">
-                        <?php esc_html_e('Check-out Time', 'moga-travel-core'); ?>
-                    </label>
-                    <input type="time" id="moga_checkout_time" name="moga_checkout_time"
-                        value="<?php echo esc_attr($checkout_time); ?>">
-                </div>
-
-            </div>
         </div>
     <?php
     }
@@ -2121,6 +2337,43 @@ class Moga_Admin_Metaboxes
     }
 
     /**
+     * Show a one-time admin notice for any Pricing Period rejected
+     * during save_pricing_periods() for overlapping an already-
+     * accepted period. Deletes the transient immediately so it only
+     * ever shows once, on the page load right after saving.
+     *
+     * @since  1.0.0
+     * @return void
+     */
+    public static function show_rejected_periods_notice()
+    {
+        global $post;
+
+        if (! $post || ! current_user_can('edit_post', $post->ID)) {
+            return;
+        }
+
+        $key      = 'moga_periods_rejected_' . $post->ID . '_' . get_current_user_id();
+        $messages = get_transient($key);
+
+        if (empty($messages)) {
+            return;
+        }
+
+        delete_transient($key);
+    ?>
+        <div class="notice notice-error is-dismissible">
+            <p><strong><?php esc_html_e('Some Pricing Periods could not be saved:', 'moga-travel-core'); ?></strong></p>
+            <ul style="list-style:disc;margin-left:20px;">
+                <?php foreach ($messages as $message) : ?>
+                    <li><?php echo esc_html($message); ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php
+    }
+
+    /**
      * Save gallery meta.
      *
      * @since  1.0.0
@@ -2233,35 +2486,16 @@ class Moga_Admin_Metaboxes
         ) {
             update_post_meta(
                 $post_id,
-                '_moga_price_per_night',
-                isset($_POST['moga_price_per_night']) ? floatval($_POST['moga_price_per_night']) : 0
-            );
-            $weekend_price_value = isset($_POST['moga_price_weekend']) ? floatval($_POST['moga_price_weekend']) : 0;
-            update_post_meta($post_id, '_moga_price_weekend', $weekend_price_value);
-
-            update_post_meta(
-                $post_id,
-                '_moga_price_discount',
-                isset($_POST['moga_price_discount']) ? floatval($_POST['moga_price_discount']) : 0
-            );
-            update_post_meta(
-                $post_id,
                 '_moga_currency',
                 isset($_POST['moga_currency']) ? sanitize_text_field(wp_unslash($_POST['moga_currency'])) : 'USD'
             );
 
-            $weekend_days = isset($_POST['moga_weekend_days']) && is_array($_POST['moga_weekend_days'])
-                ? array_map('absint', $_POST['moga_weekend_days'])
-                : array();
-
-            // Weekend Days only mean something if a weekend price is set —
-            // enforced here even though the checkboxes are already disabled
-            // client-side, since a disabled attribute can be bypassed.
-            if ($weekend_price_value <= 0) {
-                $weekend_days = array();
-            }
-
-            update_post_meta($post_id, '_moga_weekend_days', wp_json_encode($weekend_days));
+            // ---- Pricing Periods ----
+            // Everything that used to be a flat, property-wide field
+            // here (price, weekend price, weekend days, discount)
+            // moved into save_pricing_periods() — a property has no
+            // default rate of its own anymore, only periods.
+            self::save_pricing_periods($post_id);
         }
 
         // ---- Location ----
@@ -2414,36 +2648,6 @@ class Moga_Admin_Metaboxes
                 ? array_map('sanitize_text_field', wp_unslash($_POST['moga_amenities']))
                 : array();
             update_post_meta($post_id, '_moga_amenities', wp_json_encode($amenities));
-        }
-
-        // ---- Booking Rules ----
-        if (
-            isset($_POST['moga_property_booking_nonce'])
-            && wp_verify_nonce(
-                sanitize_text_field(wp_unslash($_POST['moga_property_booking_nonce'])),
-                'moga_property_booking_nonce'
-            )
-        ) {
-            update_post_meta(
-                $post_id,
-                '_moga_min_stay',
-                isset($_POST['moga_min_stay']) ? absint($_POST['moga_min_stay']) : 1
-            );
-            update_post_meta(
-                $post_id,
-                '_moga_max_stay',
-                isset($_POST['moga_max_stay']) ? absint($_POST['moga_max_stay']) : 0
-            );
-            update_post_meta(
-                $post_id,
-                '_moga_checkin_time',
-                isset($_POST['moga_checkin_time']) ? sanitize_text_field(wp_unslash($_POST['moga_checkin_time'])) : '14:00'
-            );
-            update_post_meta(
-                $post_id,
-                '_moga_checkout_time',
-                isset($_POST['moga_checkout_time']) ? sanitize_text_field(wp_unslash($_POST['moga_checkout_time'])) : '11:00'
-            );
         }
 
         // ---- Status ----
@@ -3305,6 +3509,73 @@ class Moga_Admin_Metaboxes
 
 
                 // ================================================================
+                // PRICING PERIODS
+                // ================================================================
+
+                var periodsTemplate = $('#moga-periods-row-template').length ?
+                    $('#moga-periods-row-template').html() :
+                    '';
+
+                function updateAddPeriodLabel() {
+                    var hasPeriods = $('#moga-periods-list').children('.moga-period-card').length > 0;
+                    $('#moga-periods-add-label').text(hasPeriods ? 'Add Another Period' : 'Add Period');
+                }
+
+                $('#moga-periods-add').on('click', function() {
+                    if (!periodsTemplate) return;
+
+                    var index = Date.now(); // Unique placeholder index — server re-numbers on save anyway.
+                    var rowHtml = periodsTemplate.split('__INDEX__').join(index);
+                    $('#moga-periods-list').append(rowHtml);
+                    updateAddPeriodLabel();
+                });
+
+                $('#moga-periods-list').on('click', '.moga-period-card__remove', function() {
+                    $(this).closest('.moga-period-card').remove();
+                    updateAddPeriodLabel();
+                });
+
+                // Weekend Price is disabled until at least one Weekend
+                // Day is checked WITHIN THAT SAME PERIOD CARD — each
+                // period has its own independent weekend days now,
+                // not one property-wide setting.
+                $('#moga-periods-list').on('change', '.moga-period-weekday-checkbox', function() {
+                    var $card = $(this).closest('.moga-period-card');
+                    var anyChecked = $card.find('.moga-period-weekday-checkbox:checked').length > 0;
+                    $card.find('.moga-period-weekend-price').prop('disabled', !anyChecked);
+                });
+
+                // Card header title live-updates to show the actual
+                // date range as soon as both Start and End are set —
+                // simple, consistent format here (not the fancier
+                // same-month-shortening PHP does), since this is just
+                // a live preview and the real formatted version comes
+                // back from the server on next page load anyway.
+                $('#moga-periods-list').on('change', '.moga-period-start, .moga-period-end', function() {
+                    var $card = $(this).closest('.moga-period-card');
+                    var start = $card.find('.moga-period-start').val();
+                    var end = $card.find('.moga-period-end').val();
+                    var $title = $card.find('.moga-period-card__title');
+
+                    if (start && end) {
+                        var startLabel = new Date(start + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                        var endLabel = new Date(end + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                        $title.text(startLabel + ' \u2013 ' + endLabel);
+                    } else {
+                        $title.text($title.data('default-label'));
+                    }
+                });
+
+                // Chevron expands/collapses just that card's body —
+                // purely visual, never clears or touches field values.
+                $('#moga-periods-list').on('click', '.moga-period-card__toggle', function() {
+                    var $card = $(this).closest('.moga-period-card');
+                    $card.toggleClass('moga-period-card--collapsed');
+                    $(this).text($card.hasClass('moga-period-card--collapsed') ? '\u25B8' : '\u25BE');
+                });
+
+
+                // ================================================================
                 // TOUR ITINERARY BUILDER
                 // ================================================================
 
@@ -3486,24 +3757,6 @@ class Moga_Admin_Metaboxes
                         });
                     }
                 });
-
-                // ================================================================
-                // WEEKEND DAYS — DISABLED UNTIL A WEEKEND PRICE IS ENTERED
-                // (Property Pricing box only — Tour's separate Weekend Days
-                // block has no price field to gate against, left as-is.)
-                // ================================================================
-
-                function toggleWeekendDaysState() {
-                    var priceVal = parseFloat($('#moga_price_weekend').val());
-                    var hasPrice = !isNaN(priceVal) && priceVal > 0;
-                    $('#moga-weekend-days-wrap input[type="checkbox"]').prop('disabled', !hasPrice);
-                    $('#moga-weekend-days-wrap').toggleClass('moga-weekdays--disabled', !hasPrice);
-                }
-
-                if ($('#moga_price_weekend').length) {
-                    toggleWeekendDaysState();
-                    $('#moga_price_weekend').on('input change', toggleWeekendDaysState);
-                }
 
             })(jQuery);
         </script>

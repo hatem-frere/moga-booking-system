@@ -409,6 +409,17 @@ function moga_has_amenity($property_id, $amenity_key)
 /**
  * Check if a listing is available for given dates.
  *
+ * PROPERTY RULE (locked decision): a property is bookable ONLY
+ * within a single Pricing Period — never straddling two, even two
+ * periods sitting directly adjacent with no gap between them. So
+ * this doesn't just check "is every night covered by some period or
+ * other" (which would wrongly allow spanning two adjacent periods)
+ * — it finds the ONE period covering check-in, then requires
+ * check-out to fall within that SAME period's own end date.
+ *
+ * Tours/buses/rentals are unaffected — this single-period rule is
+ * property-specific, gated by $listing_type below.
+ *
  * @since  1.0.0
  * @param  int    $listing_id   Property or tour post ID.
  * @param  string $check_in     Check-in date (Y-m-d).
@@ -435,7 +446,41 @@ function moga_is_available($listing_id, $check_in, $check_out, $listing_type = '
         $check_out
     ));
 
-    return intval($blocked) === 0;
+    if (intval($blocked) > 0) {
+        return false;
+    }
+
+    if ('property' === $listing_type) {
+        $periods_json = get_post_meta($listing_id, '_moga_pricing_periods', true);
+        $periods      = $periods_json ? json_decode($periods_json, true) : array();
+        $periods      = is_array($periods) ? $periods : array();
+
+        $covering_period = null;
+        foreach ($periods as $period) {
+            if (
+                ! empty($period['start']) && ! empty($period['end'])
+                && $check_in >= $period['start'] && $check_in < $period['end']
+            ) {
+                $covering_period = $period;
+                break;
+            }
+        }
+
+        // No period covers the check-in date at all — the property
+        // simply has no rate/rules defined for this date, so it's
+        // not bookable, regardless of the raw 'available' status.
+        if (! $covering_period) {
+            return false;
+        }
+
+        // Check-out must fall within THAT SAME period — never
+        // extend into the next period, even an adjacent one.
+        if ($check_out > $covering_period['end']) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 

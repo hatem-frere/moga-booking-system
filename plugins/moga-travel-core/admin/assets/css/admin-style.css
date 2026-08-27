@@ -5,20 +5,19 @@
 
 /* ---- Variables ---- */
 :root {
-    --moga-primary:      #003580;
-    --moga-primary-light:#0057b8;
-    --moga-success:      #1a7f37;
-    --moga-danger:       #d63638;
-    --moga-warning:      #dba617;
-    --moga-gray-100:     #f6f7f7;
-    --moga-gray-200:     #dcdcde;
-    --moga-gray-300:     #8c8f94;
-    --moga-gray-900:     #1d2327;
-    --moga-radius:       6px;
-    --moga-shadow:       0 1px 3px rgba(0,0,0,.08);
-    --moga-transition:   0.2s ease;
+    --moga-primary: #003580;
+    --moga-primary-light: #0057b8;
+    --moga-success: #1a7f37;
+    --moga-danger: #d63638;
+    --moga-warning: #dba617;
+    --moga-gray-100: #f6f7f7;
+    --moga-gray-200: #dcdcde;
+    --moga-gray-300: #8c8f94;
+    --moga-gray-900: #1d2327;
+    --moga-radius: 6px;
+    --moga-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --moga-transition: 0.2s ease;
 }
-
 
 /* ============================================================
    META BOX WRAPPER
@@ -44,7 +43,6 @@
 .moga-metabox__row--full .moga-metabox__field {
     flex: 1 1 100% !important;
 }
-
 
 /* ============================================================
    FIELD
@@ -103,7 +101,6 @@
     text-decoration: underline;
 }
 
-
 /* ============================================================
    INPUTS
    ============================================================ */
@@ -122,8 +119,9 @@
     background: #fff;
     color: var(--moga-gray-900);
     font-size: 13px;
-    transition: border-color var(--moga-transition),
-                box-shadow var(--moga-transition);
+    transition:
+        border-color var(--moga-transition),
+        box-shadow var(--moga-transition);
     box-shadow: var(--moga-shadow);
     box-sizing: border-box;
 }
@@ -149,7 +147,6 @@
     padding-right: 30px;
     cursor: pointer;
 }
-
 
 /* ============================================================
    SECTION TITLE
@@ -179,7 +176,6 @@
     color: var(--moga-danger);
     border-color: #fce0e0;
 }
-
 
 /* ============================================================
    AMENITIES
@@ -250,7 +246,6 @@
     font-weight: 600;
 }
 
-
 /* ============================================================
    TWO COLUMN LAYOUT (Includes/Excludes)
    ============================================================ */
@@ -288,7 +283,7 @@
 }
 
 .moga-checklist__item:hover {
-    background: rgba(0,0,0,.04);
+    background: rgba(0, 0, 0, 0.04);
 }
 
 .moga-checklist__item input[type="checkbox"] {
@@ -299,7 +294,6 @@
     accent-color: var(--moga-primary);
     cursor: pointer;
 }
-
 
 /* ============================================================
    WEEKDAYS
@@ -354,7 +348,6 @@
     accent-color: #fff;
 }
 
-
 /* ============================================================
    TOGGLE SWITCHES
    ============================================================ */
@@ -401,7 +394,7 @@
 
 /* Slider knob */
 .moga-switch__slider::after {
-    content: '';
+    content: "";
     position: absolute;
     width: 18px;
     height: 18px;
@@ -410,7 +403,7 @@
     top: 3px;
     left: 3px;
     transition: left var(--moga-transition);
-    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 /* Active state */
@@ -435,7 +428,6 @@
     color: var(--moga-gray-300);
     margin-top: 2px;
 }
-
 
 /* ============================================================
    META BOX POST BOX STYLING
@@ -505,7 +497,6 @@
     margin: 0;
 }
 
-
 /* ============================================================
    INTL-TEL-INPUT PHONE FIELD FIX
    ============================================================ */
@@ -526,18 +517,17 @@
     padding-left: 90px;
 }
 
-
 /* ============================================================
    RESPONSIVE
    ============================================================ */
 
-@media screen and ( max-width: 1200px ) {
+@media screen and (max-width: 1200px) {
     .moga-metabox--two-col {
         grid-template-columns: 1fr;
     }
 }
 
-@media screen and ( max-width: 900px ) {
+@media screen and (max-width: 900px) {
     .moga-metabox__field {
         flex: 1 1 100%;
     }
@@ -569,7 +559,7 @@
 
 .moga-gallery-box__list {
     display: grid;
-    grid-template-columns: repeat( 3, 1fr );
+    grid-template-columns: repeat(3, 1fr);
     gap: 6px;
     margin: 0 0 12px;
     padding: 0;
@@ -604,7 +594,7 @@
     right: 3px;
     width: 20px;
     height: 20px;
-    background: rgba(0,0,0,.7);
+    background: rgba(0, 0, 0, 0.7);
     color: #fff;
     border: none;
     border-radius: 50%;
@@ -651,7 +641,6 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
-
 
 /* ============================================================
    VIDEOS META BOX
@@ -709,7 +698,7 @@
 .moga-videos-box__url-input:focus {
     border-color: var(--moga-primary);
     outline: none;
-    box-shadow: 0 0 0 2px rgba(0,53,128,.1);
+    box-shadow: 0 0 0 2px rgba(0, 53, 128, 0.1);
 }
 
 .moga-videos-box__upload-list {
@@ -866,7 +855,9 @@
     flex-shrink: 0;
     user-select: none;
     touch-action: none;
-    transition: background var(--moga-transition), color var(--moga-transition);
+    transition:
+        background var(--moga-transition),
+        color var(--moga-transition);
 }
 
 .moga-itinerary-builder__handle:hover {
@@ -981,4 +972,137 @@
 .moga-itinerary-builder__btn:hover {
     background: var(--moga-primary) !important;
     color: #fff !important;
+}
+
+/* ============================================================
+   PRICING PERIODS
+   Matches the Tour Itinerary builder's visual language exactly —
+   same card/remove-button/add-button pattern, applied here since
+   a property has no default rate anymore, only periods.
+   ============================================================ */
+
+#moga-periods-list {
+    margin-bottom: 14px;
+}
+
+.moga-period-card {
+    background: var(--moga-gray-100);
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: var(--moga-radius);
+    padding: 16px;
+    margin-bottom: 14px;
+}
+
+.moga-period-card__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--moga-gray-200);
+}
+
+.moga-period-card__toggle {
+    width: 22px;
+    height: 22px;
+    font-size: 25px !important;
+    background: transparent;
+    border: none;
+    color: var(--moga-gray-300);
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    transition: color var(--moga-transition);
+}
+
+.moga-period-card__toggle:hover {
+    color: var(--moga-primary);
+}
+
+.moga-period-card__title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+}
+
+.moga-period-card--collapsed .moga-period-card__body {
+    display: none;
+}
+
+.moga-period-card--collapsed {
+    padding-bottom: 12px;
+}
+
+.moga-period-card--collapsed .moga-period-card__header {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.moga-period-card__remove {
+    width: 24px;
+    height: 24px;
+    background: var(--moga-danger);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    transition: background var(--moga-transition);
+}
+
+.moga-period-card__remove:hover {
+    background: #b02a2a;
+}
+
+.moga-period-card__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px 16px;
+}
+
+@media (max-width: 900px) {
+    .moga-period-card__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .moga-period-card__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+#moga-periods-add {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    height: 36px;
+    border-radius: var(--moga-radius) !important;
+    border-color: var(--moga-primary) !important;
+    color: var(--moga-primary) !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    transition: all var(--moga-transition) !important;
+}
+
+#moga-periods-add:hover {
+    background: var(--moga-primary) !important;
+    color: #fff !important;
+}
+
+.moga-metabox__field input:disabled {
+    background: var(--moga-gray-100);
+    color: var(--moga-gray-300);
+    cursor: not-allowed;
 }
