@@ -241,6 +241,19 @@
             }),
         );
 
+        // Matches the same 12-hour conversion PHP's date_i18n('g:i A', ...)
+        // already does elsewhere — "14:00" -> "2:00 PM".
+        function formatTime12h(time24) {
+            if (!time24) return "";
+            var parts = time24.split(":");
+            var hour = parseInt(parts[0], 10);
+            var minute = parts[1] || "00";
+            var ampm = hour >= 12 ? "PM" : "AM";
+            var hour12 = hour % 12;
+            if (hour12 === 0) hour12 = 12;
+            return hour12 + ":" + minute + " " + ampm;
+        }
+
         // Extracted so the periods-list click handler (below) can
         // apply the exact same checkin-selected logic as actually
         // picking a date on the calendar — setDate() doesn't fire
@@ -289,6 +302,40 @@
                 checkoutPicker.set("maxDate", periodEnd);
             } else {
                 checkoutPicker.set("maxDate", null);
+            }
+
+            // Dynamic period-info line — the replacement for the
+            // static, per-period-but-shown-as-property-wide House
+            // Rules lines removed from single-moga_property.php.
+            // Empty and hidden until a real period actually matches;
+            // one compact line, not several separate blocks.
+            var infoEl = document.getElementById("moga-booking-period-info");
+            if (infoEl) {
+                if (period) {
+                    var infoParts = [];
+                    if (period.checkin_time) {
+                        infoParts.push(
+                            formatTime12h(period.checkin_time) + " check-in",
+                        );
+                    }
+                    if (period.checkout_time) {
+                        infoParts.push(
+                            formatTime12h(period.checkout_time) + " check-out",
+                        );
+                    }
+                    infoParts.push(
+                        maxStay > 0
+                            ? minStay + "\u2013" + maxStay + " nights"
+                            : minStay + "+ nights",
+                    );
+                    infoEl.textContent =
+                        "This period: " + infoParts.join(" \u00b7 ");
+                    infoEl.removeAttribute("hidden");
+                    infoEl.style.display = "";
+                } else {
+                    infoEl.setAttribute("hidden", "");
+                    infoEl.style.display = "none";
+                }
             }
 
             return minOut;

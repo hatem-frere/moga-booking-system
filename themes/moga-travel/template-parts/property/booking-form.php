@@ -64,10 +64,12 @@ $pricing_periods_raw    = $pricing_periods_json ? json_decode($pricing_periods_j
 $pricing_periods_raw    = is_array($pricing_periods_raw) ? $pricing_periods_raw : array();
 $pricing_periods_for_js = array_map(function ($period) {
     return array(
-        'start'    => isset($period['start']) ? $period['start'] : '',
-        'end'      => isset($period['end']) ? $period['end'] : '',
-        'min_stay' => isset($period['min_stay']) ? intval($period['min_stay']) : null,
-        'max_stay' => isset($period['max_stay']) ? intval($period['max_stay']) : null,
+        'start'         => isset($period['start']) ? $period['start'] : '',
+        'end'           => isset($period['end']) ? $period['end'] : '',
+        'min_stay'      => isset($period['min_stay']) ? intval($period['min_stay']) : null,
+        'max_stay'      => isset($period['max_stay']) ? intval($period['max_stay']) : null,
+        'checkin_time'  => isset($period['checkin_time'])  ? $period['checkin_time']  : '',
+        'checkout_time' => isset($period['checkout_time']) ? $period['checkout_time'] : '',
     );
 }, $pricing_periods_raw);
 
@@ -202,6 +204,7 @@ if ($checkin_val && $checkout_val) {
     <form class="moga-booking-form" id="moga-booking-form" method="POST" action="<?php echo esc_url($booking_page_url); ?>" novalidate>
         <?php wp_nonce_field('moga_booking_nonce', 'moga_booking_nonce'); ?>
         <input type="hidden" name="property_id" value="<?php echo esc_attr($property_id); ?>">
+        <input type="hidden" name="listing_type" value="property">
         <input type="hidden" name="price_per_night" value="<?php echo esc_attr($price_per_night); ?>">
         <input type="hidden" name="currency" value="<?php echo esc_attr($currency); ?>">
 
@@ -227,6 +230,14 @@ if ($checkin_val && $checkout_val) {
                 <input type="text" id="moga-checkout" name="check_out" class="moga-booking-dates__input" value="<?php echo esc_attr($checkout_val); ?>" placeholder="<?php esc_attr_e('Add date', 'moga-travel'); ?>" readonly aria-required="true" autocomplete="off">
             </div>
         </div>
+
+        <?php // ---- Dynamic Period Info — empty until a real check-in
+        // date is picked, then filled in with THAT specific period's
+        // check-in/out time and min/max nights by booking.js. Never a
+        // static claim about the whole property — see the removed
+        // House Rules lines in single-moga_property.php for why.
+        ?>
+        <p class="moga-booking-period-info" id="moga-booking-period-info" hidden></p>
 
         <?php // ---- Guest Counter ----
         ?>

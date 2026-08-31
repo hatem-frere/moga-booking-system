@@ -507,6 +507,19 @@
     gap: var(--moga-spacing-md);
     padding: var(--moga-spacing-sm) 0;
     border-bottom: 1px solid var(--moga-gray-100);
+    flex: 1 1 200px;
+    min-width: 200px;
+}
+
+/* An item with a description paragraph (currently just Cancellation
+   Policy) naturally wants more room than a short label/value pair
+   like Max Guests — forcing it onto its own full-width row avoids
+   an unbalanced mix of very different natural sizes trying to share
+   the same row. Robust regardless of how many items exist total —
+   not tied to "exactly 2 items", which is what actually broke when
+   Check-in/Check-out/Minimum Stay were removed from this list. */
+.moga-house-rule:has(.moga-house-rule__desc) {
+    flex: 1 1 100%;
 }
 
 .moga-house-rule:last-child {

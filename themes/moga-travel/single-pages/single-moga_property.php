@@ -82,23 +82,19 @@ $bedrooms   = intval(get_post_meta($property_id, '_moga_bedrooms',   true));
 $bathrooms  = floatval(get_post_meta($property_id, '_moga_bathrooms',  true));
 $area       = floatval(get_post_meta($property_id, '_moga_area',       true));
 
-// Booking rules — pulled from the SAME period used for the
-// displayed price above, not the old flat '_moga_min_stay' etc.
-// fields. Those fields still exist in the CPT's meta registration
-// and can hold stale leftover values from before the period-only
-// pricing model — reading them here would show information from a
-// period that isn't even the one whose price is on screen. No
-// periods defined yet means these fall back to sane defaults.
-$reference_period = $display_price['period'];
-$min_stay          = $reference_period && isset($reference_period['min_stay']) ? intval($reference_period['min_stay']) : 1;
-$max_stay          = $reference_period && isset($reference_period['max_stay']) ? intval($reference_period['max_stay']) : 0;
-$checkin_time_raw  = $reference_period && ! empty($reference_period['checkin_time'])  ? $reference_period['checkin_time']  : '14:00';
-$checkout_time_raw = $reference_period && ! empty($reference_period['checkout_time']) ? $reference_period['checkout_time'] : '11:00';
-
-// Displayed as 12-hour time ("2:00 PM") — the raw 24-hour value
-// ("14:00") was being echoed directly with no formatting at all.
-$checkin_time  = date_i18n('g:i A', strtotime($checkin_time_raw));
-$checkout_time = date_i18n('g:i A', strtotime($checkout_time_raw));
+// Check-in/out time and min/max stay REMOVED from this file
+// entirely (Aug 2026 session) — these are genuinely per-period
+// facts (a property can have different check-in times or
+// minimum-stay rules across different Pricing Periods), and no
+// single static value shown here could ever honestly represent
+// the whole property. Previously derived from "whichever period
+// has the lowest price" — which correctly matched the price badge
+// above, but meant a guest could see e.g. "Minimum stay: 3 nights"
+// as a flat property-wide fact even when a DIFFERENT period (the
+// one they might actually book) requires 5. These facts now only
+// ever appear dynamically, on the booking form itself, filled in
+// the moment a guest picks a real check-in date — see
+// template-parts/property/booking-form.php and booking.js.
 $cancellation  = get_post_meta($property_id, '_moga_cancellation',  true) ?: 'moderate';
 
 $cancellation_policies = class_exists('Moga_CPT_Property')
@@ -514,18 +510,6 @@ $section_nav['moga-reviews']     = __('Reviews', 'moga-travel');
                             <span class="moga-property-highlights__label">m²</span>
                         </div>
                     <?php endif; ?>
-                    <?php if ($min_stay > 1) : ?>
-                        <div class="moga-property-highlights__item">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                <line x1="16" y1="2" x2="16" y2="6" />
-                                <line x1="8" y1="2" x2="8" y2="6" />
-                                <line x1="3" y1="10" x2="21" y2="10" />
-                            </svg>
-                            <span class="moga-property-highlights__value"><?php echo esc_html($min_stay); ?></span>
-                            <span class="moga-property-highlights__label"><?php esc_html_e('Min. nights', 'moga-travel'); ?></span>
-                        </div>
-                    <?php endif; ?>
                     <?php if ($cancellation_label) : ?>
                         <div class="moga-property-highlights__item">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -597,31 +581,6 @@ $section_nav['moga-reviews']     = __('Reviews', 'moga-travel');
                 <div class="moga-single-section" id="moga-house-rules">
                     <h2 class="moga-single-section__title"><?php esc_html_e('House Rules', 'moga-travel'); ?></h2>
                     <div class="moga-house-rules">
-                        <div class="moga-house-rule">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <circle cx="12" cy="12" r="10" />
-                                <polyline points="12 6 12 12 16 14" />
-                            </svg>
-                            <div class="moga-house-rule__content"><span class="moga-house-rule__label"><?php esc_html_e('Check-in', 'moga-travel'); ?></span><span class="moga-house-rule__value"><?php echo esc_html($checkin_time); ?></span></div>
-                        </div>
-                        <div class="moga-house-rule">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <circle cx="12" cy="12" r="10" />
-                                <polyline points="12 6 12 12 16 14" />
-                            </svg>
-                            <div class="moga-house-rule__content"><span class="moga-house-rule__label"><?php esc_html_e('Check-out', 'moga-travel'); ?></span><span class="moga-house-rule__value"><?php echo esc_html($checkout_time); ?></span></div>
-                        </div>
-                        <?php if ($min_stay > 0) : ?>
-                            <div class="moga-house-rule">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                                    <line x1="16" y1="2" x2="16" y2="6" />
-                                    <line x1="8" y1="2" x2="8" y2="6" />
-                                    <line x1="3" y1="10" x2="21" y2="10" />
-                                </svg>
-                                <div class="moga-house-rule__content"><span class="moga-house-rule__label"><?php esc_html_e('Minimum stay', 'moga-travel'); ?></span><span class="moga-house-rule__value"><?php printf(esc_html(1 === $min_stay ? __('%d night', 'moga-travel') : __('%d nights', 'moga-travel')), $min_stay); ?></span></div>
-                            </div>
-                        <?php endif; ?>
                         <?php if ($max_guests > 0) : ?>
                             <div class="moga-house-rule">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">

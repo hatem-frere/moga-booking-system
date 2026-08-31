@@ -454,6 +454,11 @@ class Moga_Activator
                 'slug'    => 'booking-confirmation',
                 'content' => '[moga_booking_confirmation]',
             ),
+            array(
+                'title'   => __('Cancellation Policy', 'moga-travel-core'),
+                'slug'    => 'cancellation-policy',
+                'content' => '[moga_cancellation_policy]',
+            ),
         );
 
         foreach ($pages as $page) {

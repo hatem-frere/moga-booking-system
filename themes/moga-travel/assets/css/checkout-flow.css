@@ -1,0 +1,381 @@
+/* ============================================================
+   CHECKOUT FLOW — Booking review, Checkout, Confirmation
+   ============================================================
+   Shared stylesheet for the three-step post-Reserve flow. Kept
+   deliberately separate from booking.css, which serves the single
+   property/tour page's booking WIDGET (sidebar card + calendar) —
+   these are full, standalone pages with a different layout shape.
+
+   One file for all three steps (not three separate files) so the
+   summary card, price breakdown, form fields, and buttons look
+   consistent across the whole flow by construction, rather than
+   risking drift between three independently-styled pages.
+
+   Reuses .moga-price-breakdown__row from booking.css rather than
+   redeclaring it — both stylesheets are loaded together on these
+   pages (see class-moga-assets.php).
+   ============================================================ */
+
+/* ============================================================
+   1. Booking Review Page (Step 1 — [moga_booking_form])
+   ============================================================ */
+
+.moga-booking-review {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.moga-booking-review__summary {
+    display: flex;
+    gap: var(--moga-spacing-md);
+    padding-bottom: var(--moga-spacing-md);
+    margin-bottom: var(--moga-spacing-md);
+    border-bottom: 1px solid var(--moga-gray-200);
+}
+
+.moga-booking-review__image {
+    width: 140px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: var(--moga-border-radius);
+    flex-shrink: 0;
+}
+
+.moga-booking-review__details h3 {
+    margin: 0 0 4px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+}
+
+.moga-booking-review__location {
+    margin: 0 0 8px;
+    font-size: 0.85rem;
+    color: var(--moga-gray-600, var(--moga-gray-300));
+}
+
+.moga-booking-review__dates {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.85rem;
+    color: var(--moga-gray-900);
+}
+
+.moga-booking-review__dates strong {
+    font-weight: 600;
+}
+
+.moga-booking-review__price {
+    background-color: var(--moga-gray-100);
+    border-radius: var(--moga-border-radius);
+    padding: var(--moga-spacing-md);
+    margin-bottom: var(--moga-spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-sm);
+}
+
+.moga-booking-review__form h4 {
+    margin: 0 0 var(--moga-spacing-sm);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+}
+
+/* Form fields — replaces the admin-only .moga-metabox__field this
+   markup was borrowing before (that class only exists in
+   admin-style.css, so these fields rendered completely unstyled). */
+
+.moga-checkout-field {
+    margin-bottom: var(--moga-spacing-md);
+}
+
+.moga-checkout-field label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+}
+
+.moga-checkout-field label .required {
+    color: var(--moga-danger);
+}
+
+.moga-checkout-field input[type="text"],
+.moga-checkout-field input[type="email"],
+.moga-checkout-field input[type="tel"],
+.moga-checkout-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--moga-gray-200);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--moga-gray-900);
+    transition: border-color var(--moga-transition);
+}
+
+.moga-checkout-field input:focus,
+.moga-checkout-field textarea:focus {
+    outline: none;
+    border-color: var(--moga-primary);
+}
+
+.moga-checkout-field textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* ============================================================
+   2. Error State (shared — shown by any step when something
+      can't proceed: stale dates, unpublished listing, etc.)
+   ============================================================ */
+
+.moga-booking-error {
+    max-width: 480px;
+    margin: 0 auto;
+    text-align: center;
+    padding: var(--moga-spacing-md);
+}
+
+.moga-booking-error h3 {
+    margin: 0 0 8px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+}
+
+.moga-booking-error p {
+    margin: 0 0 var(--moga-spacing-md);
+    color: var(--moga-gray-600, var(--moga-gray-300));
+}
+
+/* ============================================================
+   3. Checkout Page (Step 2 — [moga_checkout])
+   ============================================================ */
+
+.moga-checkout {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.moga-checkout__steps {
+    display: flex;
+    gap: var(--moga-spacing-md);
+    margin-bottom: var(--moga-spacing-md);
+    padding-bottom: var(--moga-spacing-sm);
+    border-bottom: 1px solid var(--moga-gray-200);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--moga-gray-300);
+}
+
+.moga-checkout__step--done {
+    color: var(--moga-success, var(--moga-primary));
+}
+
+.moga-checkout__step--current {
+    color: var(--moga-primary);
+}
+
+.moga-checkout-guest-summary {
+    background-color: var(--moga-gray-100);
+    border-radius: var(--moga-border-radius);
+    padding: var(--moga-spacing-md);
+    margin-bottom: var(--moga-spacing-md);
+}
+
+.moga-checkout-guest-summary h4 {
+    margin: 0 0 var(--moga-spacing-sm);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+}
+
+.moga-checkout-guest-summary__row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--moga-spacing-sm);
+    padding: 4px 0;
+    font-size: 0.85rem;
+    color: var(--moga-gray-900);
+}
+
+.moga-checkout-guest-summary__label {
+    color: var(--moga-gray-300);
+    flex-shrink: 0;
+}
+
+.moga-checkout-cancellation {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: var(--moga-spacing-sm) 0;
+    margin-bottom: var(--moga-spacing-md);
+    font-size: 0.82rem;
+    color: var(--moga-gray-300);
+}
+
+.moga-checkout-cancellation svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--moga-gray-300);
+}
+
+.moga-checkout-cancellation strong {
+    color: var(--moga-gray-900);
+}
+
+.moga-checkout-cancellation a {
+    display: block;
+    margin-top: 2px;
+    color: var(--moga-primary);
+    text-decoration: underline;
+}
+
+.moga-checkout__form h4 {
+    margin: var(--moga-spacing-md) 0 var(--moga-spacing-sm);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+}
+
+/* Payment option cards — upgraded from bare radio buttons. The
+   input stays real and accessible (just visually tucked to the
+   side) so keyboard/screen-reader use still works normally. */
+
+.moga-checkout-payment-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: var(--moga-spacing-sm) var(--moga-spacing-md);
+    margin-bottom: 10px;
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: var(--moga-border-radius);
+    cursor: pointer;
+    transition:
+        border-color var(--moga-transition),
+        background-color var(--moga-transition);
+}
+
+.moga-checkout-payment-option:hover {
+    border-color: var(--moga-primary);
+}
+
+.moga-checkout-payment-option--selected {
+    border-color: var(--moga-primary);
+    background-color: color-mix(in srgb, var(--moga-primary) 6%, transparent);
+}
+
+.moga-checkout-payment-option input[type="radio"] {
+    margin-top: 3px;
+}
+
+.moga-checkout-payment-option__body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.moga-checkout-payment-option__title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+}
+
+.moga-checkout-payment-option__hint {
+    font-size: 0.78rem;
+    color: var(--moga-gray-300);
+}
+
+.moga-checkout__offline-note {
+    font-size: 0.8rem;
+    color: var(--moga-gray-300);
+    background-color: var(--moga-gray-100);
+    border-radius: var(--moga-border-radius);
+    padding: var(--moga-spacing-sm);
+    margin: var(--moga-spacing-sm) 0 var(--moga-spacing-md);
+}
+
+.moga-checkout__trust-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    margin-top: var(--moga-spacing-sm);
+    font-size: 0.78rem;
+    color: var(--moga-gray-300);
+}
+
+.moga-checkout__trust-note svg {
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   4. Confirmation Page (Step 3 — [moga_booking_confirmation])
+   Not yet built — same note as above.
+   ============================================================ */
+
+/* ============================================================
+   5. Cancellation Policy Page ([moga_cancellation_policy])
+   General reference page — the specific policy for any one
+   listing is shown inline at checkout (.moga-checkout-cancellation
+   above), not here.
+   ============================================================ */
+
+.moga-cancellation-policy {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.moga-cancellation-policy__intro {
+    color: var(--moga-gray-800);
+    margin-bottom: var(--moga-spacing-md);
+    font-size: 0.9rem;
+}
+
+.moga-cancellation-policy__tier {
+    padding: var(--moga-spacing-md);
+    margin-bottom: var(--moga-spacing-sm);
+    border-radius: var(--moga-border-radius);
+    background-color: var(--moga-gray-100);
+    border-left: 3px solid var(--moga-warning);
+}
+
+.moga-cancellation-policy__tier h3 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--moga-gray-900);
+}
+
+.moga-cancellation-policy__tier p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--moga-gray-700);
+}
+
+.moga-cancellation-policy__tier--free {
+    border-left-color: var(--moga-success, var(--moga-primary));
+}
+
+.moga-cancellation-policy__tier--no_refund {
+    border-left-color: var(--moga-danger);
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+@media (max-width: 600px) {
+    .moga-booking-review__summary {
+        flex-direction: column;
+    }
+
+    .moga-booking-review__image {
+        width: 100%;
+        height: 160px;
+    }
+}

@@ -36,8 +36,19 @@ class Moga_Availability
 
     /**
      * Block a date range for a listing, linked to a booking.
-     * Relies on the UNIQUE KEY idx_listing_date (listing_id, date)
-     * so this correctly upserts rather than duplicating rows.
+     *
+     * BUG FIX (Aug 2026 session): previously used $wpdb->replace(),
+     * which performs a MySQL REPLACE INTO — this DELETES the entire
+     * existing row and inserts a new one containing only the columns
+     * given here. Since price_override/min_stay/max_stay weren't in
+     * that list, every single real booking anywhere on the platform
+     * silently wiped a period's pricing data back to NULL for its
+     * booked dates — discovered when a completed test booking left
+     * its own dates permanently unpriced. Now checks for an existing
+     * row first and updates ONLY status/booking_id when one exists,
+     * leaving price/stay-length data completely untouched — matching
+     * the same safe pattern already used correctly elsewhere in this
+     * class (apply_period(), set_min_stay()).
      *
      * @since  1.0.0
      * @param  int      $listing_id   Property or tour post ID.
@@ -53,7 +64,28 @@ class Moga_Availability
         $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
 
         foreach (moga_date_range($check_in, $check_out) as $date) {
-            $wpdb->replace(
+            $existing_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$prefix}availability WHERE listing_id = %d AND listing_type = %s AND date = %s",
+                $listing_id,
+                $listing_type,
+                $date
+            ));
+
+            if ($existing_id) {
+                $wpdb->update(
+                    "{$prefix}availability",
+                    array(
+                        'status'     => 'booked',
+                        'booking_id' => $booking_id,
+                    ),
+                    array('id' => $existing_id),
+                    array('%s', '%d'),
+                    array('%d')
+                );
+                continue;
+            }
+
+            $wpdb->insert(
                 "{$prefix}availability",
                 array(
                     'listing_id'   => $listing_id,
@@ -161,6 +193,12 @@ class Moga_Availability
      * Manually block a date range for a listing — owner-initiated
      * closure (maintenance, personal use), not tied to any booking.
      *
+     * BUG FIX (Aug 2026 session): same fix as block_dates() above —
+     * previously used $wpdb->replace(), which would have wiped any
+     * existing period's price_override/min_stay/max_stay data on
+     * every manual block. Now updates only status/booking_id/note
+     * when a row already exists.
+     *
      * @since  1.0.0
      * @param  int    $listing_id   Property or tour post ID.
      * @param  string $listing_type 'property'|'tour'.
@@ -175,7 +213,31 @@ class Moga_Availability
         $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
 
         foreach (moga_date_range($date_from, $date_to) as $date) {
-            $wpdb->replace(
+            $existing_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$prefix}availability WHERE listing_id = %d AND listing_type = %s AND date = %s",
+                $listing_id,
+                $listing_type,
+                $date
+            ));
+
+            $note_value = $note ? sanitize_text_field($note) : null;
+
+            if ($existing_id) {
+                $wpdb->update(
+                    "{$prefix}availability",
+                    array(
+                        'status'     => 'blocked',
+                        'booking_id' => null,
+                        'note'       => $note_value,
+                    ),
+                    array('id' => $existing_id),
+                    array('%s', '%d', '%s'),
+                    array('%d')
+                );
+                continue;
+            }
+
+            $wpdb->insert(
                 "{$prefix}availability",
                 array(
                     'listing_id'   => $listing_id,
@@ -183,7 +245,7 @@ class Moga_Availability
                     'date'         => $date,
                     'status'       => 'blocked',
                     'booking_id'   => null,
-                    'note'         => $note ? sanitize_text_field($note) : null,
+                    'note'         => $note_value,
                 ),
                 array('%d', '%s', '%s', '%s', '%d', '%s')
             );

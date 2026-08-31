@@ -61,6 +61,7 @@ class Moga_Admin_Settings
         register_setting('moga_settings_booking', 'moga_seat_lock_duration', array('sanitize_callback' => 'absint'));
         register_setting('moga_settings_booking', 'moga_deposit_floor_percent', array('sanitize_callback' => array(__CLASS__, 'sanitize_deposit_floor_percent')));
         register_setting('moga_settings_booking', 'moga_cancellation_fee_percent', array('sanitize_callback' => array(__CLASS__, 'sanitize_cancellation_fee_percent')));
+        register_setting('moga_settings_booking', 'moga_balance_due_days', array('sanitize_callback' => 'absint'));
 
         // Payment group.
         register_setting('moga_settings_payment', 'moga_payment_stripe', array('sanitize_callback' => 'rest_sanitize_boolean'));
@@ -263,6 +264,13 @@ class Moga_Admin_Settings
                                 <td>
                                     <input type="number" step="0.01" min="10" max="100" id="moga_cancellation_fee_percent" name="moga_cancellation_fee_percent" class="small-text" value="<?php echo esc_attr(get_option('moga_cancellation_fee_percent', 10)); ?>">
                                     <p class="description"><?php esc_html_e('Site-wide default fee kept on a voluntary cancellation refund. Cannot be set below 10%. Vendors will be able to override this once the owner/organizer dashboard exists.', 'moga-travel-core'); ?></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="moga_balance_due_days"><?php esc_html_e('Balance Due (days before check-in)', 'moga-travel-core'); ?></label></th>
+                                <td>
+                                    <input type="number" min="0" id="moga_balance_due_days" name="moga_balance_due_days" class="small-text" value="<?php echo esc_attr(get_option('moga_balance_due_days', 7)); ?>">
+                                    <p class="description"><?php esc_html_e('When a guest pays a deposit instead of the full amount, this is how many days before check-in the remaining balance is due. Shown to guests at checkout.', 'moga-travel-core'); ?></p>
                                 </td>
                             </tr>
                             <tr>

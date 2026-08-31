@@ -335,6 +335,12 @@ class Moga_Core
         if (class_exists('Moga_Shortcode_Booking_Form')) {
             (new Moga_Shortcode_Booking_Form())->register();
         }
+        if (class_exists('Moga_Shortcode_Checkout')) {
+            (new Moga_Shortcode_Checkout())->register();
+        }
+        if (class_exists('Moga_Shortcode_Cancellation_Policy')) {
+            (new Moga_Shortcode_Cancellation_Policy())->register();
+        }
         if (class_exists('Moga_Shortcode_Account')) {
             (new Moga_Shortcode_Account())->register();
         }

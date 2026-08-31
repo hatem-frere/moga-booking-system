@@ -291,6 +291,34 @@ class Moga_Assets
             wp_enqueue_style('intl-tel-input');
         }
 
+        // Checkout flow (Booking review -> Checkout -> Confirmation ->
+        // Cancellation Policy) — a deliberately separate stylesheet
+        // from booking.css. booking.css serves the single
+        // property/tour page's booking WIDGET (the sidebar card +
+        // calendar); these are full, standalone pages with a
+        // different layout shape entirely.
+        //
+        // BUG FIX: previously listed 'moga-booking' as a hard
+        // dependency here, since this file reuses one shared class
+        // from it (.moga-price-breakdown__row). That worked by
+        // coincidence on Booking/Checkout/Confirmation, since
+        // is_booking_page() also happens to return true there — but
+        // Cancellation Policy only matches is_checkout_flow_page(),
+        // never is_booking_page(), so 'moga-booking' was never
+        // actually registered on that page at all, causing WordPress
+        // to correctly warn about a dependency that doesn't exist.
+        // Since checkout-flow.css only ever REUSES that shared class,
+        // never redefines it, load order between the two files never
+        // mattered for correctness — no dependency needs declaring.
+        if (self::is_checkout_flow_page()) {
+            wp_enqueue_style(
+                'moga-checkout-flow',
+                $css . 'checkout-flow.css',
+                array('moga-main', 'moga-components'),
+                $ver
+            );
+        }
+
         // Account page styles — login/register/profile only.
         if (self::is_account_page()) {
             wp_enqueue_style(
@@ -548,6 +576,30 @@ class Moga_Assets
         return is_page($booking_pages)
             || is_singular('moga_property')
             || is_singular('moga_tour');
+    }
+
+    /**
+     * Check if current page is one of the checkout-flow pages
+     * specifically — Booking, Checkout, Confirmation, or Cancellation
+     * Policy. Deliberately narrower than is_booking_page(), which
+     * also (correctly) covers single property/tour pages — those two
+     * concerns need different stylesheets, since they're visually
+     * and structurally different kinds of pages.
+     *
+     * @since  1.0.0
+     * @return bool
+     */
+    private static function is_checkout_flow_page()
+    {
+
+        $flow_pages = array(
+            get_option('moga_page_booking'),
+            get_option('moga_page_checkout'),
+            get_option('moga_page_booking_confirmation'),
+            get_option('moga_page_cancellation_policy'),
+        );
+
+        return is_page($flow_pages);
     }
 
     /**
