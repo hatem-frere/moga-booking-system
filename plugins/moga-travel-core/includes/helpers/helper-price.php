@@ -289,6 +289,8 @@ function moga_calculate_property_price($property_id, $check_in, $check_out)
         'nights'           => 0,
         'weekend_nights'   => 0,
         'weekday_nights'   => 0,
+        'weekend_subtotal' => 0,
+        'weekday_subtotal' => 0,
         'price_per_night'  => 0,
         'subtotal'         => 0,
         'discount_percent' => 0,
@@ -356,10 +358,12 @@ function moga_calculate_property_price($property_id, $check_in, $check_out)
         $check_out
     ), OBJECT_K);
 
-    $dates          = moga_date_range($check_in, $check_out);
-    $subtotal       = 0;
-    $weekend_nights = 0;
-    $weekday_nights = 0;
+    $dates            = moga_date_range($check_in, $check_out);
+    $subtotal         = 0;
+    $weekend_nights   = 0;
+    $weekday_nights   = 0;
+    $weekend_subtotal = 0;
+    $weekday_subtotal = 0;
 
     foreach ($dates as $date) {
         // A valid request should have 100% period coverage — every
@@ -371,13 +375,16 @@ function moga_calculate_property_price($property_id, $check_in, $check_out)
             return $empty_result;
         }
 
-        $subtotal += (float) $overrides[$date]->price_override;
+        $date_price = (float) $overrides[$date]->price_override;
+        $subtotal  += $date_price;
 
         $day_of_week = intval(gmdate('w', strtotime($date)));
         if (in_array($day_of_week, $period_weekend_days, true)) {
             $weekend_nights++;
+            $weekend_subtotal += $date_price;
         } else {
             $weekday_nights++;
+            $weekday_subtotal += $date_price;
         }
     }
 
@@ -398,6 +405,8 @@ function moga_calculate_property_price($property_id, $check_in, $check_out)
         'nights'           => $nights,
         'weekend_nights'   => $weekend_nights,
         'weekday_nights'   => $weekday_nights,
+        'weekend_subtotal' => round($weekend_subtotal, 2),
+        'weekday_subtotal' => round($weekday_subtotal, 2),
         'price_per_night'  => round($subtotal / $nights, 2),
         'subtotal'         => round($subtotal, 2),
         'discount_percent' => $discount_percent,

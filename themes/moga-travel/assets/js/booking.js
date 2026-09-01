@@ -504,7 +504,6 @@
                 if (!json.success || !json.data || !json.data.price) return;
 
                 var p = json.data.price;
-                var nights = p.nights || 1;
 
                 // Use the server's own pre-formatted strings
                 // (moga_format_price() via class-moga-ajax.php) rather
@@ -513,10 +512,14 @@
                 // and guarantees this always matches what the top
                 // price badge (also server-formatted, in PHP) shows.
                 renderBreakdownFormatted({
-                    nightsLabel: nights + (nights === 1 ? " night" : " nights"),
-                    subtotal:
-                        p.subtotal_formatted ||
-                        fmt(p.subtotal || 0, p.currency),
+                    weekdayNights: p.weekday_nights || 0,
+                    weekdaySubtotal:
+                        p.weekday_subtotal_formatted ||
+                        fmt(p.weekday_subtotal || 0, p.currency),
+                    weekendNights: p.weekend_nights || 0,
+                    weekendSubtotal:
+                        p.weekend_subtotal_formatted ||
+                        fmt(p.weekend_subtotal || 0, p.currency),
                     discount:
                         p.discount_formatted ||
                         fmt(p.discount || 0, p.currency),
@@ -577,40 +580,53 @@
      * server on which symbol to use.
      */
     function renderBreakdownFormatted(data) {
-        var label = document.getElementById("moga-nights-label");
-        if (label) label.textContent = data.nightsLabel;
+        // Regular (weekday) and weekend rows — always visible,
+        // always updated, never hidden, even at 0 nights/0 amount —
+        // per explicit request: every term stays visible after real
+        // dates are picked, whether it has a real value or not.
+        var weekdayLabel = document.getElementById(
+            "moga-breakdown-weekday-label",
+        );
+        if (weekdayLabel) {
+            weekdayLabel.textContent =
+                data.weekdayNights +
+                (data.weekdayNights === 1
+                    ? " regular night"
+                    : " regular nights");
+        }
+        var weekdaySubEl = document.getElementById(
+            "moga-breakdown-weekday-subtotal",
+        );
+        if (weekdaySubEl) weekdaySubEl.textContent = data.weekdaySubtotal;
 
-        var subEl = document.getElementById("moga-breakdown-subtotal");
-        if (subEl) subEl.textContent = data.subtotal;
+        var weekendLabel = document.getElementById(
+            "moga-breakdown-weekend-label",
+        );
+        if (weekendLabel) {
+            weekendLabel.textContent =
+                data.weekendNights +
+                (data.weekendNights === 1
+                    ? " weekend night"
+                    : " weekend nights");
+        }
+        var weekendSubEl = document.getElementById(
+            "moga-breakdown-weekend-subtotal",
+        );
+        if (weekendSubEl) weekendSubEl.textContent = data.weekendSubtotal;
 
-        var discRow = document.getElementById("moga-breakdown-discount-row");
+        // Discount — ALWAYS visible now too, per the same explicit
+        // request. Previously toggled hidden/shown at 0% (see the
+        // style.display fix below, kept here as a defensive
+        // leftover in case any other code path still hides this
+        // element — but this function itself never hides it anymore).
         var discEl = document.getElementById("moga-breakdown-discount");
         var discLabel = document.getElementById(
             "moga-breakdown-discount-label",
         );
-        var hasDiscount = (data.discountPercent || 0) > 0;
-
-        // BUG FIX: the 'hidden' attribute alone wasn't enough here —
-        // booking.css's ".moga-price-breakdown__row { display: flex; }"
-        // rule sets display directly on this same element, and wins
-        // the specificity tie against the browser's built-in
-        // "[hidden] { display: none; }" rule (same specificity,
-        // theme stylesheet loads later). Setting style.display
-        // directly via JS always wins over any external stylesheet,
-        // regardless of what it says.
-        if (discRow) {
-            if (hasDiscount) {
-                discRow.removeAttribute("hidden");
-                discRow.style.display = "";
-            } else {
-                discRow.setAttribute("hidden", "");
-                discRow.style.display = "none";
-            }
-        }
         if (discEl) discEl.textContent = "\u2212" + data.discount;
-        if (discLabel && hasDiscount) {
+        if (discLabel) {
             discLabel.textContent =
-                "Discount (" + Math.round(data.discountPercent) + "%)";
+                "Discount (" + Math.round(data.discountPercent || 0) + "%)";
         }
 
         var totEl = document.getElementById("moga-breakdown-total");

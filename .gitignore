@@ -18,6 +18,16 @@ wp-config.php
 wp-config-sample.php
 
 
+
+# ============================================================
+# Site-wide language cache — WordPress's own auto-downloaded
+# translations (core + unrelated plugins/themes), not our work.
+# Our OWN future .pot file lives in a different place entirely:
+# plugins/moga-travel-core/languages/ — unaffected by this rule.
+# ============================================================
+/languages/
+
+
 # ============================================================
 # Uploads — User files, too large for Git
 # ============================================================
@@ -37,6 +47,7 @@ wp-config-sample.php
 /plugins/hello.php
 /plugins/hello-dolly/
 /plugins/duplicate-post/
+/plugins/wp-mail-smtp/
 
 # ============================================================
 # Cache & Optimization Plugins Output
@@ -97,6 +108,7 @@ package-lock.json
 # ============================================================
 /vendor/
 composer.lock
+composer.json
 
 
 # ============================================================
@@ -131,8 +143,4 @@ error_log
 *.sql
 *.zip
 *.tar.gz
-*.rarplugins/duplicate-post/ 
-plugins/duplicate-post/ 
-vendor/ 
-composer.json 
-languages/ 
+

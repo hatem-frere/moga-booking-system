@@ -315,8 +315,168 @@
 
 /* ============================================================
    4. Confirmation Page (Step 3 — [moga_booking_confirmation])
-   Not yet built — same note as above.
    ============================================================ */
+
+.moga-confirmation {
+    /* This value controls the card's width directly — change it
+       here to make the card narrower or wider. */
+    max-width: 560px;
+    margin: 0 auto;
+    background-color: var(--moga-white, #fff);
+    border: 1px solid var(--moga-gray-200);
+    border-radius: var(--moga-border-radius);
+    overflow: hidden;
+}
+
+.moga-confirmation .moga-checkout__steps {
+    padding: var(--moga-spacing-md) var(--moga-spacing-md) 0;
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+/* Full-width success banner — deliberately bolder than a small
+   isolated badge, so the "you're actually done" moment carries real
+   visual weight, matching the approved mockup direction. */
+.moga-confirmation__badge {
+    text-align: center;
+    padding: var(--moga-spacing-lg, 1.5rem) var(--moga-spacing-md)
+        var(--moga-spacing-md);
+    background-color: color-mix(
+        in srgb,
+        var(--moga-success, #1a9e5c) 12%,
+        transparent
+    );
+}
+
+.moga-confirmation__badge svg {
+    color: var(--moga-success, #1a9e5c);
+}
+
+.moga-confirmation__title {
+    margin: 10px 0 4px;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--moga-success, #1a9e5c);
+}
+
+.moga-confirmation__booking-number {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--moga-gray-300);
+}
+
+.moga-confirmation__email-note {
+    margin: var(--moga-spacing-md) var(--moga-spacing-md) 0;
+    padding: 10px var(--moga-spacing-sm);
+    background-color: var(--moga-gray-100);
+    border-radius: var(--moga-border-radius);
+    text-align: center;
+    font-size: 0.82rem;
+    /* BUG FIX: was var(--moga-gray-300) — a light gray sitting on
+       this same light gray background, making the text nearly
+       invisible. Darkened for real readability. */
+    color: var(--moga-gray-800, var(--moga-gray-900));
+}
+
+.moga-confirmation__email-note strong {
+    color: var(--moga-gray-900);
+}
+
+.moga-confirmation .moga-booking-review__summary,
+.moga-confirmation .moga-booking-review__price {
+    margin-left: var(--moga-spacing-md);
+    margin-right: var(--moga-spacing-md);
+}
+
+.moga-confirmation .moga-booking-review__summary {
+    margin-top: var(--moga-spacing-md);
+}
+
+/* Two-column, clearly-labeled Check-in/Check-out — deliberately
+   NOT reusing the shared .moga-booking-review__dates (stacked,
+   single-line-each) used by the Booking Review and Checkout pages,
+   so this page's clarity fix doesn't change theirs. */
+.moga-confirmation__dates {
+    display: flex;
+    gap: var(--moga-spacing-md);
+}
+
+.moga-confirmation__date {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.moga-confirmation__date-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--moga-gray-300);
+}
+
+.moga-confirmation__date-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+}
+
+.moga-confirmation__status-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 var(--moga-spacing-md) var(--moga-spacing-md);
+    padding: 10px var(--moga-spacing-sm);
+    background-color: color-mix(
+        in srgb,
+        var(--moga-warning, #d68a00) 12%,
+        transparent
+    );
+    color: var(--moga-warning, #b17400);
+    border-radius: var(--moga-border-radius);
+    font-size: 0.8rem;
+}
+
+.moga-confirmation .moga-btn {
+    display: block;
+    margin: var(--moga-spacing-md);
+    width: calc(100% - (var(--moga-spacing-md) * 2));
+}
+
+.moga-confirmation__actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--moga-spacing-sm);
+    margin: var(--moga-spacing-md);
+}
+
+.moga-confirmation__actions .moga-btn {
+    margin: 0;
+    width: 100%;
+}
+
+/* Secondary action (Back to All Properties/Tours) — deliberately
+   NOT guessing at an alternate brand color; styled as a clearly
+   secondary, outlined button instead, so the primary "Back to Home"
+   action stays visually dominant, matching the orange used
+   site-wide for primary actions everywhere else. */
+.moga-confirmation__actions .moga-btn--secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: transparent;
+    border: 1.5px solid var(--moga-gray-200);
+    color: var(--moga-gray-900);
+}
+
+.moga-confirmation__actions .moga-btn--secondary:hover {
+    border-color: var(--moga-primary);
+    color: var(--moga-primary);
+}
+
+.moga-confirmation__actions .moga-btn--secondary svg {
+    flex-shrink: 0;
+}
 
 /* ============================================================
    5. Cancellation Policy Page ([moga_cancellation_policy])

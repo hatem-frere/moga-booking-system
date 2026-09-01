@@ -112,6 +112,17 @@ if ($checkin_val && $checkout_val) {
     $default_total     = (float) $server_price['total'];
     $currency          = $server_price['currency'];
 
+    // Regular vs weekend nights/subtotals — shown as always-visible
+    // separate rows below, per explicit request: a guest seeing one
+    // blended average price with no explanation had no way to know
+    // WHY the total differed from the property's listed rate, since
+    // that blended figure silently folds in a mix of weekday and
+    // weekend nights at different prices.
+    $default_weekday_nights   = intval($server_price['weekday_nights']);
+    $default_weekend_nights   = intval($server_price['weekend_nights']);
+    $default_weekday_subtotal = (float) $server_price['weekday_subtotal'];
+    $default_weekend_subtotal = (float) $server_price['weekend_subtotal'];
+
     // Top badge — average per-night rate actually used for these
     // specific dates (a standard, widely-used convention, same as
     // Airbnb/Booking.com's own listing price display), rather than
@@ -124,6 +135,14 @@ if ($checkin_val && $checkout_val) {
     $default_subtotal = $price_per_night * $default_nights;
     $default_discount = $discount > 0 ? $default_subtotal * ($discount / 100) : 0;
     $default_total    = $default_subtotal - $default_discount;
+
+    // No real dates yet — nothing to classify as weekday/weekend,
+    // so this placeholder assumes 1 plain night, same convention the
+    // rest of this placeholder branch already uses.
+    $default_weekday_nights   = 1;
+    $default_weekend_nights   = 0;
+    $default_weekday_subtotal = $default_subtotal;
+    $default_weekend_subtotal = 0;
 
     $badge_price_per_night = $price_per_night;
     $badge_original_price  = $original_price;
@@ -277,22 +296,42 @@ if ($checkin_val && $checkout_val) {
         ?>
         <div class="moga-price-breakdown" id="moga-price-breakdown" <?php echo ($checkin_val && $checkout_val) ? '' : 'hidden'; ?>>
 
-            <div class="moga-price-breakdown__row">
-                <span class="moga-price-breakdown__label" id="moga-nights-label">
+            <div class="moga-price-breakdown__row" id="moga-breakdown-weekday-row">
+                <span class="moga-price-breakdown__label" id="moga-breakdown-weekday-label">
                     <?php
                     printf(
-                        /* translators: %d: number of nights */
-                        esc_html(1 === $default_nights ? __('%d night', 'moga-travel') : __('%d nights', 'moga-travel')),
-                        $default_nights
+                        /* translators: %d: number of regular (non-weekend) nights */
+                        esc_html(1 === $default_weekday_nights ? __('%d regular night', 'moga-travel') : __('%d regular nights', 'moga-travel')),
+                        $default_weekday_nights
                     );
                     ?>
                 </span>
-                <span class="moga-price-breakdown__value" id="moga-breakdown-subtotal">
-                    <?php echo esc_html(moga_format_price($default_subtotal, $currency)); ?>
+                <span class="moga-price-breakdown__value" id="moga-breakdown-weekday-subtotal">
+                    <?php echo esc_html(moga_format_price($default_weekday_subtotal, $currency)); ?>
                 </span>
             </div>
 
-            <div class="moga-price-breakdown__row moga-price-breakdown__row--discount" id="moga-breakdown-discount-row" <?php echo $discount > 0 ? '' : 'hidden'; ?>>
+            <div class="moga-price-breakdown__row" id="moga-breakdown-weekend-row">
+                <span class="moga-price-breakdown__label" id="moga-breakdown-weekend-label">
+                    <?php
+                    printf(
+                        /* translators: %d: number of weekend nights */
+                        esc_html(1 === $default_weekend_nights ? __('%d weekend night', 'moga-travel') : __('%d weekend nights', 'moga-travel')),
+                        $default_weekend_nights
+                    );
+                    ?>
+                </span>
+                <span class="moga-price-breakdown__value" id="moga-breakdown-weekend-subtotal">
+                    <?php echo esc_html(moga_format_price($default_weekend_subtotal, $currency)); ?>
+                </span>
+            </div>
+
+            <?php // Discount row stays ALWAYS VISIBLE now — shows
+            // "0%" rather than hiding entirely, per explicit request
+            // that every term remains visible after dates are picked,
+            // whether it has a real value or not.
+            ?>
+            <div class="moga-price-breakdown__row moga-price-breakdown__row--discount" id="moga-breakdown-discount-row">
                 <span class="moga-price-breakdown__label" id="moga-breakdown-discount-label">
                     <?php printf(esc_html__('Discount (%d%%)', 'moga-travel'), intval($discount)); ?>
                 </span>

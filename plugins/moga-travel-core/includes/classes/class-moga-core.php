@@ -341,6 +341,9 @@ class Moga_Core
         if (class_exists('Moga_Shortcode_Cancellation_Policy')) {
             (new Moga_Shortcode_Cancellation_Policy())->register();
         }
+        if (class_exists('Moga_Shortcode_Confirmation')) {
+            (new Moga_Shortcode_Confirmation())->register();
+        }
         if (class_exists('Moga_Shortcode_Account')) {
             (new Moga_Shortcode_Account())->register();
         }

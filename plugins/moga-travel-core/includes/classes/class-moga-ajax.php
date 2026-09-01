@@ -396,6 +396,14 @@ class Moga_Ajax
         $price_data['price_child_formatted']   = moga_format_price($price_data['price_child']      ?? 0, $currency);
         $price_data['discount_percent']        = $price_data['discount_percent'] ?? $price_data['group_discount'] ?? 0;
 
+        // Regular vs weekend subtotals, formatted — property only,
+        // for the always-visible "N regular nights = X, N weekend
+        // nights = Y" breakdown rows on the booking form.
+        if ('property' === $listing_type) {
+            $price_data['weekday_subtotal_formatted'] = moga_format_price($price_data['weekday_subtotal'] ?? 0, $currency);
+            $price_data['weekend_subtotal_formatted'] = moga_format_price($price_data['weekend_subtotal'] ?? 0, $currency);
+        }
+
         // Per-night AVERAGE, pre- and post-discount — for the top
         // price badge (desktop + mobile sticky bar), which shows a
         // single "starting from / night" figure even when the stay
