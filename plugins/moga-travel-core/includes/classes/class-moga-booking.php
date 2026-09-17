@@ -123,20 +123,33 @@ class Moga_Booking
         $check_in  = isset($data['check_in']) ? sanitize_text_field($data['check_in']) : '';
         $check_out = isset($data['check_out']) ? sanitize_text_field($data['check_out']) : '';
 
-        // Reuse the existing, already-verified date validator.
+        // Reuse the existing date validator.
         $date_check = moga_validate_dates($check_in, $check_out);
         if (is_wp_error($date_check)) {
             return $date_check;
         }
 
-        // Reuse the existing availability checker rather than
-        // writing new SQL against mg_moga_availability.
-        $availability_type = ('tour' === $booking_type) ? 'tour' : 'property';
+        $adults   = isset($data['guests_adults']) ? max(1, absint($data['guests_adults'])) : 1;
+        $children = isset($data['guests_children']) ? absint($data['guests_children']) : 0;
+        $infants  = isset($data['guests_infants']) ? absint($data['guests_infants']) : 0;
 
-        if (! moga_is_available($listing_id, $check_in, $check_out, $availability_type)) {
+        // Reuse the existing availability checker rather than
+        // writing new SQL against mg_moga_availability. For tours,
+        // 'check_in' IS the chosen Group's start date, and the real
+        // requested seat count (adults + children — infants don't
+        // occupy a seat, matching moga_get_tour_group_seats_taken()'s
+        // own convention) must be passed through, since a tour's
+        // availability is a genuine capacity check, not a simple
+        // date-blocked check.
+        $availability_type = ('tour' === $booking_type) ? 'tour' : 'property';
+        $requested_seats    = $adults + $children;
+
+        if (! moga_is_available($listing_id, $check_in, $check_out, $availability_type, $requested_seats)) {
             return new WP_Error(
                 'not_available',
-                __('These dates are no longer available for this listing.', 'moga-travel-core')
+                'tour' === $availability_type
+                    ? __('This departure no longer has enough seats available.', 'moga-travel-core')
+                    : __('These dates are no longer available for this listing.', 'moga-travel-core')
             );
         }
 
@@ -152,13 +165,14 @@ class Moga_Booking
             }
         }
 
-        $adults   = isset($data['guests_adults']) ? max(1, absint($data['guests_adults'])) : 1;
-        $children = isset($data['guests_children']) ? absint($data['guests_children']) : 0;
-        $infants  = isset($data['guests_infants']) ? absint($data['guests_infants']) : 0;
-
         // Reuse the existing price calculators.
         if ('tour' === $booking_type) {
-            $price = moga_calculate_tour_price($listing_id, $adults, $children, $infants);
+            // BUG FIX: this was calling moga_calculate_tour_price()
+            // with its OLD signature (no group identifier at all) —
+            // left over from before Tour Groups existed. 'check_in'
+            // is the chosen Group's start date, required now to know
+            // WHICH group's real price/capacity to use.
+            $price = moga_calculate_tour_price($listing_id, $check_in, $adults, $children, $infants);
         } else {
             $price = moga_calculate_property_price($listing_id, $check_in, $check_out);
         }
@@ -244,6 +258,14 @@ class Moga_Booking
 
         $booking_id = $wpdb->insert_id;
 
+        // Note for tours: this marks the date's row status in
+        // mg_moga_availability, same as properties — but tour
+        // capacity checking (moga_is_tour_group_available()) counts
+        // real bookings directly from mg_moga_bookings, never reads
+        // this status at all. Left in place since other, unrelated
+        // consumers of this table (e.g. an admin availability
+        // calendar) may still expect it — but it no longer has any
+        // effect on whether a tour group is considered full.
         $availability_manager = $this->get_availability_manager();
         if ($availability_manager) {
             $availability_manager->block_dates($listing_id, $availability_type, $check_in, $check_out, $booking_id);

@@ -80,10 +80,10 @@ class Moga_Admin_Settings
         // Location / GeoNames username (buyer sets this in their install).
         register_setting('moga_settings_location', 'moga_geonames_username');
 
-        // Contact group — site-wide contact info shown on the Contact
-        // Us page (themes/moga-travel/page-templates/template-contact.php).
-        // These were previously only editable via direct database access.
-        register_setting('moga_settings_contact', 'moga_contact_phone');
+        // Integrations group — third-party API keys.
+        register_setting( 'moga_settings_integrations', 'moga_google_places_api_key', array(
+            'sanitize_callback' => 'sanitize_text_field',
+        ) );
         register_setting('moga_settings_contact', 'moga_contact_whatsapp');
         register_setting('moga_settings_contact', 'moga_contact_address');
         register_setting('moga_settings_contact', 'moga_contact_lat');
@@ -170,12 +170,13 @@ class Moga_Admin_Settings
         $tab = isset($_GET['tab']) ? sanitize_text_field(wp_unslash($_GET['tab'])) : 'general';
 
         $tabs = array(
-            'general'       => __('General', 'moga-travel-core'),
-            'booking'       => __('Booking', 'moga-travel-core'),
-            'payment'       => __('Payments', 'moga-travel-core'),
-            'notifications' => __('Notifications', 'moga-travel-core'),
-            'maps'          => __('Maps', 'moga-travel-core'),
-            'contact'       => __('Contact Info', 'moga-travel-core'),
+            'general'        => __( 'General',       'moga-travel-core' ),
+            'booking'        => __( 'Booking',        'moga-travel-core' ),
+            'payment'        => __( 'Payments',       'moga-travel-core' ),
+            'notifications'  => __( 'Notifications',  'moga-travel-core' ),
+            'maps'           => __( 'Maps',           'moga-travel-core' ),
+            'integrations'   => __( 'Integrations',   'moga-travel-core' ),
+            'contact'        => __( 'Contact Info',   'moga-travel-core' ),
         );
 ?>
         <div class="wrap">
@@ -193,7 +194,67 @@ class Moga_Admin_Settings
 
             <div style="background:#fff;border:1px solid #c3c4c7;border-top:none;padding:30px;border-radius:0 0 4px 4px;">
 
-                <?php if ('contact' === $tab) : ?>
+                <?php if ( 'integrations' === $tab ) : ?>
+
+                    <form method="post" action="options.php">
+                        <?php settings_fields( 'moga_settings_integrations' ); ?>
+
+                        <h2 style="margin-top:0;"><?php esc_html_e( 'Google Places API', 'moga-travel-core' ); ?></h2>
+
+                        <p style="max-width:680px;color:#3c434a;line-height:1.6;">
+                            <?php esc_html_e( 'Required for two features: (1) the hotel name autocomplete in the Tour editor accommodation section, and (2) real hotel photos and ratings in the Accommodation widget on the single tour page.', 'moga-travel-core' ); ?>
+                        </p>
+
+                        <table class="form-table" role="presentation">
+                            <tr>
+                                <th scope="row">
+                                    <label for="moga_google_places_api_key">
+                                        <?php esc_html_e( 'Google Places API Key', 'moga-travel-core' ); ?>
+                                    </label>
+                                </th>
+                                <td>
+                                    <input
+                                        type="text"
+                                        id="moga_google_places_api_key"
+                                        name="moga_google_places_api_key"
+                                        value="<?php echo esc_attr( get_option( 'moga_google_places_api_key', '' ) ); ?>"
+                                        class="regular-text"
+                                        placeholder="AIzaSy…"
+                                        autocomplete="off">
+
+                                    <p class="description" style="margin-top:10px;max-width:600px;line-height:1.6;">
+                                        <strong><?php esc_html_e( 'How to get your free API key (5 minutes):', 'moga-travel-core' ); ?></strong><br>
+                                        1. <?php printf(
+                                            /* translators: %s: link to Google Cloud Console */
+                                            esc_html__( 'Go to %s', 'moga-travel-core' ),
+                                            '<a href="https://console.cloud.google.com" target="_blank" rel="noopener">console.cloud.google.com</a>'
+                                        ); ?><br>
+                                        2. <?php esc_html_e( 'Select or create a project.', 'moga-travel-core' ); ?><br>
+                                        3. <?php esc_html_e( 'Click "APIs &amp; Services" → "Library" → search "Places API (New)" → Enable it.', 'moga-travel-core' ); ?><br>
+                                        4. <?php esc_html_e( 'Click "APIs &amp; Services" → "Credentials" → "+ Create Credentials" → "API Key".', 'moga-travel-core' ); ?><br>
+                                        5. <?php esc_html_e( 'Copy the key and paste it above.', 'moga-travel-core' ); ?><br><br>
+                                        <?php esc_html_e( 'Google gives $200 free credit every month — roughly 5,000 hotel lookups. For a platform at launch this is free in practice. The key is stored securely on the server and never exposed to visitors.', 'moga-travel-core' ); ?>
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <?php submit_button( __( 'Save API Key', 'moga-travel-core' ) ); ?>
+                    </form>
+
+                    <hr>
+
+                    <p style="color:#3c434a;line-height:1.6;max-width:680px;">
+                        <?php esc_html_e(
+                            'Once saved, the API key enables three features: '
+                            . '(1) city autocomplete in tour and property location fields — type a city name and select from Google suggestions, '
+                            . '(2) hotel name autocomplete in the Tour Groups accommodation section, '
+                            . '(3) real hotel photos and ratings in the Accommodation widget on the single tour page.',
+                            'moga-travel-core'
+                        ); ?>
+                    </p>
+
+                <?php elseif ( 'contact' === $tab ) : ?>
 
                     <form method="post" action="options.php">
                         <?php settings_fields('moga_settings_contact'); ?>

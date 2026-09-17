@@ -74,6 +74,10 @@ class Moga_CPT_Tour {
             'public'              => true,
             'publicly_queryable'  => true,
             'show_ui'             => true,
+            // show_in_menu = true gives Tours its own direct WordPress
+            // sidebar entry — the clean ThemeForest-standard approach.
+            // The old Moga top-level wrapper menu is removed from
+            // class-moga-admin-menus.php in the same fix session.
             'show_in_menu'        => true,
             'show_in_nav_menus'   => true,
             'show_in_admin_bar'   => true,
@@ -83,8 +87,15 @@ class Moga_CPT_Tour {
             'menu_position'       => 6,
             'menu_icon'           => 'dashicons-location-alt',
 
-            // Capabilities.
-            'capability_type'     => 'post',
+            // Capabilities — dedicated pair, matching the same pattern
+            // already used by Moga_CPT_Bus after its Sep 2026 fix.
+            // Previously 'post' (generic), which mapped edit_moga_tours
+            // → edit_posts — a cap Tour Organizers don't have, causing
+            // "You are not allowed to edit posts in this post type."
+            // The custom pair means WordPress maps correctly to
+            // edit_moga_tour / edit_moga_tours / publish_moga_tours etc.,
+            // which Tour Organizers DO have (set in Moga_Roles 2.2.0).
+            'capability_type'     => array( 'moga_tour', 'moga_tours' ),
             'map_meta_cap'        => true,
 
             // Supports.
@@ -188,13 +199,45 @@ class Moga_CPT_Tour {
             ),
             '_moga_available_days'       => array(
                 'type'        => 'string',
-                'description' => __( 'JSON array of available weekdays (0=Sun, 6=Sat).', 'moga-travel-core' ),
+                'description' => __( 'DEPRECATED — superseded by _moga_tour_groups. Kept registered only for backward compatibility, no longer read anywhere.', 'moga-travel-core' ),
                 'default'     => '',
             ),
             '_moga_start_dates'          => array(
                 'type'        => 'string',
-                'description' => __( 'JSON array of specific start dates (Y-m-d format).', 'moga-travel-core' ),
+                'description' => __( 'DEPRECATED — superseded by _moga_tour_groups. Kept registered only for backward compatibility, no longer read anywhere.', 'moga-travel-core' ),
                 'default'     => '',
+            ),
+
+            // ---- Tour Groups (Aug 2026 session) ----
+            // Each tour has no flat departure date, price, or capacity
+            // of its own anymore — every group carries its own start
+            // date, price (adult/child/infant), and capacity. A
+            // group's END date is never stored directly — it is
+            // always derived from the tour's own fixed Duration
+            // fields above, so a group can never drift out of sync
+            // with how long the tour actually runs. Mirrors exactly
+            // how Property Periods replaced flat property pricing.
+            //
+            // JSON schema (array of group objects):
+            // [
+            //   {
+            //     "start":              "2026-09-05",
+            //     "price_adult":        8000,
+            //     "price_child":        4000,
+            //     "price_infant":       0,
+            //     "capacity":           25,
+            //     "min_participants":   10
+            //   }
+            // ]
+            '_moga_tour_groups'          => array(
+                'type'        => 'string',
+                'description' => __( 'JSON array of Tour Groups — each with its own start date, pricing, and capacity.', 'moga-travel-core' ),
+                'default'     => '',
+            ),
+            '_moga_booking_cutoff_hours' => array(
+                'type'        => 'integer',
+                'description' => __( 'Hours before a group\'s start date after which booking closes automatically, even with seats remaining. Applies across all of this tour\'s groups.', 'moga-travel-core' ),
+                'default'     => 24,
             ),
 
             // ---- Location ----
@@ -308,12 +351,12 @@ class Moga_CPT_Tour {
             // ---- Tour Details ----
             '_moga_max_participants'     => array(
                 'type'        => 'integer',
-                'description' => __( 'Maximum number of participants.', 'moga-travel-core' ),
+                'description' => __( 'DEPRECATED — superseded by each group\'s own "capacity" in _moga_tour_groups. Kept registered only for backward compatibility, no longer read anywhere.', 'moga-travel-core' ),
                 'default'     => 20,
             ),
             '_moga_min_participants'     => array(
                 'type'        => 'integer',
-                'description' => __( 'Minimum participants required to run the tour.', 'moga-travel-core' ),
+                'description' => __( 'DEPRECATED — superseded by each group\'s own "min_participants" in _moga_tour_groups. Kept registered only for backward compatibility, no longer read anywhere.', 'moga-travel-core' ),
                 'default'     => 1,
             ),
             '_moga_difficulty'           => array(
@@ -451,7 +494,7 @@ class Moga_CPT_Tour {
                     'show_in_rest'      => true,
                     'sanitize_callback' => self::get_sanitize_callback( $field['type'] ),
                     'auth_callback'     => function() {
-                        return current_user_can( 'edit_posts' );
+                        return current_user_can( 'edit_moga_tours' );
                     },
                 )
             );

@@ -59,15 +59,20 @@ $tour_type_label = isset( $tour_types[ $tour_type ] )
 // Participants.
 $max_participants = intval( get_post_meta( $tour_id, '_moga_max_participants', true ) );
 
-// Price.
-$price    = floatval( get_post_meta( $tour_id, '_moga_price_per_person', true ) );
-$currency = get_post_meta( $tour_id, '_moga_currency', true ) ?: 'USD';
-$discount = floatval( get_post_meta( $tour_id, '_moga_price_group', true ) );
+// Price — uses the real, live "starting from" price across all
+// Tour Groups, same as single-moga_tour.php's own badge. Previously
+// read '_moga_price_per_person' directly, a flat field nothing has
+// saved to since Tour Groups replaced it — this card was silently
+// showing frozen, stale data (usually 0) on every tour that's been
+// updated to use real groups.
+$display_price = function_exists( 'moga_get_tour_display_price' )
+    ? moga_get_tour_display_price( $tour_id )
+    : array( 'price' => 0, 'original' => 0, 'currency' => 'USD', 'discount' => 0 );
 
-$original_price = $price;
-if ( $discount > 0 ) {
-    $price = $price - ( $price * ( $discount / 100 ) );
-}
+$price          = $display_price['price'];
+$currency       = $display_price['currency'];
+$discount       = $display_price['discount'];
+$original_price = $display_price['original'] > 0 ? $display_price['original'] : $price;
 
 // Rating.
 $rating       = floatval( get_post_meta( $tour_id, '_moga_rating',       true ) );

@@ -40,6 +40,26 @@ class Moga_Admin_Menus {
      */
     public static function init() {
         add_action( 'admin_menu', array( __CLASS__, 'register_menus' ) );
+
+        // Restrict admin list screens to own posts for vendor roles.
+        add_action( 'pre_get_posts', array( __CLASS__, 'filter_own_posts_only' ) );
+
+        // Fix count tabs on CPT list screens for vendor roles.
+        add_filter( 'views_edit-moga_tour',     array( __CLASS__, 'filter_own_post_views' ) );
+        add_filter( 'views_edit-moga_bus',      array( __CLASS__, 'filter_own_post_views' ) );
+        add_filter( 'views_edit-moga_property', array( __CLASS__, 'filter_own_post_views' ) );
+
+        // Add "Edit Tour" / "Edit Property" link to the frontend admin bar.
+        // WordPress generates this automatically for built-in post types,
+        // but custom capability_type pairs require an explicit hook because
+        // the admin bar's automatic edit node checks 'edit_post' against the
+        // primitive post capability — which with map_meta_cap=true should
+        // resolve correctly, but only when the user also has
+        // 'show_toolbar_when_viewing_site' enabled in their profile.
+        // This hook adds the node regardless, so vendor accounts always
+        // see the edit link on their own posts without needing to touch
+        // their WordPress profile settings.
+        add_action( 'admin_bar_menu', array( __CLASS__, 'add_edit_cpt_node' ), 80 );
     }
 
     /**
@@ -51,106 +71,331 @@ class Moga_Admin_Menus {
      */
     public static function register_menus() {
 
-        // ---- Top-level Moga menu ----
+        // ================================================================
+        // ARCHITECTURE NOTE (Sep 2026 fix)
+        // ================================================================
+        // The old Moga top-level wrapper menu is removed entirely.
+        // It caused two problems:
+        //
+        //   1. The top-level page required 'manage_options', which blocked
+        //      every Tour Organizer and Property Owner from the whole menu
+        //      tree, even when each submenu used the correct lower cap.
+        //
+        //   2. CPTs with show_in_menu=true also generated their own sidebar
+        //      entries, so Tours appeared twice in the sidebar.
+        //
+        // Clean ThemeForest-standard approach:
+        //   - CPTs (Tours, Properties, Buses) each own their sidebar entry
+        //     via show_in_menu=true in their CPT registration. WordPress
+        //     handles these natively and applies the correct capability gate.
+        //   - Admin-only pages (Bookings, Locations, Vendors, Reports,
+        //     Settings) get their own top-level entries here.
+        // ================================================================
+
+        // ---- Moga Bookings (Phase 5) ----
         add_menu_page(
-            __( 'Moga Booking System', 'moga-travel-core' ),
-            __( 'Moga', 'moga-travel-core' ),
-            'manage_options',
-            'moga-dashboard',
-            array( __CLASS__, 'render_dashboard' ),
-            self::get_menu_icon(),
-            30
-        );
-
-        // ---- Dashboard (same slug as top-level to rename the auto-generated item) ----
-        add_submenu_page(
-            'moga-dashboard',
-            __( 'Moga Dashboard', 'moga-travel-core' ),
-            __( 'Dashboard', 'moga-travel-core' ),
-            'manage_options',
-            'moga-dashboard',
-            array( __CLASS__, 'render_dashboard' )
-        );
-
-        // ---- Properties ----
-        add_submenu_page(
-            'moga-dashboard',
-            __( 'Properties', 'moga-travel-core' ),
-            __( 'Properties', 'moga-travel-core' ),
-            'edit_moga_propertys',
-            'edit.php?post_type=moga_property'
-        );
-
-        // ---- Tours ----
-        add_submenu_page(
-            'moga-dashboard',
-            __( 'Tours', 'moga-travel-core' ),
-            __( 'Tours', 'moga-travel-core' ),
-            'edit_moga_tours',
-            'edit.php?post_type=moga_tour'
-        );
-
-        // ---- Buses ----
-        add_submenu_page(
-            'moga-dashboard',
-            __( 'Buses', 'moga-travel-core' ),
-            __( 'Buses', 'moga-travel-core' ),
-            'moga_manage_buses',
-            'edit.php?post_type=moga_bus'
-        );
-
-        // ---- Bookings (Phase 5) ----
-        add_submenu_page(
-            'moga-dashboard',
-            __( 'Bookings', 'moga-travel-core' ),
+            __( 'Moga Bookings', 'moga-travel-core' ),
             __( 'Bookings', 'moga-travel-core' ),
             'manage_options',
             'moga-bookings',
-            array( __CLASS__, 'render_placeholder' )
+            array( __CLASS__, 'render_placeholder' ),
+            'dashicons-calendar-alt',
+            31
         );
 
-        // ---- Users / Vendor Approvals ----
-        add_submenu_page(
-            'moga-dashboard',
-            __( 'Vendors', 'moga-travel-core' ),
-            __( 'Users', 'moga-travel-core' ),
-            'moga_approve_vendors',
-            'moga-users',
-            class_exists( 'Moga_Admin_Vendors' )
-                ? array( 'Moga_Admin_Vendors', 'render_page' )
-                : array( __CLASS__, 'render_placeholder' )
-        );
-
-        // ---- Location Settings + Editor ----
-        // Callback is handled entirely by Moga_Admin_Locations.
-        add_submenu_page(
-            'moga-dashboard',
+        // ---- Moga Locations ----
+        add_menu_page(
             __( 'Location Settings', 'moga-travel-core' ),
             __( 'Locations', 'moga-travel-core' ),
             'manage_options',
             'moga-locations',
-            array( 'Moga_Admin_Locations', 'render_page' )
+            array( 'Moga_Admin_Locations', 'render_page' ),
+            'dashicons-location',
+            32
         );
 
-        // ---- Reports (Phase 6) ----
-        add_submenu_page(
-            'moga-dashboard',
-            __( 'Reports', 'moga-travel-core' ),
+        // ---- Moga Vendors / User Approvals ----
+        add_menu_page(
+            __( 'Moga Vendors', 'moga-travel-core' ),
+            __( 'Vendors', 'moga-travel-core' ),
+            'moga_approve_vendors',
+            'moga-users',
+            class_exists( 'Moga_Admin_Vendors' )
+                ? array( 'Moga_Admin_Vendors', 'render_page' )
+                : array( __CLASS__, 'render_placeholder' ),
+            'dashicons-groups',
+            33
+        );
+
+        // ---- Moga Reports (Phase 6) ----
+        add_menu_page(
+            __( 'Moga Reports', 'moga-travel-core' ),
             __( 'Reports', 'moga-travel-core' ),
             'manage_options',
             'moga-reports',
-            array( __CLASS__, 'render_placeholder' )
+            array( __CLASS__, 'render_placeholder' ),
+            'dashicons-chart-bar',
+            34
         );
 
-        // ---- Settings (Phase 6) ----
-        add_submenu_page(
-            'moga-dashboard',
+        // ---- Moga Settings (Phase 6) ----
+        add_menu_page(
             __( 'Moga Settings', 'moga-travel-core' ),
-            __( 'Settings', 'moga-travel-core' ),
+            __( 'Moga Settings', 'moga-travel-core' ),
             'manage_options',
             'moga-settings',
-            array( 'Moga_Admin_Settings', 'render_page' )
+            array( 'Moga_Admin_Settings', 'render_page' ),
+            'dashicons-admin-settings',
+            35
         );
+    }
+
+
+    // ============================================================
+    // ADMIN BAR — EDIT LINK FOR MOGA CPTs
+    // ============================================================
+
+    /**
+     * Add an "Edit Tour" / "Edit Property" / "Edit Bus" node to the
+     * WordPress frontend admin bar when the current user is viewing a
+     * single Moga CPT post that they have permission to edit.
+     *
+     * WordPress adds this node automatically for built-in post types,
+     * but with custom capability_type pairs and map_meta_cap=true the
+     * automatic check can fail unless the user has explicitly enabled
+     * "Show Toolbar when viewing site" in their profile. This hook
+     * adds the node explicitly so vendor accounts always see the link
+     * on their own posts — no profile setting required.
+     *
+     * Fires at priority 80, after WordPress's own edit-post node (20)
+     * but before late additions — so we never duplicate an existing node.
+     *
+     * @since  1.0.0
+     * @param  WP_Admin_Bar $wp_admin_bar Admin bar object.
+     * @return void
+     */
+    public static function add_edit_cpt_node( $wp_admin_bar ) {
+
+        // Only on the frontend — the admin already has its own edit UI.
+        if ( is_admin() ) {
+            return;
+        }
+
+        // Only on singular Moga CPT pages.
+        $post_types = array( 'moga_tour', 'moga_property', 'moga_bus', 'moga_destination' );
+        if ( ! is_singular( $post_types ) ) {
+            return;
+        }
+
+        $post = get_queried_object();
+        if ( ! $post || ! isset( $post->ID ) ) {
+            return;
+        }
+
+        // Check the user can actually edit this specific post.
+        if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+            return;
+        }
+
+        $edit_url = get_edit_post_link( $post->ID, 'url' );
+        if ( ! $edit_url ) {
+            return;
+        }
+
+        // Label varies by post type.
+        $labels = array(
+            'moga_tour'        => __( 'Edit Tour', 'moga-travel-core' ),
+            'moga_property'    => __( 'Edit Property', 'moga-travel-core' ),
+            'moga_bus'         => __( 'Edit Bus', 'moga-travel-core' ),
+            'moga_destination' => __( 'Edit Destination', 'moga-travel-core' ),
+        );
+
+        $label = isset( $labels[ $post->post_type ] )
+            ? $labels[ $post->post_type ]
+            : __( 'Edit', 'moga-travel-core' );
+
+        // Remove the default 'edit' node if WordPress already added one
+        // (prevents duplicates for admins who have toolbar enabled).
+        $wp_admin_bar->remove_node( 'edit' );
+
+        $wp_admin_bar->add_node( array(
+            'id'    => 'moga-edit-post',
+            'title' => $label,
+            'href'  => $edit_url,
+            'meta'  => array(
+                'title' => $label,
+            ),
+        ) );
+    }
+
+
+    // ============================================================
+    // OWN-POSTS-ONLY FILTER
+    // ============================================================
+
+    /**
+     * Restrict the admin post list to the current user's own posts
+     * for all Moga CPTs when the user is a vendor role (Tour Organizer
+     * or Property Owner) — not an Administrator.
+     *
+     * This enforces multi-vendor isolation: a Tour Organizer never sees
+     * another organizer's tours or buses; a Property Owner never sees
+     * another owner's properties.
+     *
+     * Runs on 'pre_get_posts' — fires before the DB query is built,
+     * so it filters the list cleanly without any post-query processing.
+     * WordPress's own pagination and counts all work correctly because
+     * they're calculated after this filter applies.
+     *
+     * @since  1.0.0
+     * @param  WP_Query $query The current query object (passed by reference).
+     * @return void
+     */
+    public static function filter_own_posts_only( $query ) {
+
+        // Only applies in the admin, on the main query, on list screens.
+        if ( ! is_admin() || ! $query->is_main_query() ) {
+            return;
+        }
+
+        // Administrators are never filtered — they see everything.
+        if ( current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        $post_type = $query->get( 'post_type' );
+
+        // Tour Organizer — restrict tours and buses to own posts.
+        if (
+            in_array( $post_type, array( 'moga_tour', 'moga_bus' ), true )
+            && current_user_can( 'edit_moga_tours' )
+            && ! current_user_can( 'edit_others_moga_tours' )
+        ) {
+            $query->set( 'author', get_current_user_id() );
+            return;
+        }
+
+        // Property Owner — restrict properties to own posts.
+        if (
+            'moga_property' === $post_type
+            && current_user_can( 'edit_moga_propertys' )
+            && ! current_user_can( 'edit_others_moga_propertys' )
+        ) {
+            $query->set( 'author', get_current_user_id() );
+            return;
+        }
+    }
+
+
+    // ============================================================
+    // OWN-POST COUNT TABS FILTER
+    // ============================================================
+
+    /**
+     * Replace the count tab labels (All / Published / Draft / Trash)
+     * on CPT list screens with counts that reflect only the current
+     * vendor's own posts — matching what pre_get_posts shows in the list.
+     *
+     * WordPress calculates these counts via wp_count_posts() which never
+     * goes through pre_get_posts, so without this filter a vendor who
+     * has zero tours still sees "All (4) | Published (2) | Drafts (2)"
+     * — the global totals — even though the list shows "No tours found."
+     *
+     * Admins are not affected — they see the real global totals.
+     *
+     * @since  1.0.0
+     * @param  array $views Existing view links keyed by status slug.
+     * @return array        Replaced view links with corrected counts.
+     */
+    public static function filter_own_post_views( $views ) {
+
+        // Admins see real global totals — never filter for them.
+        if ( current_user_can( 'manage_options' ) ) {
+            return $views;
+        }
+
+        // Determine which post type we're on from the current screen.
+        $screen    = get_current_screen();
+        $post_type = $screen ? $screen->post_type : '';
+
+        if ( ! $post_type ) {
+            return $views;
+        }
+
+        $user_id  = get_current_user_id();
+        $statuses = array( 'publish', 'draft', 'pending', 'trash', 'private' );
+
+        // Count only the current user's posts per status.
+        $own_counts = array();
+        $total      = 0;
+
+        foreach ( $statuses as $status ) {
+            $count = (int) ( new WP_Query( array(
+                'post_type'      => $post_type,
+                'post_status'    => $status,
+                'author'         => $user_id,
+                'posts_per_page' => -1,
+                'fields'         => 'ids',
+                'no_found_rows'  => false,
+            ) ) )->found_posts;
+
+            $own_counts[ $status ] = $count;
+            if ( 'trash' !== $status ) {
+                $total += $count;
+            }
+        }
+
+        // Rebuild the view links with corrected counts.
+        // We reuse the existing link markup but replace just the number
+        // inside the count badge — preserving the URL and active class.
+        foreach ( $views as $status => $link ) {
+            $map = array(
+                'all'     => $total,
+                'publish' => $own_counts['publish']  ?? 0,
+                'draft'   => $own_counts['draft']    ?? 0,
+                'pending' => $own_counts['pending']  ?? 0,
+                'trash'   => $own_counts['trash']    ?? 0,
+                'private' => $own_counts['private']  ?? 0,
+            );
+
+            $count = $map[ $status ] ?? null;
+            if ( null === $count ) {
+                continue;
+            }
+
+            // Replace the count number in the view link.
+            // WordPress renders counts in one of two formats depending on version:
+            //   Format A: Post Title <span class="count">(N)</span>
+            //   Format B: Post Title (<span class="count">N</span>)
+            // We match both to be safe across WordPress versions.
+            $new_count = (string) $count;
+            $replaced  = false;
+
+            // Format A — parentheses inside the span.
+            $result = preg_replace(
+                '/<span class="count">\(\d+\)<\/span>/',
+                '<span class="count">(' . $new_count . ')</span>',
+                $link
+            );
+            if ( $result && $result !== $link ) {
+                $views[ $status ] = $result;
+                $replaced = true;
+            }
+
+            // Format B — parentheses outside the span.
+            if ( ! $replaced ) {
+                $result = preg_replace(
+                    '/\(<span class="count">\d+<\/span>\)/',
+                    '(<span class="count">' . $new_count . '</span>)',
+                    $link
+                );
+                if ( $result && $result !== $link ) {
+                    $views[ $status ] = $result;
+                }
+            }
+        }
+
+        return $views;
     }
 
 

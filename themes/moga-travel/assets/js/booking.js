@@ -16,6 +16,8 @@
  *   10. Tour date picker — single date, restricted to available days/dates
  *   11. Tour participant counters — adults / children / infants
  *   12. Tour price breakdown — shows immediately, updates live
+ *   13. Tour seat map — seat grid, reserve/release AJAX, hold countdown
+ *   14. Tour seat availability indicator — "N of M seats available" on tour page
  *
  * @package MogaTravel
  * @since   1.0.0
@@ -43,6 +45,20 @@
     // keeps the two config objects (and their shapes) fully independent.
     function getTourConfig() {
         var el = document.getElementById("moga-tour-booking-config");
+        if (!el) return null;
+        try {
+            return JSON.parse(el.textContent);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // Seat map config — only present on the Booking page when the
+    // tour has an assigned bus. Separate from the tour booking config
+    // (which lives on the single tour page) so the two pages stay
+    // completely independent.
+    function getSeatMapConfig() {
+        var el = document.getElementById("moga-seat-map-config");
         if (!el) return null;
         try {
             return JSON.parse(el.textContent);
@@ -372,11 +388,11 @@
         }
 
         // Available Periods list — clicking an item fills in both
-        // date fields, applying the exact same constraint logic a
-        // real calendar click would, then suggests a checkout date
-        // matching that period's own minimum stay, so a guest gets a
-        // ready-to-book pair of dates in one click rather than a
-        // second decision to make immediately after.
+        // date fields. Uses setDate() without the trigger flag so
+        // Flatpickr updates the visible altInput without firing
+        // onClose (which would open the checkout picker prematurely).
+        // applyCheckinConstraints is called manually here to set
+        // the checkout minDate before setDate on the checkout picker.
         var periodsListEl = document.getElementById("moga-available-periods");
         if (periodsListEl) {
             periodsListEl.addEventListener("click", function (e) {
@@ -386,9 +402,18 @@
                 var start = btn.getAttribute("data-start");
                 if (!start) return;
 
-                checkinPicker.setDate(start, true);
+                // setDate(value, false) — updates the input and altInput
+                // display without firing onClose or onChange events.
+                // This prevents the checkout picker from auto-opening
+                // and avoids double-calling applyCheckinConstraints.
+                checkinPicker.setDate(start, false);
+
+                // Manually apply constraints so checkout picker knows
+                // the correct minDate and maxDate for this period.
                 var minOut = applyCheckinConstraints(start);
-                checkoutPicker.setDate(minOut, true);
+
+                // Set checkout to the minimum allowed date for this period.
+                checkoutPicker.setDate(minOut, false);
 
                 updatePriceBreakdown(config);
             });
@@ -442,36 +467,14 @@
         // No real dates selected yet (or only check-in picked so
         // far, check-out still pending) — keep the breakdown box
         // hidden entirely rather than showing a guessed placeholder.
-        // Per explicit request: "the price should be the only thing
-        // displayed... until dates have been set" — nothing else
-        // should compete for attention before there's something real
-        // to show.
         if (!checkIn || !checkOut) {
             hidePriceBreakdown();
             return;
         }
 
-        // BUG FIX (Aug 15 session): this function used to compute the
-        // breakdown itself, in JS, from config.pricePerNight — which
-        // is an ALREADY-DISCOUNTED, date-blind value baked into the
-        // page by PHP's moga_get_property_display_price(). Multiplying
-        // that by the night count and then subtracting the discount
-        // percentage AGAIN compounded it, and weekend pricing was never
-        // applied at all. Fixed: with real dates known, always defer to
-        // the server's authoritative calculation — the same
-        // moga_calculate_property_price() the AJAX handler already
-        // uses correctly — rather than duplicating that logic here.
         fetchServerPrice(config, checkIn, checkOut);
     }
 
-    /**
-     * Hides the price breakdown box entirely. Sets style.display
-     * directly, not just the 'hidden' attribute — booking.css may
-     * set 'display' directly on '.moga-price-breakdown' (the same
-     * specificity-conflict pattern already found and fixed on the
-     * discount badge/row), which would otherwise silently keep the
-     * box visible despite the 'hidden' attribute being present.
-     */
     function hidePriceBreakdown() {
         var bd = document.getElementById("moga-price-breakdown");
         if (bd) {
@@ -505,12 +508,6 @@
 
                 var p = json.data.price;
 
-                // Use the server's own pre-formatted strings
-                // (moga_format_price() via class-moga-ajax.php) rather
-                // than reformatting raw numbers here — sidesteps
-                // fmt()'s currency-symbol bug entirely for this path,
-                // and guarantees this always matches what the top
-                // price badge (also server-formatted, in PHP) shows.
                 renderBreakdownFormatted({
                     weekdayNights: p.weekday_nights || 0,
                     weekdaySubtotal:
@@ -527,16 +524,9 @@
                     discountPercent: p.discount_percent || 0,
                 });
 
-                // Also update the top price badges (desktop + mobile
-                // sticky bar) — these were previously only set once,
-                // on initial page load, and never refreshed when the
-                // guest picked dates live via the date picker.
                 updatePriceBadges(p);
             })
-            .catch(function () {
-                // Network/server error — leave the last known-good
-                // display in place rather than showing broken numbers.
-            });
+            .catch(function () {});
     }
 
     function renderBreakdown(data) {
@@ -572,18 +562,7 @@
         }
     }
 
-    /**
-     * Same DOM targets as renderBreakdown(), but for already-formatted
-     * price strings (e.g. "E£700.00") coming straight from the server
-     * via moga_format_price() — no client-side currency-symbol
-     * formatting involved at all, so this can't disagree with the
-     * server on which symbol to use.
-     */
     function renderBreakdownFormatted(data) {
-        // Regular (weekday) and weekend rows — always visible,
-        // always updated, never hidden, even at 0 nights/0 amount —
-        // per explicit request: every term stays visible after real
-        // dates are picked, whether it has a real value or not.
         var weekdayLabel = document.getElementById(
             "moga-breakdown-weekday-label",
         );
@@ -614,11 +593,6 @@
         );
         if (weekendSubEl) weekendSubEl.textContent = data.weekendSubtotal;
 
-        // Discount — ALWAYS visible now too, per the same explicit
-        // request. Previously toggled hidden/shown at 0% (see the
-        // style.display fix below, kept here as a defensive
-        // leftover in case any other code path still hides this
-        // element — but this function itself never hides it anymore).
         var discEl = document.getElementById("moga-breakdown-discount");
         var discLabel = document.getElementById(
             "moga-breakdown-discount-label",
@@ -634,51 +608,19 @@
 
         var bd = document.getElementById("moga-price-breakdown");
         if (bd) {
-            // BUG FIX: hidePriceBreakdown() sets style.display = "none"
-            // directly (needed to beat booking.css's own display rule
-            // on this element). An inline style like that persists
-            // independently of the 'hidden' attribute — removing just
-            // the attribute was NOT enough to actually reveal the box
-            // again, since the leftover inline style kept silently
-            // overriding everything, even with correct data and a
-            // removed attribute. Both must be cleared together.
             bd.removeAttribute("hidden");
             bd.style.display = "";
         }
     }
 
-    /**
-     * Update the top price badges (desktop card + mobile sticky bar)
-     * with the real per-night average for the selected dates. Uses
-     * price_per_night_avg_formatted / price_per_night_avg_original_formatted
-     * from the AJAX response — server-formatted, so no client-side
-     * currency-symbol guessing.
-     *
-     * BUG FIX: previously only ever updated TEXT content, never
-     * toggled visibility — so picking a period with a different (or
-     * zero) discount than whatever the page happened to load with
-     * left a stale discount chip and strikethrough price visible,
-     * showing the WRONG percentage next to a correctly-recalculated
-     * (and correctly zero, when applicable) dollar amount. Discount
-     * is a per-period value, not a fixed page-load constant — every
-     * element here now explicitly shows/hides based on this specific
-     * response's real discount_percent, not whatever was true when
-     * the page first rendered.
-     */
     function updatePriceBadges(p) {
-        if (!p.price_per_night_avg_formatted) return; // Tour pricing has no per-night concept.
+        if (!p.price_per_night_avg_formatted) return;
 
         var hasDiscount = (p.discount_percent || 0) > 0;
 
         var current = document.getElementById("moga-badge-price-current");
         if (current) current.textContent = p.price_per_night_avg_formatted;
 
-        // BUG FIX: 'hidden' attribute alone wasn't enough — booking.css
-        // sets 'display' directly on these classes (e.g.
-        // ".moga-booking-form-card__discount { display: inline-flex; }"),
-        // which wins the specificity tie against the browser's
-        // built-in "[hidden] { display: none; }" rule. Setting
-        // style.display directly via JS always wins regardless.
         var old = document.getElementById("moga-badge-price-old");
         if (old) {
             if (hasDiscount && p.price_per_night_avg_original_formatted) {
@@ -785,7 +727,6 @@
                 btn.setAttribute("aria-expanded", "true");
                 btn.querySelector("svg").style.transform = "rotate(180deg)";
             }
-            // Update button text node (first text node).
             var textNode = Array.from(btn.childNodes).find(function (n) {
                 return n.nodeType === 3;
             });
@@ -862,7 +803,7 @@
         if (sections.length === 0) return;
 
         function onScroll() {
-            var scrollY = window.pageYOffset + 120; // offset for sticky header + nav
+            var scrollY = window.pageYOffset + 120;
             var active = null;
 
             sections.forEach(function (item) {
@@ -880,7 +821,6 @@
         window.addEventListener("scroll", onScroll, { passive: true });
         onScroll();
 
-        // Smooth scroll on click.
         links.forEach(function (link) {
             link.addEventListener("click", function (e) {
                 var href = link.getAttribute("href");
@@ -929,14 +869,13 @@
 
     // ============================================================
     // 10. TOUR DATE PICKER
+    //     REBUILT (Tour Groups): restricted to real Group start
+    //     dates only — same whitelist technique already used for
+    //     property periods — instead of the old flat
+    //     availableDays/startDates fields, which had no real
+    //     capacity or pricing behind them at all.
     // ============================================================
 
-    // Restricts the tour date field to bookable days only:
-    //   - If startDates is non-empty, ONLY those exact dates are enabled
-    //     (specific scheduled departures take priority).
-    //   - Otherwise, dates are enabled by weekday according to availableDays
-    //     (0=Sun .. 6=Sat). An empty availableDays array means "no
-    //     restriction" — every day from today onward is enabled.
     function initTourDatePicker(config) {
         if (typeof flatpickr === "undefined" || !config) return;
 
@@ -946,40 +885,265 @@
         var today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        var groups = config.groups || [];
+        var startDates = groups
+            .filter(function (g) {
+                return g.seats_remaining > 0;
+            })
+            .map(function (g) {
+                return g.start;
+            });
+
         var opts = {
             dateFormat: "Y-m-d",
             altInput: true,
             altFormat: "D, M j, Y",
             minDate: today,
             disableMobile: false,
+            enable: startDates,
         };
 
-        var startDates = (config.startDates || []).filter(Boolean);
+        var picker = flatpickr(dateEl, opts);
 
-        if (startDates.length > 0) {
-            // Specific scheduled departure dates only.
-            opts.enable = startDates;
-        } else if (config.availableDays && config.availableDays.length > 0) {
-            // Weekday whitelist.
-            var allowedDays = config.availableDays;
-            opts.disable = [
-                function (date) {
-                    return allowedDays.indexOf(date.getDay()) === -1;
-                },
-            ];
+        // Jump to the month of the earliest available group — so
+        // a guest doesn't land on September when all departures
+        // are in October or later. Only when no date is pre-filled.
+        if (!dateEl.value && startDates.length > 0) {
+            var earliest = startDates.slice().sort()[0];
+            picker.jumpToDate(earliest);
         }
-        // If neither is set, every future date is bookable — no restriction.
 
-        flatpickr(dateEl, opts);
+        function findGroup(dateStr) {
+            for (var i = 0; i < groups.length; i++) {
+                if (groups[i].start === dateStr) return groups[i];
+            }
+            return null;
+        }
+
+        function selectGroup(dateStr) {
+            var group = findGroup(dateStr);
+            updateTourGroupInfo(group);
+            updateTourPriceDisplays(group);
+            updateSeatAvailabilityIndicator(group, config);
+            fetchTourServerPrice(config, dateStr);
+            updateDepartureSummary(group);
+
+            // Sync the hidden input that the form submits — the visible
+            // <select> carries the display value but the hidden input
+            // carries the Y-m-d that the Booking page reads from $_GET.
+            var hiddenInput = document.getElementById("moga-tour-date-input");
+            if (hiddenInput) hiddenInput.value = dateStr;
+
+            // Sync the departure dropdown if it exists.
+            var dropdownEl = document.getElementById("moga-tour-date-select");
+            if (dropdownEl && dropdownEl.value !== dateStr) {
+                dropdownEl.value = dateStr;
+            }
+        }
+
+        // Sync from Flatpickr calendar → dropdown.
+        dateEl.addEventListener("change", function () {
+            if (dateEl.value) selectGroup(dateEl.value);
+        });
+
+        // Sync from dropdown → Flatpickr calendar.
+        var dropdownEl = document.getElementById("moga-tour-date-select");
+        if (dropdownEl) {
+            dropdownEl.addEventListener("change", function () {
+                var val = dropdownEl.value;
+                if (!val) return;
+                picker.setDate(val, true);
+                selectGroup(val);
+            });
+        }
+
+        // Legacy: stacked list buttons (kept for graceful degradation).
+        var list = document.getElementById("moga-available-departures");
+        if (list) {
+            list.addEventListener("click", function (e) {
+                var btn = e.target.closest(".moga-available-periods__item");
+                if (!btn || btn.disabled) return;
+                var start = btn.getAttribute("data-start");
+                if (!start) return;
+                picker.setDate(start, true);
+                selectGroup(start);
+            });
+        }
+
+        if (dateEl.value) selectGroup(dateEl.value);
+    }
+
+    function updateTourGroupInfo(group) {
+        var infoEl = document.getElementById("moga-tour-group-info");
+        if (!infoEl) return;
+
+        if (!group) {
+            infoEl.setAttribute("hidden", "");
+            infoEl.style.display = "none";
+            return;
+        }
+
+        var parts = [];
+        if (group.end && group.end !== group.start) {
+            parts.push(
+                formatDateHuman(group.start) + " \u2013 " + formatDateHuman(group.end),
+            );
+        } else {
+            parts.push(formatDateHuman(group.start));
+        }
+        parts.push(
+            group.seats_remaining > 0
+                ? group.seats_remaining + " seats left"
+                : "Sold out",
+        );
+
+        infoEl.textContent = "This departure: " + parts.join(" \u00b7 ");
+        infoEl.removeAttribute("hidden");
+        infoEl.style.display = "";
+    }
+
+    function formatDateHuman(dateStr) {
+        if (!dateStr) return "";
+        var d = new Date(dateStr + "T00:00:00");
+        return d.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
+    }
+
+    function updateTourPriceDisplays(group) {
+        var currency = (getTourConfig() || {}).currency || "";
+
+        var adultEl = document.getElementById("moga-price-adult-display");
+        var childEl = document.getElementById("moga-price-child-display");
+        var infantEl = document.getElementById("moga-price-infant-display");
+
+        if (!group) return;
+
+        if (adultEl) adultEl.textContent = fmt(group.price_adult || 0, currency);
+        if (childEl) childEl.textContent = fmt(group.price_child || 0, currency);
+        if (infantEl) {
+            infantEl.textContent =
+                group.price_infant > 0 ? fmt(group.price_infant, currency) : "Free";
+        }
+    }
+
+    // ============================================================
+    // 14. TOUR SEAT AVAILABILITY INDICATOR
+    //     Updates the "N of M seats available" line on the single
+    //     tour page sidebar when a departure is selected.
+    //     Only shown when the tour has a bus (config.busId > 0).
+    // ============================================================
+
+    function updateSeatAvailabilityIndicator(group, config) {
+        var el = document.getElementById("moga-seat-availability");
+        var textEl = document.getElementById("moga-seat-availability-text");
+        if (!el || !textEl) return;
+
+        // No bus assigned to this tour — indicator never shows.
+        if (!config || !config.busId || config.busId < 1) return;
+
+        if (!group) {
+            el.setAttribute("hidden", "");
+            el.style.display = "none";
+            return;
+        }
+
+        // bus_seats_available and bus_seats_total are pre-computed
+        // by PHP (get_available_seat_count) and embedded in the
+        // groups config — no extra AJAX call needed here.
+        var available = group.bus_seats_available;
+        var total     = group.bus_seats_total;
+
+        if (available === null || available === undefined || total === null) {
+            el.setAttribute("hidden", "");
+            el.style.display = "none";
+            return;
+        }
+
+        var text;
+        if (available < 1) {
+            text = "No seats available for this departure";
+        } else if (available <= 5) {
+            text = "Only " + available + " of " + total + " seats available!";
+        } else {
+            text = available + " of " + total + " seats available";
+        }
+
+        textEl.textContent = text;
+        el.removeAttribute("hidden");
+        el.style.display = "";
+    }
+
+    // ============================================================
+    // 14b. DEPARTURE SUMMARY CARD
+    //      Shows date range, price per person, and seats remaining
+    //      below the dropdown after a departure is selected.
+    // ============================================================
+
+    function updateDepartureSummary(group) {
+        var summaryEl = document.getElementById("moga-departure-summary");
+        var datesEl   = document.getElementById("moga-departure-summary-dates");
+        var metaEl    = document.getElementById("moga-departure-summary-meta");
+        if (!summaryEl) return;
+
+        if (!group) {
+            summaryEl.setAttribute("hidden", "");
+            summaryEl.style.display = "none";
+            return;
+        }
+
+        var config = getTourConfig();
+        var currency = config ? config.currency : "";
+
+        // Date range.
+        var dateStr = formatDateHuman(group.start);
+        if (group.end && group.end !== group.start) {
+            dateStr += " \u2192 " + formatDateHuman(group.end);
+        }
+        if (datesEl) datesEl.textContent = dateStr;
+
+        // Meta: price + seats.
+        if (metaEl) {
+            var metaHtml = "";
+
+            var priceStr = fmt(group.price_adult || 0, currency);
+            metaHtml += '<span class="moga-departure-summary__meta-item">' + priceStr + " / person</span>";
+
+            if (group.seats_remaining < 1) {
+                metaHtml += '<span class="moga-departure-summary__meta-item moga-departure-summary__meta-item--urgency">Sold out</span>';
+            } else if (group.seats_remaining <= 5) {
+                metaHtml += '<span class="moga-departure-summary__meta-item moga-departure-summary__meta-item--urgency">Only ' + group.seats_remaining + ' spot' + (group.seats_remaining === 1 ? "" : "s") + ' left!</span>';
+            } else {
+                metaHtml += '<span class="moga-departure-summary__meta-item">' + group.seats_remaining + " spots available</span>";
+            }
+
+            metaEl.innerHTML = metaHtml;
+        }
+
+        summaryEl.removeAttribute("hidden");
+        summaryEl.style.display = "";
     }
 
     // ============================================================
     // 11. TOUR PARTICIPANT COUNTERS
+    //     REBUILT: max total now comes from the SELECTED group's
+    //     own real capacity/seats remaining, not a stale flat
+    //     tour-wide number.
     // ============================================================
 
-    function initParticipantCounters(config) {
-        var maxTotal = config ? config.maxParticipants || 20 : 20;
+    function getSelectedTourGroup(config) {
+        var dateEl = document.getElementById("moga-tour-date");
+        if (!dateEl || !dateEl.value || !config) return null;
+        var groups = config.groups || [];
+        for (var i = 0; i < groups.length; i++) {
+            if (groups[i].start === dateEl.value) return groups[i];
+        }
+        return null;
+    }
 
+    function initParticipantCounters(config) {
         var groups = [
             { key: "adults", min: 1 },
             { key: "children", min: 0 },
@@ -991,10 +1155,16 @@
             return input ? parseInt(input.value, 10) || 0 : 0;
         }
 
-        function totalCount() {
-            return groups.reduce(function (sum, g) {
-                return sum + getCount(g.key);
-            }, 0);
+        // Only adults + children count against real seat capacity —
+        // matches moga_get_tour_group_seats_taken()'s server-side
+        // convention exactly (infants travel on an adult's lap).
+        function seatCount() {
+            return getCount("adults") + getCount("children");
+        }
+
+        function maxSeats() {
+            var group = getSelectedTourGroup(config);
+            return group ? group.seats_remaining : 999;
         }
 
         function render(key, min) {
@@ -1007,7 +1177,14 @@
             var count = getCount(key);
             display.textContent = count;
             minus.disabled = count <= min;
-            plus.disabled = totalCount() >= maxTotal;
+
+            plus.disabled = key === "infants" ? false : seatCount() >= maxSeats();
+        }
+
+        function renderAll() {
+            groups.forEach(function (g) {
+                render(g.key, g.min);
+            });
         }
 
         groups.forEach(function (g) {
@@ -1020,86 +1197,632 @@
                 var count = getCount(g.key);
                 if (count > g.min) {
                     input.value = count - 1;
-                    groups.forEach(function (gg) {
-                        render(gg.key, gg.min);
-                    });
-                    updateTourPriceBreakdown(config);
+                    renderAll();
+                    var dateEl = document.getElementById("moga-tour-date");
+                    if (dateEl && dateEl.value)
+                        fetchTourServerPrice(config, dateEl.value);
                 }
             });
 
             plus.addEventListener("click", function () {
-                if (totalCount() < maxTotal) {
+                var withinSeatCap =
+                    g.key === "infants" || seatCount() < maxSeats();
+                if (withinSeatCap) {
                     input.value = getCount(g.key) + 1;
-                    groups.forEach(function (gg) {
-                        render(gg.key, gg.min);
-                    });
-                    updateTourPriceBreakdown(config);
+                    renderAll();
+                    var dateEl = document.getElementById("moga-tour-date");
+                    if (dateEl && dateEl.value)
+                        fetchTourServerPrice(config, dateEl.value);
                 }
             });
-
-            render(g.key, g.min);
         });
+
+        renderAll();
     }
 
     // ============================================================
     // 12. TOUR PRICE BREAKDOWN
+    //     REBUILT: now a real, server-verified AJAX call — matching
+    //     exactly how the property side already works — instead of
+    //     pure client-side math with no capacity awareness at all.
     // ============================================================
 
-    function updateTourPriceBreakdown(config) {
-        if (!config) return;
+    function fetchTourServerPrice(config, groupStart) {
+        if (!config || !config.ajaxUrl || !config.nonce || !config.tourId) return;
+        if (!groupStart) return;
 
-        var adultsEl = document.getElementById("moga-adults-input");
-        var childrenEl = document.getElementById("moga-children-input");
-        var infantsEl = document.getElementById("moga-infants-input");
+        var adults = parseInt(
+            (document.getElementById("moga-adults-input") || {}).value,
+            10,
+        ) || 1;
+        var children = parseInt(
+            (document.getElementById("moga-children-input") || {}).value,
+            10,
+        ) || 0;
+        var infants = parseInt(
+            (document.getElementById("moga-infants-input") || {}).value,
+            10,
+        ) || 0;
 
-        var adults = adultsEl ? parseInt(adultsEl.value, 10) || 1 : 1;
-        var children = childrenEl ? parseInt(childrenEl.value, 10) || 0 : 0;
-        var infants = infantsEl ? parseInt(infantsEl.value, 10) || 0 : 0;
+        var body = new URLSearchParams({
+            action: "moga_calculate_price",
+            nonce: config.nonce,
+            listing_id: config.tourId,
+            listing_type: "tour",
+            check_in: groupStart,
+            adults: adults,
+            children: children,
+            infants: infants,
+        });
 
-        var priceAdult = config.pricePerPerson || 0;
-        var priceChild = config.priceChild || 0;
-        var priceInfant = config.priceInfant || 0;
-        var groupDiscount = config.groupDiscount || 0;
-        var currency = config.currency || "";
+        fetch(config.ajaxUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: body.toString(),
+        })
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (json) {
+                if (!json.success || !json.data || !json.data.price) return;
+                renderTourBreakdown(json.data.price);
+            });
+    }
 
-        var subtotal =
-            priceAdult * adults + priceChild * children + priceInfant * infants;
-        var disc = groupDiscount > 0 ? subtotal * (groupDiscount / 100) : 0;
-        var total = subtotal - disc;
+    // Three separate lines (Adults/Children/Infants) — each entirely
+    // hidden (not just zeroed) when its count is zero.
+    function renderTourBreakdown(p) {
+        var rows = [
+            { key: "adults", count: p.adults, price: p.price_adult_formatted, total: p.adults_total_formatted, singular: "Adult", plural: "Adults" },
+            { key: "children", count: p.children, price: p.price_child_formatted, total: p.children_total_formatted, singular: "Child", plural: "Children" },
+            { key: "infants", count: p.infants, price: p.price_infant_formatted, total: p.infants_total_formatted, singular: "Infant", plural: "Infants" },
+        ];
 
-        var totalParticipants = adults + children + infants;
+        rows.forEach(function (row) {
+            var rowEl = document.getElementById("moga-breakdown-" + row.key + "-row");
+            var labelEl = document.getElementById("moga-breakdown-" + row.key + "-label");
+            var totalEl = document.getElementById("moga-breakdown-" + row.key + "-total");
+            if (!rowEl) return;
 
-        var label = document.getElementById("moga-participants-label");
-        if (label) {
-            var parts = [];
-            if (adults > 0)
-                parts.push(adults + (adults === 1 ? " adult" : " adults"));
-            if (children > 0)
-                parts.push(
-                    children + (children === 1 ? " child" : " children"),
-                );
-            if (infants > 0)
-                parts.push(infants + (infants === 1 ? " infant" : " infants"));
-            label.textContent =
-                fmt(priceAdult, currency) +
-                " \u00d7 " +
-                (parts.join(", ") || totalParticipants + " participants");
-        }
+            if (!row.count || row.count < 1) {
+                rowEl.setAttribute("hidden", "");
+                rowEl.style.display = "none";
+                return;
+            }
 
-        var subEl = document.getElementById("moga-breakdown-subtotal");
-        if (subEl) subEl.textContent = fmt(subtotal, currency);
-
-        var discEl = document.getElementById("moga-breakdown-discount");
-        if (discEl) discEl.textContent = "\u2212" + fmt(disc, currency);
+            rowEl.removeAttribute("hidden");
+            rowEl.style.display = "";
+            if (labelEl) {
+                labelEl.textContent =
+                    row.count +
+                    " " +
+                    (row.count === 1 ? row.singular : row.plural) +
+                    " \u00d7 " +
+                    row.price;
+            }
+            if (totalEl) totalEl.textContent = row.total;
+        });
 
         var totEl = document.getElementById("moga-breakdown-total");
-        if (totEl) totEl.textContent = fmt(total, currency);
+        if (totEl) totEl.textContent = p.total_formatted;
 
         var bd = document.getElementById("moga-price-breakdown");
         if (bd) {
             bd.removeAttribute("hidden");
             bd.style.display = "";
         }
+    }
+
+    // ============================================================
+    // 13. TOUR SEAT MAP
+    //     Only runs on the Booking page when:
+    //       - #moga-seat-map-config JSON block is present
+    //       - #moga-seat-map container exists in the DOM
+    //
+    //     Flow:
+    //       1. Fetch full seat grid via moga_get_seat_map AJAX
+    //       2. Render color-coded seat buttons in the grid
+    //       3. Guest clicks a seat:
+    //            - If available → reserve via AJAX → mark selected
+    //            - If selected  → release via AJAX → mark available
+    //            - If taken/unavailable → ignore
+    //       4. Start/refresh 15-min countdown on first reservation
+    //       5. Update submit button state (disabled until N seats selected)
+    //       6. On beforeunload → release all held seats
+    //       7. On countdown expiry → release all seats + show expired msg
+    // ============================================================
+
+    function initSeatMap(seatConfig) {
+        if (!seatConfig) return;
+
+        var mapEl      = document.getElementById("moga-seat-map");
+        var loadingEl  = document.getElementById("moga-seat-map-loading");
+        var submitBtn  = document.getElementById("moga-tour-review-submit");
+        var noticeEl   = document.getElementById("moga-seat-required-notice");
+        var countEl    = document.getElementById("moga-seats-selected-count");
+        var labelsEl   = document.getElementById("moga-selected-seat-labels");
+        var timerEl    = document.getElementById("moga-seat-hold-timer");
+        var countdownEl = document.getElementById("moga-seat-hold-countdown");
+        var seatsField = document.getElementById("moga-selected-seats-field");
+        var sessionField = document.getElementById("moga-seat-session-field");
+
+        if (!mapEl) return;
+
+        // State.
+        var selectedSeats  = [];   // seat numbers currently selected by this guest
+        var sessionToken   = "";   // issued by server on first reserve call
+        var holdExpiresAt  = null; // Date object — when the hold expires
+        var countdownTimer = null; // setInterval handle
+        var seatData       = {};   // seat_number → seat object from last server response
+
+        var busId        = seatConfig.busId;
+        var tourId       = seatConfig.tourId;
+        var tripDate     = seatConfig.tripDate;
+        var required     = seatConfig.requiredSeats;
+        var ajaxUrl      = seatConfig.ajaxUrl;
+        var nonce        = seatConfig.nonce;
+
+        // ---- Fetch and render the seat grid ----
+        function loadSeatMap() {
+            showLoading(true);
+
+            var body = new URLSearchParams({
+                action:        "moga_get_seat_map",
+                nonce:         nonce,
+                bus_id:        busId,
+                trip_date:     tripDate,
+                session_token: sessionToken,
+            });
+
+            fetch(ajaxUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: body.toString(),
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    showLoading(false);
+                    if (!json.success || !json.data) return;
+                    renderSeatGrid(json.data);
+                })
+                .catch(function () {
+                    showLoading(false);
+                });
+        }
+
+        function showLoading(on) {
+            if (loadingEl) {
+                if (on) {
+                    loadingEl.removeAttribute("hidden");
+                    loadingEl.style.display = "";
+                } else {
+                    loadingEl.setAttribute("hidden", "");
+                    loadingEl.style.display = "none";
+                }
+            }
+            if (mapEl) {
+                if (on) {
+                    mapEl.setAttribute("hidden", "");
+                    mapEl.style.display = "none";
+                } else {
+                    mapEl.removeAttribute("hidden");
+                    mapEl.style.display = "";
+                }
+            }
+        }
+
+        // ---- Build the seat grid from server data ----
+        function renderSeatGrid(data) {
+            var seats   = data.seats   || [];
+            var columns = data.columns || 4;
+            var layout  = data.layout  || "2+2";
+            var driver  = data.driver_position || "front-left";
+
+            // Index seat data for quick lookup.
+            seatData = {};
+            seats.forEach(function (s) { seatData[s.seat_number] = s; });
+
+            mapEl.innerHTML = "";
+
+            // ---- Driver row ----
+            var driverRow = document.createElement("div");
+            driverRow.className = "moga-seat-row moga-seat-row--driver";
+            driverRow.setAttribute("aria-hidden", "true");
+
+            var driverCell = document.createElement("div");
+            driverCell.className = "moga-seat moga-seat--driver " +
+                ("front-left" === driver ? "moga-seat--driver-left" : "moga-seat--driver-right");
+            driverCell.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
+            driverCell.title = "Driver";
+
+            if ("front-left" === driver) {
+                driverRow.appendChild(driverCell);
+            } else {
+                // Push driver to the right.
+                var spacer = document.createElement("div");
+                spacer.className = "moga-seat moga-seat--spacer";
+                for (var s = 0; s < columns - 1; s++) {
+                    driverRow.appendChild(spacer.cloneNode(false));
+                }
+                driverRow.appendChild(driverCell);
+            }
+            mapEl.appendChild(driverRow);
+
+            // ---- Seat rows ----
+            // Group seats into rows by seat_row number.
+            var rowMap = {};
+            seats.forEach(function (seat) {
+                var r = seat.seat_row;
+                if (!rowMap[r]) rowMap[r] = [];
+                rowMap[r].push(seat);
+            });
+
+            var rowNums = Object.keys(rowMap).map(Number).sort(function (a, b) { return a - b; });
+
+            rowNums.forEach(function (rowNum) {
+                var rowSeats = rowMap[rowNum];
+                var rowEl = document.createElement("div");
+                rowEl.className = "moga-seat-row";
+                rowEl.setAttribute("data-row", rowNum);
+
+                // Determine aisle position from layout.
+                // 2+2 → aisle after column 2
+                // 2+3 → aisle after column 2
+                // 1+2 → aisle after column 1
+                // 1+1 → aisle after column 1
+                var aisleAfter = Math.floor(columns / 2);
+                if (layout === "1+2") aisleAfter = 1;
+                if (layout === "1+1") aisleAfter = 1;
+
+                rowSeats.forEach(function (seat, idx) {
+                    // Insert aisle gap.
+                    if (idx === aisleAfter) {
+                        var aisle = document.createElement("div");
+                        aisle.className = "moga-seat-aisle";
+                        rowEl.appendChild(aisle);
+                    }
+
+                    var btn = buildSeatButton(seat);
+                    rowEl.appendChild(btn);
+                });
+
+                mapEl.appendChild(rowEl);
+            });
+        }
+
+        // ---- Build a single seat button element ----
+        function buildSeatButton(seat) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "moga-seat";
+            btn.setAttribute("data-seat", seat.seat_number);
+
+            // Normalise: a seat marked disabled by type is always
+            // unavailable regardless of its DB status — must be
+            // resolved BEFORE applyStatusClasses so the color class
+            // reflects the real state (not "available green" + disabled).
+            var effectiveStatus = seat.status;
+            if (seat.seat_type === "disabled") {
+                effectiveStatus = "unavailable";
+            }
+
+            // Tooltip + aria label — status + type in plain English.
+            var typeLabel   = seat.seat_type === "vip"     ? " · VIP"
+                            : seat.seat_type === "disabled" ? " · Unavailable"
+                            : "";
+            var statusLabel = effectiveStatus === "available"      ? "Available"
+                            : effectiveStatus === "reserved_by_me" ? "Your selection"
+                            : effectiveStatus === "reserved"        ? "Held by another guest"
+                            : effectiveStatus === "booked"          ? "Taken"
+                            : "Not available";
+
+            var tooltipText = "Seat " + seat.seat_number + typeLabel + " — " + statusLabel;
+            btn.setAttribute("data-status-label", tooltipText);
+            btn.setAttribute("aria-label", tooltipText);
+
+            applyStatusClasses(btn, effectiveStatus, seat.seat_type);
+
+            // Disable non-selectable seats.
+            if (effectiveStatus !== "available") {
+                btn.disabled = true;
+            }
+
+            btn.addEventListener("click", function () {
+                handleSeatClick(seat.seat_number);
+            });
+
+            // Seat label inside.
+            var label = document.createElement("span");
+            label.className = "moga-seat__label";
+            label.textContent = seat.seat_number;
+            btn.appendChild(label);
+
+            return btn;
+        }
+
+        function applyStatusClasses(btn, status, type) {
+            btn.className = "moga-seat";
+
+            if (type === "vip")      btn.classList.add("moga-seat--vip");
+            if (type === "disabled") btn.classList.add("moga-seat--disabled");
+
+            switch (status) {
+                case "available":
+                    btn.classList.add("moga-seat--available");
+                    break;
+                case "reserved_by_me":
+                case "selected":
+                    btn.classList.add("moga-seat--selected");
+                    break;
+                case "reserved":
+                case "booked":
+                case "taken":
+                    btn.classList.add("moga-seat--taken");
+                    break;
+                case "unavailable":
+                default:
+                    btn.classList.add("moga-seat--unavailable");
+                    break;
+            }
+
+            // Refresh tooltip to reflect current state.
+            var seatNumber  = btn.getAttribute("data-seat") || "";
+            var typeLabel   = type === "vip"     ? " · VIP"
+                            : type === "disabled" ? " · Unavailable"
+                            : "";
+            var statusLabel = status === "available"      ? "Available"
+                            : status === "reserved_by_me" ? "Your selection"
+                            : status === "selected"        ? "Your selection"
+                            : status === "reserved"        ? "Held by another guest"
+                            : status === "booked"          ? "Taken"
+                            : status === "taken"           ? "Taken"
+                            : "Not available";
+            var tip = "Seat " + seatNumber + typeLabel + " — " + statusLabel;
+            btn.setAttribute("data-status-label", tip);
+            btn.setAttribute("aria-label", tip);
+        }
+
+        // ---- Handle a seat click ----
+        function handleSeatClick(seatNumber) {
+            var seat = seatData[seatNumber];
+            if (!seat) return;
+
+            var isSelected = selectedSeats.indexOf(seatNumber) !== -1;
+
+            if (isSelected) {
+                // Deselect — release this seat.
+                releaseSeat(seatNumber);
+            } else {
+                // Can the guest select another seat?
+                if (selectedSeats.length >= required) {
+                    // Already at limit — flash a message, don't block.
+                    flashSelectionStatus("You need " + required + " seat" + (required === 1 ? "" : "s") + ". Deselect one first.");
+                    return;
+                }
+                reserveSeat(seatNumber);
+            }
+        }
+
+        // ---- Reserve a single seat via AJAX ----
+        function reserveSeat(seatNumber) {
+            var seatsToReserve = [seatNumber];
+
+            var body = new URLSearchParams({
+                action:        "moga_reserve_seats",
+                nonce:         nonce,
+                bus_id:        busId,
+                tour_id:       tourId,
+                trip_date:     tripDate,
+                seats:         JSON.stringify(seatsToReserve),
+                session_token: sessionToken,
+            });
+
+            fetch(ajaxUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: body.toString(),
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (json) {
+                    if (!json.success || !json.data) return;
+
+                    var data = json.data;
+
+                    // Store session token issued by server.
+                    if (data.session_token && !sessionToken) {
+                        sessionToken = data.session_token;
+                        if (sessionField) sessionField.value = sessionToken;
+                    }
+
+                    // Mark successfully reserved seats.
+                    data.reserved.forEach(function (sn) {
+                        if (selectedSeats.indexOf(sn) === -1) {
+                            selectedSeats.push(sn);
+                        }
+                        updateSeatButtonStatus(sn, "selected");
+                    });
+
+                    // Mark seats taken by someone else.
+                    data.taken.forEach(function (sn) {
+                        updateSeatButtonStatus(sn, "taken");
+                        if (seatData[sn]) seatData[sn].status = "booked";
+                    });
+
+                    // Start or refresh the hold countdown.
+                    if (data.expires_at && data.reserved.length > 0) {
+                        startCountdown(new Date(data.expires_at));
+                    }
+
+                    if (data.taken.length > 0) {
+                        flashSelectionStatus("Seat " + data.taken.join(", ") + " was just taken. Please choose another.");
+                    }
+
+                    updateSelectionUI();
+                })
+                .catch(function () {});
+        }
+
+        // ---- Release a single seat via AJAX ----
+        function releaseSeat(seatNumber) {
+            if (!sessionToken) return;
+
+            var body = new URLSearchParams({
+                action:        "moga_release_seats",
+                nonce:         nonce,
+                bus_id:        busId,
+                trip_date:     tripDate,
+                seats:         JSON.stringify([seatNumber]),
+                session_token: sessionToken,
+            });
+
+            fetch(ajaxUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: body.toString(),
+            })
+                .then(function (res) { return res.json(); })
+                .then(function () {
+                    var idx = selectedSeats.indexOf(seatNumber);
+                    if (idx !== -1) selectedSeats.splice(idx, 1);
+                    updateSeatButtonStatus(seatNumber, "available");
+                    updateSelectionUI();
+                })
+                .catch(function () {});
+        }
+
+        // ---- Release ALL held seats (beforeunload / timeout) ----
+        function releaseAllSeats(sync) {
+            if (!sessionToken || selectedSeats.length === 0) return;
+
+            var body = new URLSearchParams({
+                action:        "moga_release_seats",
+                nonce:         nonce,
+                bus_id:        busId,
+                trip_date:     tripDate,
+                seats:         JSON.stringify([]),   // empty = release all held by session
+                session_token: sessionToken,
+            });
+
+            // Use sendBeacon for beforeunload — fetch is not reliable there.
+            if (sync && navigator.sendBeacon) {
+                navigator.sendBeacon(ajaxUrl, body);
+            } else {
+                fetch(ajaxUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: body.toString(),
+                }).catch(function () {});
+            }
+        }
+
+        // ---- Update a single seat button's visual state ----
+        function updateSeatButtonStatus(seatNumber, status) {
+            var btn = mapEl.querySelector('[data-seat="' + seatNumber + '"]');
+            if (!btn) return;
+
+            var seat = seatData[seatNumber] || { seat_type: "standard" };
+            applyStatusClasses(btn, status, seat.seat_type);
+
+            btn.disabled = (status === "taken" || status === "unavailable" || status === "booked");
+        }
+
+        // ---- Update the selection count, labels, submit button ----
+        function updateSelectionUI() {
+            var count = selectedSeats.length;
+
+            if (countEl) countEl.textContent = count;
+
+            if (labelsEl) {
+                labelsEl.textContent = count > 0
+                    ? "(" + selectedSeats.slice().sort().join(", ") + ")"
+                    : "";
+            }
+
+            if (seatsField) seatsField.value = selectedSeats.join(",");
+
+            var complete = count >= required;
+
+            if (submitBtn) {
+                submitBtn.disabled = !complete;
+            }
+            if (noticeEl) {
+                if (complete) {
+                    noticeEl.setAttribute("hidden", "");
+                    noticeEl.style.display = "none";
+                } else {
+                    noticeEl.removeAttribute("hidden");
+                    noticeEl.style.display = "";
+                }
+            }
+        }
+
+        // ---- Flash a temporary status message ----
+        function flashSelectionStatus(msg) {
+            var statusEl = document.getElementById("moga-seat-selection-status");
+            if (!statusEl) return;
+            var original = statusEl.textContent;
+            statusEl.textContent = msg;
+            statusEl.classList.add("moga-seat-selection-status--flash");
+            setTimeout(function () {
+                statusEl.classList.remove("moga-seat-selection-status--flash");
+                updateSelectionUI(); // restore real count
+            }, 2500);
+        }
+
+        // ---- Hold countdown timer ----
+        function startCountdown(expiresAt) {
+            holdExpiresAt = expiresAt;
+
+            if (timerEl) {
+                timerEl.removeAttribute("hidden");
+                timerEl.style.display = "";
+            }
+
+            if (countdownTimer) clearInterval(countdownTimer);
+
+            countdownTimer = setInterval(function () {
+                var remaining = Math.max(0, holdExpiresAt - Date.now());
+                var mins = Math.floor(remaining / 60000);
+                var secs = Math.floor((remaining % 60000) / 1000);
+
+                if (countdownEl) {
+                    countdownEl.textContent =
+                        mins + ":" + (secs < 10 ? "0" : "") + secs;
+                }
+
+                if (remaining <= 0) {
+                    clearInterval(countdownTimer);
+                    onHoldExpired();
+                }
+            }, 1000);
+        }
+
+        function onHoldExpired() {
+            selectedSeats = [];
+            sessionToken  = "";
+            if (seatsField)  seatsField.value  = "";
+            if (sessionField) sessionField.value = "";
+
+            if (timerEl) {
+                timerEl.setAttribute("hidden", "");
+                timerEl.style.display = "none";
+            }
+
+            updateSelectionUI();
+            // Reload the seat map so released seats show as available again.
+            loadSeatMap();
+
+            flashSelectionStatus("Your seat hold expired. Please reselect your seats.");
+        }
+
+        // ---- Release seats when the guest leaves the page ----
+        window.addEventListener("beforeunload", function () {
+            releaseAllSeats(true); // sync via sendBeacon
+        });
+
+        // ---- Init ----
+        loadSeatMap();
+        updateSelectionUI();
     }
 
     // ============================================================
@@ -1119,11 +1842,481 @@
         initSectionNav();
         initShareButton();
 
-        // Tour page — elements are absent on property pages, so each
-        // function below early-returns harmlessly if its DOM isn't found.
+        // Property booking form — collapsible Available Dates toggle.
+        var periodsToggle = document.getElementById("moga-periods-toggle");
+        var periodsList   = document.getElementById("moga-periods-list");
+        if (periodsToggle && periodsList) {
+            periodsToggle.addEventListener("click", function () {
+                var expanded = periodsToggle.getAttribute("aria-expanded") === "true";
+                periodsToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+                if (expanded) {
+                    periodsList.setAttribute("hidden", "");
+                    periodsList.style.display = "none";
+                } else {
+                    periodsList.removeAttribute("hidden");
+                    periodsList.style.display = "";
+                }
+            });
+        }
+
+        // Tour single page — elements are absent on property pages,
+        // so each function below early-returns harmlessly if its DOM
+        // isn't found.
         var tourConfig = getTourConfig();
         initTourDatePicker(tourConfig);
         initParticipantCounters(tourConfig);
-        updateTourPriceBreakdown(tourConfig); // Show default 1-adult price on load.
+
+        // Calendar browse button — opens Flatpickr when clicked.
+        // The real Flatpickr input is hidden; this button triggers it.
+        var calBtn = document.getElementById("moga-tour-calendar-btn");
+        if (calBtn) {
+            calBtn.addEventListener("click", function () {
+                var hiddenInput = document.getElementById("moga-tour-date");
+                if (hiddenInput && hiddenInput._flatpickr) {
+                    hiddenInput._flatpickr.open();
+                }
+            });
+        }
+
+        // If a departure is pre-selected from URL, show summary immediately.
+        if (tourConfig) {
+            var preDate = document.getElementById("moga-tour-date");
+            if (preDate && preDate.value) {
+                var preGroups = tourConfig.groups || [];
+                var preGroup  = null;
+                for (var pi = 0; pi < preGroups.length; pi++) {
+                    if (preGroups[pi].start === preDate.value) { preGroup = preGroups[pi]; break; }
+                }
+                if (preGroup) updateDepartureSummary(preGroup);
+            }
+        }
+
+        // Booking page — seat map. Only runs when the seat map config
+        // block is present (i.e. this tour has an assigned bus).
+        var seatConfig = getSeatMapConfig();
+        if (seatConfig) {
+            initSeatMap(seatConfig);
+        }
+
+        // Single tour page — Accommodation widget.
+        initAccommodationWidget();
     });
+
+    // ============================================================
+    // ACCOMMODATION WIDGET
+    // ============================================================
+
+    var placesCache = {};
+
+    function initAccommodationWidget() {
+        var configEl = document.getElementById("moga-accommodation-config");
+        var widgetEl = document.getElementById("moga-accommodation-widget");
+        if (!configEl || !widgetEl) return;
+
+        var config;
+        try { config = JSON.parse(configEl.textContent); } catch(e) { return; }
+        if (!config || !config.groups) return;
+
+        // Load default (first) group on page load.
+        fetchAndRenderAccomGroup(config.defaultDate, config);
+
+        // Update when guest selects a departure.
+        var selectEl = document.getElementById("moga-tour-date-select");
+        if (selectEl) {
+            selectEl.addEventListener("change", function() {
+                var date = selectEl.value;
+                if (date && config.groups[date]) {
+                    fetchAndRenderAccomGroup(date, config);
+                }
+            });
+        }
+
+        var dateInput = document.getElementById("moga-tour-date");
+        if (dateInput) {
+            dateInput.addEventListener("change", function() {
+                var date = dateInput.value;
+                if (date && config.groups[date]) {
+                    fetchAndRenderAccomGroup(date, config);
+                }
+            });
+        }
+
+        // Wire scroll arrow buttons.
+        // Purpose: let the guest navigate between hotel cards by clicking
+        // the ‹ and › buttons that overlay the left/right edges of the widget.
+        // Each click scrolls exactly one card width, with smooth animation.
+        var prevBtn = document.getElementById("moga-accom-arrow-prev");
+        var nextBtn = document.getElementById("moga-accom-arrow-next");
+        var listEl  = document.getElementById("moga-accommodation-list");
+
+        if (prevBtn && nextBtn && listEl) {
+
+            function getCardWidth() {
+                var card = listEl.querySelector(".moga-accommodation-card");
+                // card width + 10px gap
+                return card ? card.offsetWidth + 10 : 240;
+            }
+
+            function updateArrowState() {
+                var atStart = listEl.scrollLeft <= 2;
+                var atEnd   = listEl.scrollLeft + listEl.offsetWidth >= listEl.scrollWidth - 2;
+                prevBtn.style.opacity      = atStart ? "0.3" : "1";
+                prevBtn.style.pointerEvents = atStart ? "none" : "";
+                nextBtn.style.opacity      = atEnd   ? "0.3" : "1";
+                nextBtn.style.pointerEvents = atEnd   ? "none" : "";
+            }
+
+            prevBtn.addEventListener("click", function() {
+                listEl.scrollBy({ left: -getCardWidth(), behavior: "smooth" });
+            });
+
+            nextBtn.addEventListener("click", function() {
+                listEl.scrollBy({ left: getCardWidth(), behavior: "smooth" });
+            });
+
+            listEl.addEventListener("scroll", updateArrowState);
+
+            // Set initial arrow state after cards are rendered.
+            setTimeout(updateArrowState, 100);
+        }
+    }
+
+    function fetchAndRenderAccomGroup(dateStr, config) {
+        var stays = config.groups[dateStr];
+        if (!stays || !stays.length) return;
+
+        var listEl = document.getElementById("moga-accommodation-list");
+        if (!listEl) return;
+
+        listEl.innerHTML = "";
+
+        // Filter valid stays first so we know the total for layout decisions.
+        var validStays = stays.filter(function(s) { return !!s.hotel_name; });
+
+        validStays.forEach(function(stay) {
+            var card = buildHotelCard(stay);
+            listEl.appendChild(card);
+            fetchHotelPlaces(stay.hotel_name, config, function(data) {
+                enrichHotelCard(card, data, stay);
+            });
+        });
+
+        // CSS :has() handles single vs multiple card widths automatically.
+        // JS fallback for browsers without :has() support:
+        if (validStays.length > 1) {
+            listEl.querySelectorAll(".moga-accommodation-card").forEach(function(c) {
+                c.style.flex = "0 0 85%";
+            });
+        }
+    }
+
+    function buildHotelCard(stay) {
+        var stars      = Math.max(1, Math.min(5, parseInt(stay.stars, 10) || 4));
+        var nightFrom  = parseInt(stay.night_from, 10) || 1;
+        var nightTo    = parseInt(stay.night_to,   10) || 1;
+        var nightLabel = nightFrom === nightTo
+            ? "Night " + nightFrom
+            : "Nights " + nightFrom + "\u2013" + nightTo;
+
+        var card = document.createElement("div");
+        card.className = "moga-accommodation-card";
+
+        card.innerHTML =
+            '<div class="moga-accommodation-card__gallery swiper js-hotel-swiper">' +
+                '<div class="swiper-wrapper">' +
+                    '<div class="swiper-slide moga-accommodation-card__placeholder">' +
+                        '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">' +
+                            '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' +
+                            '<polyline points="9 22 9 12 15 12 15 22"/>' +
+                        '</svg>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="swiper-pagination"></div>' +
+                '<div class="swiper-button-prev"></div>' +
+                '<div class="swiper-button-next"></div>' +
+            '</div>' +
+            '<div class="moga-accommodation-card__body">' +
+                '<span class="moga-accommodation-card__nights">' + escHtmlStr(nightLabel) + '</span>' +
+                '<h4 class="moga-accommodation-card__name">' + escHtmlStr(stay.hotel_name) + '</h4>' +
+                '<div class="moga-accommodation-card__meta">' +
+                    '<span class="moga-accommodation-card__stars">' +
+                        '\u2605'.repeat(stars) + '\u2606'.repeat(5 - stars) +
+                    '</span>' +
+                    '<span class="moga-accommodation-card__rating js-hotel-rating"></span>' +
+                '</div>' +
+            '</div>';
+
+        return card;
+    }
+
+    function enrichHotelCard(card, data, stay) {
+        // ---- Determine photos to show ----
+        // Strategy: merge Google Places photos + organizer-added photos
+        // (uploaded via Media Library OR added by URL) into one slideshow.
+        // Google photos come first; organizer photos are appended after.
+        // If Google has no match, organizer photos fill the slideshow alone.
+        // If neither source has photos, the placeholder icon remains.
+        var googlePhotos    = (data && data.found && data.photos && data.photos.length) ? data.photos : [];
+        var organizerPhotos = (stay.photo_urls && stay.photo_urls.length) ? stay.photo_urls : [];
+        var isGoogleMatch   = data && data.found;
+
+        var photosToShow = googlePhotos.concat(organizerPhotos);
+
+        // ---- Build Swiper slides ----
+        var swiperWrapper = card.querySelector(".swiper-wrapper");
+        if (swiperWrapper && photosToShow.length) {
+            swiperWrapper.innerHTML = "";
+            var galleryId = "hotel-" + escHtmlStr(stay.hotel_name).replace(/\s+/g, "-").toLowerCase();
+
+            photosToShow.forEach(function(url, idx) {
+                var slide = document.createElement("div");
+                slide.className = "swiper-slide";
+
+                var mediaType = detectMediaType(url); // 'image' | 'video' | 'youtube' | 'vimeo'
+
+                if (mediaType === "image") {
+                    // Standard image slide with GLightbox popup.
+                    var a = document.createElement("a");
+                    a.href      = url;
+                    a.className = "moga-hotel-photo-link glightbox";
+                    a.setAttribute("data-gallery",   galleryId);
+                    a.setAttribute("data-type",      "image");
+                    a.setAttribute("data-title",     stay.hotel_name || "");
+
+                    var img = document.createElement("img");
+                    img.src       = url;
+                    img.alt       = stay.hotel_name || "";
+                    img.className = "moga-accommodation-card__photo";
+                    img.loading   = idx === 0 ? "eager" : "lazy";
+
+                    a.appendChild(img);
+                    slide.appendChild(a);
+
+                } else if (mediaType === "video") {
+                    // Direct video file — inline <video> with play overlay.
+                    // Clicking opens GLightbox video popup.
+                    var va = document.createElement("a");
+                    va.href      = url;
+                    va.className = "moga-hotel-photo-link moga-hotel-video-link glightbox";
+                    va.setAttribute("data-gallery", galleryId);
+                    va.setAttribute("data-type",    "video");
+                    va.setAttribute("data-title",   stay.hotel_name || "");
+
+                    var vWrap = document.createElement("div");
+                    vWrap.className = "moga-accommodation-card__video-thumb";
+
+                    var vid = document.createElement("video");
+                    vid.src      = url;
+                    vid.muted    = true;
+                    vid.preload  = "metadata";
+                    vid.className = "moga-accommodation-card__photo";
+
+                    var playIcon = document.createElement("div");
+                    playIcon.className = "moga-hotel-play-icon";
+                    playIcon.innerHTML =
+                        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+                            '<path d="M8 5v14l11-7z"/>' +
+                        '</svg>';
+
+                    vWrap.appendChild(vid);
+                    vWrap.appendChild(playIcon);
+                    va.appendChild(vWrap);
+                    slide.appendChild(va);
+
+                } else {
+                    // YouTube or Vimeo — show thumbnail poster with play overlay.
+                    // Clicking opens GLightbox iframe popup.
+                    var embedUrl = getEmbedUrl(url, mediaType);
+                    var thumbUrl = getVideoThumbnail(url, mediaType);
+
+                    var ia = document.createElement("a");
+                    ia.href      = url;
+                    ia.className = "moga-hotel-photo-link moga-hotel-video-link glightbox";
+                    ia.setAttribute("data-gallery", galleryId);
+                    ia.setAttribute("data-type",    "video");
+                    ia.setAttribute("data-title",   stay.hotel_name || "");
+
+                    var iWrap = document.createElement("div");
+                    iWrap.className = "moga-accommodation-card__video-thumb";
+
+                    if (thumbUrl) {
+                        var tImg = document.createElement("img");
+                        tImg.src       = thumbUrl;
+                        tImg.alt       = stay.hotel_name || "";
+                        tImg.className = "moga-accommodation-card__photo";
+                        tImg.loading   = "lazy";
+                        iWrap.appendChild(tImg);
+                    }
+
+                    var iPlayIcon = document.createElement("div");
+                    iPlayIcon.className = "moga-hotel-play-icon";
+                    iPlayIcon.innerHTML =
+                        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+                            '<path d="M8 5v14l11-7z"/>' +
+                        '</svg>';
+
+                    iWrap.appendChild(iPlayIcon);
+                    ia.appendChild(iWrap);
+                    slide.appendChild(ia);
+                }
+
+                swiperWrapper.appendChild(slide);
+            });
+
+            // Photo count badge on first slide.
+            if (photosToShow.length > 1) {
+                var badge = document.createElement("div");
+                badge.className = "moga-hotel-photo-count";
+                badge.innerHTML =
+                    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">' +
+                        '<rect x="3" y="3" width="18" height="18" rx="2"/>' +
+                        '<circle cx="8.5" cy="8.5" r="1.5"/>' +
+                        '<polyline points="21 15 16 10 5 21"/>' +
+                    '</svg> ' +
+                    photosToShow.length;
+                card.querySelector(".moga-accommodation-card__gallery").appendChild(badge);
+            }
+
+            // Initialise Swiper.
+            if (typeof Swiper !== "undefined") {
+                var swiperEl = card.querySelector(".js-hotel-swiper");
+                if (swiperEl) {
+                    new Swiper(swiperEl, {
+                        loop: photosToShow.length > 1,
+                        pagination: {
+                            el:        swiperEl.querySelector(".swiper-pagination"),
+                            clickable: true,
+                        },
+                        navigation: {
+                            prevEl: swiperEl.querySelector(".swiper-button-prev"),
+                            nextEl: swiperEl.querySelector(".swiper-button-next"),
+                        },
+                    });
+                }
+            }
+
+            // Initialise GLightbox for this card's gallery.
+            if (typeof GLightbox !== "undefined") {
+                GLightbox({
+                    selector: "[data-gallery='" + galleryId + "']",
+                    loop:     true,
+                    touchNavigation: true,
+                });
+            }
+        }
+
+        // ---- Hotel name: replace with Google-confirmed name + Maps link ----
+        var nameEl = card.querySelector(".moga-accommodation-card__name");
+        if (nameEl) {
+            if (isGoogleMatch && data.maps_url) {
+                // Replace plain name with a clickable link to Google Maps.
+                var googleName = data.google_name || data.name || stay.hotel_name;
+                nameEl.innerHTML =
+                    '<a href="' + escHtmlStr(data.maps_url) + '" target="_blank" rel="noopener noreferrer" ' +
+                    'class="moga-hotel-maps-link" title="View on Google Maps">' +
+                    escHtmlStr(googleName) +
+                    '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:4px;vertical-align:middle;" aria-hidden="true">' +
+                        '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>' +
+                        '<polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>' +
+                    '</svg>' +
+                    '</a>';
+            }
+        }
+
+        // ---- Stars: hide organizer stars, show Google rating ----
+        var starsEl  = card.querySelector(".moga-accommodation-card__stars");
+        var ratingEl = card.querySelector(".js-hotel-rating");
+
+        if (isGoogleMatch && data.rating) {
+            // Hide organizer-entered stars — Google rating is authoritative.
+            if (starsEl) starsEl.style.display = "none";
+
+            // Show Google rating with star icon.
+            if (ratingEl) {
+                ratingEl.innerHTML =
+                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="#f59e0b" aria-hidden="true">' +
+                        '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>' +
+                    '</svg> <strong>' + parseFloat(data.rating).toFixed(1) + '</strong>' +
+                    (data.user_ratings
+                        ? ' <span class="moga-accommodation-card__rating-count">(' +
+                          Number(data.user_ratings).toLocaleString() + ')</span>'
+                        : '');
+            }
+        } else if (!isGoogleMatch) {
+            // No Google match — keep organizer stars visible, clear rating.
+            if (starsEl) starsEl.style.display = "";
+            if (ratingEl) ratingEl.innerHTML = "";
+        }
+    }
+
+    // ---- Media type helpers ----
+
+    function detectMediaType(url) {
+        var u = url.toLowerCase().split("?")[0];
+        if (/\.(jpg|jpeg|png|gif|webp|avif|svg)$/.test(u))  return "image";
+        if (/\.(mp4|webm|mov|avi|ogv|m4v)$/.test(u))         return "video";
+        if (/youtube\.com\/watch|youtu\.be\//.test(url))      return "youtube";
+        if (/vimeo\.com\/\d/.test(url))                       return "vimeo";
+        // Fallback: treat as image (Google Places photo URLs have no extension).
+        return "image";
+    }
+
+    function getEmbedUrl(url, type) {
+        if (type === "youtube") {
+            var m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+            return m ? "https://www.youtube.com/embed/" + m[1] + "?autoplay=1" : url;
+        }
+        if (type === "vimeo") {
+            var vm = url.match(/vimeo\.com\/(\d+)/);
+            return vm ? "https://player.vimeo.com/video/" + vm[1] + "?autoplay=1" : url;
+        }
+        return url;
+    }
+
+    function getVideoThumbnail(url, type) {
+        if (type === "youtube") {
+            var m = url.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+            return m ? "https://img.youtube.com/vi/" + m[1] + "/hqdefault.jpg" : "";
+        }
+        // Vimeo thumbnails require an API call — skip for now, show play icon only.
+        return "";
+    }
+
+    function fetchHotelPlaces(hotelName, config, callback) {
+        if (!config.apiKey) {
+            callback({ found: false });
+            return;
+        }
+
+        if (placesCache[hotelName] !== undefined) {
+            callback(placesCache[hotelName]);
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append("action",     "moga_get_hotel_places");
+        formData.append("nonce",      config.nonce);
+        formData.append("hotel_name", hotelName);
+
+        fetch(config.ajaxUrl, { method: "POST", body: formData })
+            .then(function(r) { return r.json(); })
+            .then(function(json) {
+                var data = (json.success && json.data) ? json.data : { found: false };
+                placesCache[hotelName] = data;
+                callback(data);
+            })
+            .catch(function() {
+                placesCache[hotelName] = { found: false };
+                callback({ found: false });
+            });
+    }
+
+    function escHtmlStr(str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
+
 })();

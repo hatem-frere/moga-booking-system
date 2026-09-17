@@ -88,7 +88,6 @@ $tour_types     = class_exists('Moga_CPT_Tour') ? Moga_CPT_Tour::get_tour_types(
 $tour_type_data = isset($tour_types[$tour_type_key]) ? $tour_types[$tour_type_key] : null;
 
 // Group size & language.
-$max_participants = intval(get_post_meta($tour_id, '_moga_max_participants', true)) ?: 20;
 $language         = get_post_meta($tour_id, '_moga_language', true) ?: 'Arabic';
 $guide_included    = get_post_meta($tour_id, '_moga_guide_included', true);
 
@@ -475,18 +474,6 @@ $section_nav['moga-reviews']   = __('Reviews', 'moga-travel');
                         <span class="moga-property-highlights__value moga-property-highlights__value--sm"><?php echo esc_html($duration_label); ?></span>
                         <span class="moga-property-highlights__label"><?php esc_html_e('Duration', 'moga-travel'); ?></span>
                     </div>
-                    <?php if ($max_participants > 0) : ?>
-                        <div class="moga-property-highlights__item">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                <circle cx="9" cy="7" r="4" />
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                            </svg>
-                            <span class="moga-property-highlights__value"><?php echo esc_html($max_participants); ?></span>
-                            <span class="moga-property-highlights__label"><?php esc_html_e('Max group size', 'moga-travel'); ?></span>
-                        </div>
-                    <?php endif; ?>
                     <?php if ($difficulty_data) : ?>
                         <div class="moga-property-highlights__item">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="<?php echo esc_attr($difficulty_data['color']); ?>" stroke-width="1.5" aria-hidden="true">
@@ -620,6 +607,98 @@ $section_nav['moga-reviews']   = __('Reviews', 'moga-travel');
                                 </div>
                             <?php endif; ?>
                         </div>
+                    </div>
+                <?php endif; ?>
+
+
+                <?php // ---- Where You'll Stay — accommodation details with notes ----
+                // Full accommodation breakdown in the left (main) column.
+                // Shows all groups' hotels with night range, board type, and
+                // the organizer's notes. Separate from the sidebar widget which
+                // shows only name, stars, and photos without notes.
+                ?>
+                <?php
+                $groups_json_left  = get_post_meta($tour_id, '_moga_tour_groups', true);
+                $groups_left       = $groups_json_left ? json_decode($groups_json_left, true) : array();
+                $groups_left       = is_array($groups_left) ? $groups_left : array();
+                $has_accom_details = false;
+                foreach ($groups_left as $gl) {
+                    if (! empty($gl['accommodation'])) { $has_accom_details = true; break; }
+                }
+                ?>
+                <?php if ($has_accom_details) : ?>
+                    <div class="moga-single-section" id="moga-accommodation-details">
+                        <h2 class="moga-single-section__title">
+                            <?php esc_html_e('Where You\'ll Stay', 'moga-travel'); ?>
+                        </h2>
+                        <?php foreach ($groups_left as $gl) :
+                            if (empty($gl['accommodation'])) continue;
+                            $group_start = $gl['start'] ?? '';
+                        ?>
+                            <?php if (count(array_filter($groups_left, fn($g) => !empty($g['accommodation']))) > 1 && $group_start) : ?>
+                                <p class="moga-accommodation-details__group-label">
+                                    <?php printf(
+                                        esc_html__('Departure: %s', 'moga-travel'),
+                                        '<strong>' . esc_html(moga_format_date_human($group_start)) . '</strong>'
+                                    ); ?>
+                                </p>
+                            <?php endif; ?>
+
+                            <?php foreach ($gl['accommodation'] as $stay) :
+                                if (empty($stay['hotel_name'])) continue;
+                                $stars      = max(1, min(5, intval($stay['stars'] ?? 4)));
+                                $night_from = intval($stay['night_from'] ?? 1);
+                                $night_to   = intval($stay['night_to']   ?? 1);
+                                $board      = $stay['board']  ?? '';
+                                $notes      = $stay['notes']  ?? '';
+
+                                $night_label = $night_from === $night_to
+                                    ? sprintf(__('Night %d', 'moga-travel'), $night_from)
+                                    : sprintf(__('Nights %d–%d', 'moga-travel'), $night_from, $night_to);
+
+                                $board_labels = array(
+                                    'room_only'     => __('Room Only',       'moga-travel'),
+                                    'breakfast'     => __('Breakfast Incl.', 'moga-travel'),
+                                    'half_board'    => __('Half Board',      'moga-travel'),
+                                    'full_board'    => __('Full Board',      'moga-travel'),
+                                    'all_inclusive' => __('All Inclusive',   'moga-travel'),
+                                );
+                                $board_label = $board_labels[$board] ?? '';
+                            ?>
+                                <div class="moga-accommodation-detail-row">
+                                    <div class="moga-accommodation-detail-row__left">
+                                        <span class="moga-accommodation-detail-row__nights">
+                                            <?php echo esc_html($night_label); ?>
+                                        </span>
+                                    </div>
+                                    <div class="moga-accommodation-detail-row__right">
+                                        <div class="moga-accommodation-detail-row__name">
+                                            <?php echo esc_html($stay['hotel_name']); ?>
+                                        </div>
+                                        <div class="moga-accommodation-detail-row__meta">
+                                            <span class="moga-accommodation-detail-row__stars">
+                                                <?php echo esc_html(str_repeat('★', $stars) . str_repeat('☆', 5 - $stars)); ?>
+                                            </span>
+                                            <?php if ($board_label) : ?>
+                                                <span class="moga-accommodation-detail-row__board">
+                                                    · <?php echo esc_html($board_label); ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if ($notes) : ?>
+                                            <p class="moga-accommodation-detail-row__notes">
+                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                                    <circle cx="12" cy="12" r="10"/>
+                                                    <line x1="12" y1="8" x2="12" y2="12"/>
+                                                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                                </svg>
+                                                <?php echo esc_html($notes); ?>
+                                            </p>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
 
@@ -784,8 +863,34 @@ $section_nav['moga-reviews']   = __('Reviews', 'moga-travel');
             <div class="moga-single-sidebar">
                 <div class="moga-booking-sidebar" id="moga-booking-sidebar">
 
-                    <?php // ---- Organizer Card ----
+                    <?php // ---- 1. Accommodation Widget ----
+                    // Shows hotels for the first available departure group by default.
+                    // Updates via JS when the guest selects a different departure.
+                    // Only rendered when the tour has at least one group with accommodation.
                     ?>
+                    <?php
+                    $groups_json_raw = get_post_meta($tour_id, '_moga_tour_groups', true);
+                    $all_groups      = $groups_json_raw ? json_decode($groups_json_raw, true) : array();
+                    $all_groups      = is_array($all_groups) ? $all_groups : array();
+                    $has_accommodation = false;
+                    foreach ($all_groups as $g) {
+                        if (! empty($g['accommodation'])) {
+                            $has_accommodation = true;
+                            break;
+                        }
+                    }
+                    if ($has_accommodation) :
+                        get_template_part('template-parts/tour/accommodation-widget', null, array(
+                            'tour_id' => $tour_id,
+                            'groups'  => $all_groups,
+                        ));
+                    endif;
+                    ?>
+
+                    <?php // ---- 2. Booking Form ---- ?>
+                    <?php get_template_part('template-parts/tour/booking-form'); ?>
+
+                    <?php // ---- 3. Organizer Card ---- ?>
                     <?php if ($organizer_name) : ?>
                         <div class="moga-organizer-card">
                             <?php if ($organizer_photo_url) : ?>
@@ -802,8 +907,7 @@ $section_nav['moga-reviews']   = __('Reviews', 'moga-travel');
                         </div>
                     <?php endif; ?>
 
-                    <?php // ---- Message the Organizer ----
-                    ?>
+                    <?php // ---- 4. Message the Organizer ---- ?>
                     <?php
                     get_template_part('template-parts/global/vendor-contact-form', null, array(
                         'vendor_name'     => $organizer_name,
@@ -815,7 +919,6 @@ $section_nav['moga-reviews']   = __('Reviews', 'moga-travel');
                     ));
                     ?>
 
-                    <?php get_template_part('template-parts/tour/booking-form'); ?>
                 </div>
             </div>
 

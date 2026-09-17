@@ -186,35 +186,78 @@ if ($checkin_val && $checkout_val) {
         </div>
     <?php endif; ?>
 
-    <?php // ---- Available Periods — so a guest browsing a month with
-    // zero availability (e.g. August, when everything is in
-    // September) knows real dates exist elsewhere, instead of
-    // silently wondering why the calendar looks empty. Clicking an
-    // item fills in both date fields via event delegation in
-    // booking.js.
+    <?php // ---- Available Periods — collapsed by default.
+    // Shows a one-line teaser ("2 available periods — from Oct 1")
+    // so the guest knows real dates exist. Clicking expands the full
+    // list. Clicking any period item fills in both date pickers via
+    // the existing booking.js event delegation on #moga-available-periods.
     ?>
-    <?php if (! empty($pricing_periods_raw)) : ?>
+    <?php if (! empty($pricing_periods_raw)) :
+        $period_count = count($pricing_periods_raw);
+        $first_period = reset($pricing_periods_raw);
+        $first_start  = ! empty($first_period['start'])
+            ? (function_exists('moga_format_date_human')
+                ? moga_format_date_human($first_period['start'])
+                : date_i18n('M j, Y', strtotime($first_period['start'])))
+            : '';
+    ?>
         <div class="moga-available-periods" id="moga-available-periods">
-            <p class="moga-available-periods__label">
-                <?php esc_html_e('Available dates', 'moga-travel'); ?>
-            </p>
-            <?php foreach ($pricing_periods_raw as $period) :
-                if (empty($period['start']) || empty($period['end']) || empty($period['price'])) {
-                    continue;
-                }
-            ?>
-                <button type="button" class="moga-available-periods__item"
-                    data-start="<?php echo esc_attr($period['start']); ?>"
-                    data-end="<?php echo esc_attr($period['end']); ?>">
-                    <span class="moga-available-periods__dates">
-                        <?php echo esc_html(moga_format_date_range($period['start'], $period['end'])); ?>
-                    </span>
-                    <span class="moga-available-periods__price">
-                        <?php echo esc_html(moga_format_price($period['price'], $currency)); ?>
-                        <?php esc_html_e('/ night', 'moga-travel'); ?>
-                    </span>
-                </button>
-            <?php endforeach; ?>
+
+            <button type="button"
+                class="moga-available-periods__toggle"
+                id="moga-periods-toggle"
+                aria-expanded="false"
+                aria-controls="moga-periods-list">
+                <span class="moga-available-periods__toggle-icon" aria-hidden="true">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </span>
+                <?php if (1 === $period_count) : ?>
+                    <?php printf(
+                        /* translators: %s: formatted date */
+                        esc_html__('Available from %s', 'moga-travel'),
+                        '<strong>' . esc_html($first_start) . '</strong>'
+                    ); ?>
+                <?php else : ?>
+                    <?php printf(
+                        /* translators: %1$d: number of periods, %2$s: earliest date */
+                        esc_html__('%1$d available periods — from %2$s', 'moga-travel'),
+                        $period_count,
+                        '<strong>' . esc_html($first_start) . '</strong>'
+                    ); ?>
+                <?php endif; ?>
+            </button>
+
+            <div class="moga-available-periods__list"
+                id="moga-periods-list"
+                hidden>
+                <p class="moga-available-periods__label">
+                    <?php esc_html_e('Click a period to fill in dates', 'moga-travel'); ?>
+                </p>
+                <?php foreach ($pricing_periods_raw as $period) :
+                    if (empty($period['start']) || empty($period['end']) || empty($period['price'])) {
+                        continue;
+                    }
+                ?>
+                    <button type="button"
+                        class="moga-available-periods__item"
+                        data-start="<?php echo esc_attr($period['start']); ?>"
+                        data-end="<?php echo esc_attr($period['end']); ?>">
+                        <span class="moga-available-periods__dates">
+                            <?php echo esc_html(moga_format_date_range($period['start'], $period['end'])); ?>
+                        </span>
+                        <span class="moga-available-periods__price">
+                            <?php echo esc_html(moga_format_price($period['price'], $currency)); ?>
+                            <span class="moga-available-periods__per">
+                                <?php esc_html_e('/ night', 'moga-travel'); ?>
+                            </span>
+                        </span>
+                    </button>
+                <?php endforeach; ?>
+            </div>
+
         </div>
     <?php endif; ?>
 

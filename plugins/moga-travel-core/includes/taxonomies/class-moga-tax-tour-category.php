@@ -92,6 +92,20 @@ class Moga_Tax_Tour_Category {
 
             // Query.
             'query_var'          => true,
+
+            // Capabilities — explicitly mapped so Tour Organizers
+            // (who have edit_moga_tours but NOT manage_categories)
+            // can assign categories to their tours. Without this,
+            // WordPress falls back to requiring manage_categories
+            // for term assignment — which vendor roles don't have.
+            // Only assign_terms is lowered; managing (creating,
+            // editing, deleting) category terms remains admin-only.
+            'capabilities'       => array(
+                'manage_terms' => 'manage_options',
+                'edit_terms'   => 'manage_options',
+                'delete_terms' => 'manage_options',
+                'assign_terms' => 'edit_moga_tours',
+            ),
         );
 
         register_taxonomy(

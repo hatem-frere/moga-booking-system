@@ -280,6 +280,8 @@ class Moga_Assets
         }
 
         // Single property / tour pages — booking.css + Flatpickr + intl-tel-input.
+        // Flatpickr calendar theme is defined in booking.css (section 12) using
+        // CSS variables — no inline override needed here.
         if (self::is_booking_page()) {
             wp_enqueue_style(
                 'moga-booking',

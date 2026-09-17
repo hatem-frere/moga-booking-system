@@ -15,6 +15,25 @@
  * whenever ROLES_VERSION is bumped, so role/capability changes
  * ship like any other code change — no reactivation required.
  *
+ * ROLES_VERSION history:
+ *   1.0.0 — Initial role definitions (Moga_Activator).
+ *   2.0.0 — Split moga_owner into Tour Organizer + Property Owner.
+ *            Added vendor approval gate. Moved to this class.
+ *   2.1.0 — BUS PERMISSION FIX: Moga_CPT_Bus now uses a dedicated
+ *            capability_type ('moga_bus'/'moga_buses') instead of
+ *            the generic 'post' capability_type. Tour Organizer and
+ *            Administrator now receive the matching Bus-specific caps.
+ *            The old moga_manage_buses flag is kept for any code that
+ *            checks it, but real WordPress access is now gated on
+ *            edit_moga_bus / edit_moga_buses / publish_moga_buses etc.
+ *   2.2.0 — Added delete_published caps for Tours and Buses.
+ *            Tour Organizer and Bus caps fully aligned.
+ *   2.3.0 — ISOLATION FIX: Removed edit_others_moga_tours from Tour
+ *            Organizer. Combined with pre_get_posts in Moga_Admin_Menus,
+ *            Tour Organizers now see only their own tours and buses in
+ *            the admin list screens. Buses sidebar tab hidden from
+ *            Tour Organizers — buses are tour-embedded, not a global fleet.
+ *
  * @package    MogaTravelCore
  * @subpackage MogaTravelCore/includes/classes
  * @author     Hatem Frere
@@ -36,7 +55,7 @@ class Moga_Roles {
      *
      * @since 1.0.0
      */
-    const ROLES_VERSION = '2.0.0';
+    const ROLES_VERSION = '2.3.0';
 
     /**
      * The option name storing the currently-applied roles version.
@@ -215,20 +234,49 @@ class Moga_Roles {
         // (array( 'moga_tour', 'moga_tours' ) — see class-moga-cpt-tour.php),
         // so this role can manage tours without touching properties
         // or core WordPress Posts.
+        //
+        // BUS CAPS (added in 2.1.0): Moga_CPT_Bus now uses capability_type
+        // array('moga_bus', 'moga_buses'), so Tour Organizers need these
+        // real WordPress caps to create/edit/publish bus posts in the admin.
+        // The old moga_manage_buses flag is kept for backward compatibility
+        // but is no longer what WordPress checks for actual access.
         // ------------------------------------------------------------
         add_role(
             'moga_tour_organizer',
             __( 'Tour Organizer', 'moga-travel-core' ),
             array(
                 'read'                       => true,
-                'edit_moga_tour'             => true,
-                'edit_moga_tours'            => true,
-                'edit_published_moga_tours'  => true,
-                'delete_moga_tour'           => true,
-                'delete_moga_tours'          => true,
-                'publish_moga_tours'         => true,
-                'upload_files'               => true, // gallery/video/organizer photo/docs.
-                'moga_manage_buses'          => true, // tours may use buses for group transport.
+
+                // Tour caps — OWN tours only.
+                // edit_others_moga_tours is intentionally ABSENT.
+                // A Tour Organizer must never see or edit another
+                // organizer's tours. The pre_get_posts filter in
+                // Moga_Admin_Menus restricts the admin list to
+                // post_author = current user for all vendor roles.
+                'edit_moga_tour'                  => true,
+                'edit_moga_tours'                 => true,
+                'edit_published_moga_tours'       => true,
+                'delete_moga_tour'                => true,
+                'delete_moga_tours'               => true,
+                'delete_published_moga_tours'     => true,
+                'publish_moga_tours'              => true,
+
+                // Bus caps — own buses only, same pattern.
+                // edit_others_moga_buses intentionally absent.
+                // Buses tab hidden from Tour Organizers entirely —
+                // buses are created inline from the Tour editor,
+                // not managed as a global fleet.
+                'edit_moga_bus'                   => true,
+                'edit_moga_buses'                 => true,
+                'edit_published_moga_buses'       => true,
+                'delete_moga_bus'                 => true,
+                'delete_moga_buses'               => true,
+                'delete_published_moga_buses'     => true,
+                'publish_moga_buses'              => true,
+
+                // Shared / system.
+                'upload_files'               => true,
+                'moga_manage_buses'          => true,
                 'moga_view_bookings'         => true,
                 'moga_manage_availability'   => true,
                 'moga_view_earnings'         => true,
@@ -240,6 +288,8 @@ class Moga_Roles {
         // Same pattern, will map to the Property CPT's own
         // capability_type once class-moga-cpt-property.php gets the
         // matching update (see note in class-moga-roles.php header).
+        // Property Owners do NOT get Bus caps — buses are a Tour
+        // Organizer concern only.
         // ------------------------------------------------------------
         add_role(
             'moga_property_owner',
@@ -305,6 +355,12 @@ class Moga_Roles {
             'delete_moga_property', 'delete_moga_propertys', 'delete_others_moga_propertys',
             'delete_published_moga_propertys', 'delete_private_moga_propertys',
             'edit_private_moga_propertys', 'read_private_moga_propertys',
+            // Buses — full set matching the new capability_type pair.
+            'edit_moga_bus', 'edit_moga_buses', 'edit_others_moga_buses',
+            'edit_published_moga_buses', 'publish_moga_buses',
+            'delete_moga_bus', 'delete_moga_buses', 'delete_others_moga_buses',
+            'delete_published_moga_buses', 'delete_private_moga_buses',
+            'edit_private_moga_buses', 'read_private_moga_buses',
             // Shared / system.
             'moga_manage_buses', 'moga_view_bookings', 'moga_manage_bookings',
             'moga_manage_availability', 'moga_view_earnings', 'moga_manage_commissions',

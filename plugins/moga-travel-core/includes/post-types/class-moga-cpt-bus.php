@@ -73,9 +73,17 @@ class Moga_CPT_Bus {
             'public'              => false,
             'publicly_queryable'  => false,
             'show_ui'             => true,
-            'show_in_menu'        => true,
+            // Buses sidebar tab is admin-only. Tour Organizers create
+            // buses inline from the Tour editor — they never need a
+            // standalone Buses management screen. The sidebar entry
+            // is hidden from Tour Organizers via show_in_menu=false
+            // combined with a direct add_submenu_page() call that
+            // requires manage_options. Their buses are still accessible
+            // (they can create/edit via the Tour editor inline panel),
+            // just not via a dedicated sidebar tab.
+            'show_in_menu'        => current_user_can( 'manage_options' ),
             'show_in_nav_menus'   => false,
-            'show_in_admin_bar'   => true,
+            'show_in_admin_bar'   => current_user_can( 'manage_options' ),
             'show_in_rest'        => true,
 
             // Admin.
@@ -83,7 +91,13 @@ class Moga_CPT_Bus {
             'menu_icon'           => 'dashicons-car',
 
             // Capabilities.
-            'capability_type'     => 'post',
+            // Capabilities — dedicated pair so Tour Organizers only
+            // need Bus-specific caps, not the generic 'edit_posts'
+            // that would grant access to every 'post'-based CPT.
+            // Moga_Roles grants edit_moga_bus / edit_moga_buses /
+            // publish_moga_buses etc. to Tour Organizer and Administrator.
+            'capability_type'     => array( 'moga_bus', 'moga_buses' ),
+            'map_meta_cap'        => true,
             'map_meta_cap'        => true,
 
             // Supports.
@@ -274,7 +288,7 @@ class Moga_CPT_Bus {
                     'show_in_rest'      => true,
                     'sanitize_callback' => self::get_sanitize_callback( $field['type'] ),
                     'auth_callback'     => function() {
-                        return current_user_can( 'edit_posts' );
+                        return current_user_can( 'edit_moga_buses' );
                     },
                 )
             );

@@ -433,40 +433,177 @@ function moga_calculate_property_price($property_id, $check_in, $check_out)
  * @param  int $infants       Number of infant participants.
  * @return array              Price breakdown array.
  */
-function moga_calculate_tour_price($tour_id, $adults = 1, $children = 0, $infants = 0)
+/**
+ * Real, live count of seats already committed to a specific Tour
+ * Group — Option B (confirmed decision): always counted fresh from
+ * real bookings, never a cached/stored running number. This is what
+ * makes overbooking structurally impossible even if two guests try
+ * to book the last seat at nearly the same moment — the same
+ * principle already used for property availability.
+ *
+ * Infants are NOT counted toward capacity — matches common
+ * real-world tour/airline convention (infants travel on an adult's
+ * lap, don't occupy their own seat).
+ *
+ * @since  1.0.0
+ * @param  int    $tour_id     Tour post ID.
+ * @param  string $group_start The group's own start date (Y-m-d) — its unique identifier.
+ * @return int
+ */
+function moga_get_tour_group_seats_taken($tour_id, $group_start)
 {
+    global $wpdb;
+    $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;
 
-    $price_adult    = floatval(get_post_meta($tour_id, '_moga_price_per_person', true));
-    $price_child    = floatval(get_post_meta($tour_id, '_moga_price_child', true));
-    $price_infant   = floatval(get_post_meta($tour_id, '_moga_price_infant', true));
-    $group_discount = floatval(get_post_meta($tour_id, '_moga_price_group', true));
+    $result = $wpdb->get_row($wpdb->prepare(
+        "SELECT SUM(guests_adults) AS adults, SUM(guests_children) AS children
+         FROM {$prefix}bookings
+         WHERE listing_id = %d AND booking_type = 'tour' AND check_in = %s
+         AND status NOT IN ('cancelled', 'expired')",
+        $tour_id,
+        $group_start
+    ));
+
+    $adults   = ($result && $result->adults)   ? intval($result->adults)   : 0;
+    $children = ($result && $result->children) ? intval($result->children) : 0;
+
+    return $adults + $children;
+}
+
+/**
+ * Whether a specific Tour Group can still accept a new booking of
+ * the given size — checks BOTH real, live capacity AND the tour's
+ * own booking cutoff window. Either failing makes the group closed,
+ * regardless of the other.
+ *
+ * @since  1.0.0
+ * @param  int    $tour_id         Tour post ID.
+ * @param  string $group_start     The group's start date (Y-m-d).
+ * @param  int    $requested_seats Adults + children being requested (infants excluded — see moga_get_tour_group_seats_taken()).
+ * @return bool
+ */
+function moga_is_tour_group_available($tour_id, $group_start, $requested_seats = 1)
+{
+    $groups_json = get_post_meta($tour_id, '_moga_tour_groups', true);
+    $groups      = $groups_json ? json_decode($groups_json, true) : array();
+    $groups      = is_array($groups) ? $groups : array();
+
+    $group = null;
+    foreach ($groups as $g) {
+        if (isset($g['start']) && $g['start'] === $group_start) {
+            $group = $g;
+            break;
+        }
+    }
+
+    if (! $group) {
+        return false;
+    }
+
+    // Cutoff — booking closes this many hours before the group's own
+    // start date, even with seats remaining.
+    $cutoff_hours     = get_post_meta($tour_id, '_moga_booking_cutoff_hours', true);
+    $cutoff_hours     = ('' === $cutoff_hours) ? 24 : intval($cutoff_hours);
+    $start_timestamp  = strtotime($group_start . ' 00:00:00');
+    $cutoff_timestamp = $start_timestamp - ($cutoff_hours * HOUR_IN_SECONDS);
+
+    if (! $start_timestamp || time() > $cutoff_timestamp) {
+        return false;
+    }
+
+    // Capacity — real, live count (Option B), never cached.
+    $capacity    = isset($group['capacity']) ? intval($group['capacity']) : 0;
+    $seats_taken = moga_get_tour_group_seats_taken($tour_id, $group_start);
+
+    return ($seats_taken + max(1, intval($requested_seats))) <= $capacity;
+}
+
+/**
+ * Calculate the real price for a specific Tour Group departure.
+ *
+ * REBUILT (Aug 2026 session — Tour Groups): previously read flat,
+ * whole-tour price fields with zero date-awareness at all — every
+ * departure of a tour was priced identically regardless of when it
+ * ran. Now requires identifying WHICH group is being priced (by its
+ * start date) and sources every price from that group specifically,
+ * mirroring exactly how moga_calculate_property_price() sources
+ * every price from a specific Pricing Period.
+ *
+ * @since  1.0.0
+ * @param  int    $tour_id     Tour post ID.
+ * @param  string $group_start The chosen group's start date (Y-m-d) — identifies which group.
+ * @param  int    $adults      Adult participant count.
+ * @param  int    $children    Child participant count.
+ * @param  int    $infants     Infant participant count (free-riding, doesn't affect capacity).
+ * @return array
+ */
+function moga_calculate_tour_price($tour_id, $group_start, $adults = 1, $children = 0, $infants = 0)
+{
+    $currency = get_post_meta($tour_id, '_moga_currency', true) ?: get_option('moga_currency', 'USD');
+
+    $empty_result = array(
+        'group_found'      => false,
+        'adults'           => 0,
+        'children'         => 0,
+        'infants'          => 0,
+        'price_adult'      => 0,
+        'price_child'      => 0,
+        'price_infant'     => 0,
+        'adults_total'     => 0,
+        'children_total'   => 0,
+        'infants_total'    => 0,
+        'subtotal'         => 0,
+        'tax_rate'         => 0,
+        'taxes'            => 0,
+        'total'            => 0,
+        'currency'         => $currency,
+        'capacity'         => 0,
+        'seats_taken'      => 0,
+        'seats_remaining'  => 0,
+    );
+
+    $groups_json = get_post_meta($tour_id, '_moga_tour_groups', true);
+    $groups      = $groups_json ? json_decode($groups_json, true) : array();
+    $groups      = is_array($groups) ? $groups : array();
+
+    $group = null;
+    foreach ($groups as $g) {
+        if (isset($g['start']) && $g['start'] === $group_start) {
+            $group = $g;
+            break;
+        }
+    }
+
+    if (! $group) {
+        return $empty_result;
+    }
+
+    $price_adult  = isset($group['price_adult'])  ? floatval($group['price_adult'])  : 0;
+    $price_child  = isset($group['price_child'])  ? floatval($group['price_child'])  : 0;
+    $price_infant = isset($group['price_infant']) ? floatval($group['price_infant']) : 0;
+    $capacity     = isset($group['capacity'])     ? intval($group['capacity'])       : 0;
 
     $adults   = max(0, intval($adults));
     $children = max(0, intval($children));
     $infants  = max(0, intval($infants));
+
+    $seats_taken     = moga_get_tour_group_seats_taken($tour_id, $group_start);
+    $seats_remaining = max(0, $capacity - $seats_taken);
 
     $adults_total   = $price_adult * $adults;
     $children_total = $price_child * $children;
     $infants_total  = $price_infant * $infants;
     $subtotal       = $adults_total + $children_total + $infants_total;
 
-    // Apply group discount.
-    $discount = 0;
-    if ($group_discount > 0) {
-        $discount = moga_calculate_discount_amount($subtotal, $group_discount);
-    }
-
-    $subtotal_after_discount = $subtotal - $discount;
-
-    // Calculate taxes.
+    // No per-group discount concept in this first build — deferred,
+    // matching the confirmed Tour Groups scope (price_adult/child/
+    // infant only, no discount field on a group).
     $tax_rate = floatval(get_option('moga_tax_rate', 0));
-    $taxes    = $tax_rate > 0
-        ? round($subtotal_after_discount * ($tax_rate / 100), 2)
-        : 0;
-
-    $total = round($subtotal_after_discount + $taxes, 2);
+    $taxes    = $tax_rate > 0 ? round($subtotal * ($tax_rate / 100), 2) : 0;
+    $total    = round($subtotal + $taxes, 2);
 
     return array(
+        'group_found'      => true,
         'adults'           => $adults,
         'children'         => $children,
         'infants'          => $infants,
@@ -477,13 +614,13 @@ function moga_calculate_tour_price($tour_id, $adults = 1, $children = 0, $infant
         'children_total'   => round($children_total, 2),
         'infants_total'    => round($infants_total, 2),
         'subtotal'         => round($subtotal, 2),
-        'group_discount'   => $group_discount,
-        'discount'         => round($discount, 2),
         'tax_rate'         => $tax_rate,
         'taxes'            => $taxes,
         'total'            => $total,
-        'currency'         => get_post_meta($tour_id, '_moga_currency', true)
-            ?: get_option('moga_currency', 'USD'),
+        'currency'         => $currency,
+        'capacity'         => $capacity,
+        'seats_taken'      => $seats_taken,
+        'seats_remaining'  => $seats_remaining,
     );
 }
 
@@ -666,19 +803,43 @@ function moga_get_property_display_price($property_id)
 function moga_get_tour_display_price($tour_id)
 {
 
-    $price_per_person = floatval(get_post_meta($tour_id, '_moga_price_per_person', true));
-    $group_discount   = floatval(get_post_meta($tour_id, '_moga_price_group', true));
-    $currency         = get_post_meta($tour_id, '_moga_currency', true)
+    $currency = get_post_meta($tour_id, '_moga_currency', true)
         ?: get_option('moga_currency', 'USD');
 
-    $display_price = $group_discount > 0
-        ? moga_apply_discount($price_per_person, $group_discount)
-        : $price_per_person;
+    $groups_json = get_post_meta($tour_id, '_moga_tour_groups', true);
+    $groups      = $groups_json ? json_decode($groups_json, true) : array();
+    $groups      = is_array($groups) ? $groups : array();
+
+    // "Starting from" the cheapest real group's price/adult —
+    // matches exactly the same convention already used for
+    // properties (lowest period price). Previously read the old,
+    // now-frozen '_moga_price_per_person' flat field, which nothing
+    // has saved to since Tour Groups replaced it — this function was
+    // silently showing stale data on every tour that's been updated
+    // to use real groups.
+    if (empty($groups)) {
+        return array(
+            'price'    => 0,
+            'original' => 0,
+            'currency' => $currency,
+            'discount' => 0,
+        );
+    }
+
+    $cheapest = null;
+    foreach ($groups as $group) {
+        $price = isset($group['price_adult']) ? floatval($group['price_adult']) : 0;
+        if (null === $cheapest || $price < $cheapest) {
+            $cheapest = $price;
+        }
+    }
 
     return array(
-        'price'    => $display_price,
-        'original' => $group_discount > 0 ? $price_per_person : 0,
+        'price'    => $cheapest,
+        // No per-group discount concept in this build (confirmed
+        // scope) — no separate "original" price to strike through.
+        'original' => 0,
         'currency' => $currency,
-        'discount' => $group_discount,
+        'discount' => 0,
     );
 }

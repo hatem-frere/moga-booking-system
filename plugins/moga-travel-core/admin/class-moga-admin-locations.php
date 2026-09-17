@@ -17,6 +17,11 @@
  *     entries at every level. The only way to add districts is
  *     here — no JSON file ships with district data.
  *
+ * Note on city names: The bundled cities.json uses local/transliterated
+ * names. City selection in the admin metaboxes now uses Google Places
+ * Autocomplete, which always returns the correct internationally
+ * recognized name regardless of what is stored in the local DB.
+ *
  * JSON source files (bundled with the plugin):
  *   data/locations/countries.json  — 247 world countries
  *   data/locations/provinces.json  — 4,120 provinces / states / governorates
@@ -370,7 +375,7 @@ class Moga_Admin_Locations {
                         <?php // Data quality note ?>
                         <div class="moga-loc-note">
                             <strong><?php esc_html_e( 'Data Quality Note:', 'moga-travel-core' ); ?></strong>
-                            <?php esc_html_e( 'The bundled data covers 247 countries and 48,313 cities worldwide. Province and city names for Arab countries use English transliteration — use the Location Editor tab to rename entries to your preferred spellings after import. Districts are not included in the import and must be added manually via the Location Editor.', 'moga-travel-core' ); ?>
+                            <?php esc_html_e( 'The bundled data covers 247 countries and 48,313 cities worldwide. City names in the admin editor now use Google Places Autocomplete, which always returns the correct internationally recognized name — so city name quality in this table does not affect how cities appear in tour and property forms. Districts are not included in the import and must be added manually via the Location Editor.', 'moga-travel-core' ); ?>
                         </div>
 
                     </div>

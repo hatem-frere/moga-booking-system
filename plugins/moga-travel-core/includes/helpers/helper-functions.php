@@ -427,8 +427,23 @@ function moga_has_amenity($property_id, $amenity_key)
  * @param  string $listing_type Listing type (property, tour).
  * @return bool
  */
-function moga_is_available($listing_id, $check_in, $check_out, $listing_type = 'property')
+function moga_is_available($listing_id, $check_in, $check_out, $listing_type = 'property', $requested_seats = 1)
 {
+    // Tours use a fundamentally different availability model than
+    // properties — a specific Group's real, live seat capacity plus
+    // its own booking cutoff, not "is this date blocked at all".
+    // The generic blocked/status check below is correct for
+    // properties (a night can only be sold once) but was WRONG for
+    // tours: it would mark a date fully unavailable after a single
+    // booking, with zero concept of remaining seats, regardless of
+    // how large that group's real capacity was. Routed entirely to
+    // moga_is_tour_group_available() instead — see helper-price.php.
+    if ('tour' === $listing_type) {
+        return function_exists('moga_is_tour_group_available')
+            ? moga_is_tour_group_available($listing_id, $check_in, max(1, intval($requested_seats)))
+            : false;
+    }
+
     global $wpdb;
 
     $prefix = $wpdb->prefix . MOGA_CORE_DB_PREFIX;

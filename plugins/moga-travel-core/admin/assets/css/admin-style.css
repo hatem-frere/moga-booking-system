@@ -888,7 +888,7 @@
 }
 
 .moga-itinerary-builder__remove {
-    margin-left: auto;
+    margin-left: 0;
     width: 22px;
     height: 22px;
     background: var(--moga-danger);
@@ -1101,8 +1101,522 @@
     color: #fff !important;
 }
 
+/* ============================================================
+   TOUR GROUPS — mirrors .moga-period-card exactly, for visual
+   consistency between the two repeaters (Property Periods and
+   Tour Groups solve the same underlying problem — per-departure
+   pricing/capacity — so they should look like the same feature).
+   ============================================================ */
+
+.moga-tour-group-card {
+    background: var(--moga-gray-100);
+    border: 1.5px solid var(--moga-gray-200);
+    border-radius: var(--moga-radius);
+    padding: 16px;
+    margin-bottom: 14px;
+}
+
+.moga-tour-group-card__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--moga-gray-200);
+}
+
+.moga-tour-group-card__toggle {
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    border: none;
+    color: var(--moga-gray-300);
+    font-size: 25px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    transition: color var(--moga-transition);
+}
+
+.moga-tour-group-card__toggle:hover {
+    color: var(--moga-primary);
+}
+
+.moga-tour-group-card__title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--moga-gray-900);
+}
+
+.moga-tour-group-card--collapsed .moga-tour-group-card__body {
+    display: none;
+}
+
+.moga-tour-group-card--collapsed {
+    padding-bottom: 12px;
+}
+
+.moga-tour-group-card--collapsed .moga-tour-group-card__header {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.moga-tour-group-card__remove {
+    width: 24px;
+    height: 24px;
+    background: var(--moga-danger);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    transition: background var(--moga-transition);
+}
+
+.moga-tour-group-card__remove:hover {
+    background: #b02a2a;
+}
+
+#moga-tour-groups-add {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    height: 36px;
+}
+
+/* ============================================================
+   ITINERARY — collapse/expand toggle, added next to the existing
+   remove ✕ button. Mirrors the same toggle pattern used by
+   Property Periods and Tour Groups.
+   ============================================================ */
+
+.moga-itinerary-builder__toggle {
+    margin-left: auto;
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    border: none;
+    color: var(--moga-gray-300);
+    font-size: 25px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0;
+    transition: color var(--moga-transition);
+}
+
+.moga-itinerary-builder__toggle:hover {
+    color: var(--moga-primary);
+}
+
+.moga-itinerary-builder__row--collapsed .moga-itinerary-builder__row-body {
+    display: none;
+}
+
+.moga-itinerary-builder__row--collapsed .moga-itinerary-builder__row-header {
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
 .moga-metabox__field input:disabled {
     background: var(--moga-gray-100);
     color: var(--moga-gray-300);
     cursor: not-allowed;
+}
+
+/* ============================================================
+   BUS SEAT MAP PREVIEW — admin editor (Seat Layout meta box)
+   A compact but accurate visual grid matching the real seat map
+   the guest sees on the Booking page.
+   ============================================================ */
+
+.moga-bus-seat-preview {
+    background: var(--moga-gray-100);
+    border: 1px solid var(--moga-gray-200);
+    border-radius: var(--moga-radius);
+    padding: 16px 16px 12px;
+    overflow-x: auto;
+}
+
+/* Remove the plain-text hint line — legend replaces it */
+.moga-bus-seat-preview + .moga-metabox__hint {
+    display: none;
+}
+
+.moga-seat-preview-grid {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 100%;
+}
+
+/* Each row of seats */
+.moga-seat-preview-row {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+/* Driver row — separated from seat rows */
+.moga-seat-preview-row--driver {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px dashed var(--moga-gray-200);
+}
+
+/* Aisle gap between seat groups */
+.moga-seat-preview-aisle {
+    width: 18px;
+    flex-shrink: 0;
+}
+
+/* Individual seat cell */
+.moga-seat-preview-cell {
+    width: 38px;
+    height: 34px;
+    border-radius: 5px 5px 7px 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: default;
+    flex-shrink: 0;
+    border: 1px solid transparent;
+    position: relative;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+/* Seat headrest — top bar visual detail */
+.moga-seat-preview-cell::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 5px;
+    right: 5px;
+    height: 5px;
+    border-radius: 3px 3px 0 0;
+    background: rgba(0,0,0,0.10);
+}
+
+/* Available — teal/green */
+.moga-seat-preview-cell--available {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+    color: #065f46;
+}
+
+/* VIP — gold/amber */
+.moga-seat-preview-cell--vip {
+    background: #fef3c7;
+    border-color: #fbbf24;
+    color: #78350f;
+}
+.moga-seat-preview-cell--vip::after {
+    content: '★';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 9px;
+    color: #d97706;
+    line-height: 1;
+}
+
+/* Disabled / unavailable — grey with X */
+.moga-seat-preview-cell--disabled {
+    background: #f0f0f1;
+    border-color: #c3c4c7;
+    color: #a7aaad;
+    text-decoration: line-through;
+    box-shadow: none;
+}
+.moga-seat-preview-cell--disabled::before {
+    background: rgba(0,0,0,0.04);
+}
+
+/* Driver cell — dark blue badge */
+.moga-seat-preview-cell--driver {
+    background: var(--moga-primary);
+    border-color: var(--moga-primary-light);
+    color: #fff;
+    font-size: 15px;
+    box-shadow: 0 2px 4px rgba(0,53,128,0.3);
+}
+.moga-seat-preview-cell--driver::before {
+    background: rgba(255,255,255,0.15);
+}
+
+/* Empty spacer cells in the driver row — completely invisible */
+.moga-seat-preview-cell--empty {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    visibility: hidden;
+}
+.moga-seat-preview-cell--empty::before {
+    display: none;
+}
+
+/* "N more rows" overflow indicator */
+.moga-seat-preview-more {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--moga-gray-300);
+    font-style: italic;
+    letter-spacing: 0.2px;
+}
+
+/* ---- Seat Preview Legend ---- */
+.moga-seat-preview-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--moga-gray-200);
+}
+
+.moga-seat-preview-legend__item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    color: var(--moga-gray-900);
+    white-space: nowrap;
+}
+
+/* The colored swatch square */
+.moga-seat-preview-legend__swatch {
+    width: 18px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.moga-seat-preview-legend__swatch--available {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+}
+
+.moga-seat-preview-legend__swatch--vip {
+    background: #fef3c7;
+    border-color: #fbbf24;
+}
+.moga-seat-preview-legend__swatch--vip::after {
+    content: '★';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 9px;
+    color: #d97706;
+    line-height: 1;
+}
+
+.moga-seat-preview-legend__swatch--disabled {
+    background: #f0f0f1;
+    border-color: #c3c4c7;
+}
+
+.moga-seat-preview-legend__swatch--driver {
+    background: var(--moga-primary);
+    border-color: var(--moga-primary-light);
+}
+
+/* Section title used in Bus Details box */
+.moga-metabox__section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--moga-gray-300);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--moga-gray-200);
+}
+
+/* Label hint — "optional" suffix next to field labels */
+.moga-metabox__label-hint {
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--moga-gray-300);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* ============================================================
+   INLINE CREATE BUS PANEL — inside Tour editor Bus & Seats box
+   ============================================================ */
+
+/* Bus assign row — select + button side by side */
+.moga-bus-assign-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.moga-bus-assign-row__select {
+    flex: 1;
+}
+
+.moga-bus-assign-row__create-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* The slide-down panel */
+.moga-create-bus-panel {
+    margin-top: 16px;
+    border: 1px solid var(--moga-primary-light);
+    border-radius: var(--moga-radius);
+    background: #f0f4ff;
+    overflow: hidden;
+}
+
+.moga-create-bus-panel__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--moga-primary);
+    color: #fff;
+    font-size: 12px;
+}
+
+.moga-create-bus-panel__close {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    transition: color var(--moga-transition);
+}
+
+.moga-create-bus-panel__close:hover {
+    color: #fff;
+}
+
+.moga-create-bus-panel__body {
+    padding: 16px 14px;
+}
+
+.moga-create-bus-panel__notice {
+    padding: 8px 12px;
+    border-radius: var(--moga-radius);
+    font-size: 12px;
+    margin-bottom: 12px;
+}
+
+.moga-create-bus-panel__notice--success {
+    background: #d1fae5;
+    border: 1px solid #6ee7b7;
+    color: #065f46;
+}
+
+.moga-create-bus-panel__notice--error {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+}
+
+.moga-create-bus-panel__footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid var(--moga-gray-200);
+}
+
+.moga-create-bus-panel__note {
+    font-size: 11px;
+    color: var(--moga-gray-300);
+    font-style: italic;
+}
+
+/* ============================================================
+   Accommodation Row — Google Places photo thumbnails
+   Shown in the Tour editor when a Google hotel is selected.
+   ============================================================ */
+
+.moga-accommodation-row__google-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+    min-height: 24px;
+}
+
+/* Individual thumbnail wrapper */
+.moga-google-thumbs__item {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid #dcdcde;
+    background: #f6f7f7;
+    flex-shrink: 0;
+}
+
+.moga-google-thumbs__item img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.2s ease;
+}
+
+.moga-google-thumbs__item:hover img {
+    opacity: 0.88;
+}
+
+/* "+N more" badge on the first thumbnail */
+.moga-google-thumbs__count {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.62);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 3px;
+    pointer-events: none;
+    line-height: 1.4;
+}
+
+/* Loading spinner row */
+.moga-accommodation-row__google-thumbs-loading {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #6b7280;
+    gap: 4px;
+    padding: 4px 0;
+}
+
+/* Empty / error state */
+.moga-google-thumbs__empty {
+    font-size: 12px;
+    color: #8c8f94;
+    padding: 4px 0;
+    display: block;
 }
