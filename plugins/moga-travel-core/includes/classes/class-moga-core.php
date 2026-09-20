@@ -350,6 +350,9 @@ class Moga_Core
         if (class_exists('Moga_Shortcode_Contact')) {
             (new Moga_Shortcode_Contact())->register();
         }
+        if (class_exists('Moga_Shortcode_Dashboard')) {
+            Moga_Shortcode_Dashboard::init();
+        }
     }
 
 

@@ -193,7 +193,8 @@ class Moga_Assets
      *   8. booking.css    — single property/tour page styles
      *   9. account.css    — login/register/profile page
      *  10. contact.css    — contact page (loads account.css as a dependency for form fields)
-     *  11. dashboard.css  — owner dashboard styles
+     *  11. dashboard.css  — frontend dashboard styles (all roles)
+ *  12. dashboard.js   — dashboard tab switching, AJAX actions, mobile sidebar
      *  12. responsive.css — all media queries (always last)
      *  13. rtl.css        — RTL overrides (if RTL language)
      *
@@ -450,6 +451,26 @@ class Moga_Assets
                 array('jquery', 'moga-main'),
                 $ver,
                 true
+            );
+        }
+
+        // Dashboard script — only on dashboard pages.
+        if (self::is_dashboard_page()) {
+            wp_enqueue_script(
+                'moga-dashboard',
+                $js . 'dashboard.js',
+                array('jquery', 'moga-main'),
+                $ver,
+                true
+            );
+            wp_localize_script(
+                'moga-dashboard',
+                'mogaDashboardData',
+                array(
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'nonce'   => wp_create_nonce('moga_dashboard_nonce'),
+                    'tab'     => isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'overview',
+                )
             );
         }
 

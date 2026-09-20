@@ -1,0 +1,1427 @@
+/**
+ * Dashboard CSS
+ *
+ * Styles for all four frontend dashboard roles:
+ * Client, Property Owner, Tour Organizer, and Admin.
+ *
+ * Architecture:
+ *   - Two-column layout: fixed sidebar (left) + scrollable content (right)
+ *   - Sidebar flips to right on RTL languages
+ *   - Collapses to bottom tab bar on mobile (≤768px)
+ *   - All colours use CSS variables from main.css
+ *   - BEM naming: .moga-db__ prefix throughout
+ *
+ * @package MogaTravel
+ * @since   1.0.0
+ */
+
+/* ============================================================
+   1. LAYOUT SHELL
+   ============================================================ */
+
+/*
+ * --moga-header-h: total height of the theme header above the dashboard.
+ * Adjust this value if the header height changes.
+ * Logged-in users see the WP admin bar (32px) + site header (~110px) = ~142px.
+ * Logged-out users see site header only (~110px).
+ * We use 142px as the default (covers the logged-in case).
+ */
+:root {
+    --moga-header-h: 222px;
+}
+
+.moga-dashboard-page {
+    background: var(--moga-gray-50, #f8f9fa);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Outer wrapper: sidebar + content side by side */
+.moga-db {
+    display: flex;
+    flex: 1;
+    min-height: calc(100vh - var(--moga-header-h));
+    position: relative;
+}
+
+
+/* ============================================================
+   2. SIDEBAR
+   ============================================================ */
+
+.moga-db__sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid var(--moga-gray-200, #e5e7eb);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: var(--moga-header-h);       /* stick below the theme header */
+    height: calc(100vh - var(--moga-header-h)); /* fill remaining viewport */
+    overflow-y: auto;
+    z-index: 100;
+    transition: width 0.25s ease;
+}
+
+/* RTL — sidebar flips to right */
+[dir="rtl"] .moga-db__sidebar {
+    border-right: none;
+    border-left: 1px solid var(--moga-gray-200, #e5e7eb);
+}
+
+/* Sidebar user profile block */
+.moga-db__sidebar-profile {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--moga-gray-100, #f3f4f6);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.moga-db__sidebar-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--moga-primary, #003580);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.moga-db__sidebar-avatar img {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.moga-db__sidebar-name {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--moga-gray-900, #111827);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.moga-db__sidebar-role {
+    font-size: 0.72rem;
+    color: var(--moga-gray-500, #6b7280);
+    margin-top: 2px;
+}
+
+/* Sidebar navigation */
+.moga-db__nav {
+    flex: 1;
+    padding: 12px 0;
+    overflow-y: auto;
+}
+
+.moga-db__nav-section {
+    margin-bottom: 4px;
+}
+
+.moga-db__nav-section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--moga-gray-400, #9ca3af);
+    padding: 12px 20px 4px;
+}
+
+.moga-db__nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--moga-gray-700, #374151);
+    text-decoration: none;
+    border-radius: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+    position: relative;
+    white-space: nowrap;
+}
+
+.moga-db__nav-link:hover {
+    background: var(--moga-gray-50, #f8f9fa);
+    color: var(--moga-primary, #003580);
+    text-decoration: none;
+}
+
+/* Active tab — left border indicator */
+.moga-db__nav-link.is-active {
+    background: var(--moga-primary-light, #e8f0fe);
+    color: var(--moga-primary, #003580);
+    font-weight: 700;
+}
+
+.moga-db__nav-link.is-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 3px;
+    background: var(--moga-primary, #003580);
+    border-radius: 0 2px 2px 0;
+}
+
+/* RTL active indicator flips */
+[dir="rtl"] .moga-db__nav-link.is-active::before {
+    left: auto;
+    right: 0;
+    border-radius: 2px 0 0 2px;
+}
+
+.moga-db__nav-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    opacity: 0.75;
+}
+
+.moga-db__nav-link.is-active .moga-db__nav-icon,
+.moga-db__nav-link:hover .moga-db__nav-icon {
+    opacity: 1;
+}
+
+/* Badge (e.g. pending count) */
+.moga-db__nav-badge {
+    margin-left: auto;
+    background: var(--moga-danger, #dc2626);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+}
+
+[dir="rtl"] .moga-db__nav-badge {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+/* External link tab (System Management) */
+.moga-db__nav-link--external .moga-db__nav-icon-ext {
+    width: 12px;
+    height: 12px;
+    margin-left: auto;
+    opacity: 0.4;
+}
+
+[dir="rtl"] .moga-db__nav-link--external .moga-db__nav-icon-ext {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+/* Danger zone tab (Delete Account) */
+.moga-db__nav-link--danger {
+    color: var(--moga-danger, #dc2626);
+}
+
+.moga-db__nav-link--danger:hover {
+    background: #fef2f2;
+    color: var(--moga-danger, #dc2626);
+}
+
+/* Sidebar footer — sign out + view site */
+.moga-db__sidebar-footer {
+    padding: 12px 20px 20px;
+    border-top: 1px solid var(--moga-gray-100, #f3f4f6);
+    flex-shrink: 0;
+}
+
+.moga-db__sidebar-signout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--moga-gray-500, #6b7280);
+    text-decoration: none;
+    padding: 6px 0;
+    transition: color 0.15s ease;
+}
+
+.moga-db__sidebar-signout:hover {
+    color: var(--moga-danger, #dc2626);
+    text-decoration: none;
+}
+
+
+/* ============================================================
+   3. TOP BAR
+   ============================================================ */
+
+.moga-db__topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    height: 60px;
+    background: #fff;
+    border-bottom: 1px solid var(--moga-gray-200, #e5e7eb);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    gap: 16px;
+}
+
+.moga-db__topbar-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--moga-gray-900, #111827);
+    flex: 1;
+}
+
+.moga-db__topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Notification bell */
+.moga-db__topbar-bell {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--moga-gray-600, #4b5563);
+    transition: background 0.15s ease;
+    text-decoration: none;
+}
+
+.moga-db__topbar-bell:hover {
+    background: var(--moga-gray-50, #f8f9fa);
+}
+
+.moga-db__topbar-bell-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--moga-danger, #dc2626);
+    border: 2px solid #fff;
+}
+
+/* View site link */
+.moga-db__topbar-site-link {
+    font-size: 0.8rem;
+    color: var(--moga-primary, #003580);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.moga-db__topbar-site-link:hover {
+    text-decoration: underline;
+}
+
+/* Mobile hamburger */
+.moga-db__topbar-hamburger {
+    display: none;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--moga-gray-700, #374151);
+    padding: 0;
+}
+
+
+/* ============================================================
+   4. CONTENT AREA
+   ============================================================ */
+
+.moga-db__content-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* prevent flex overflow */
+    overflow: hidden;
+}
+
+.moga-db__content {
+    flex: 1;
+    padding: 28px;
+    overflow-y: auto;
+}
+
+/* Tab panels */
+.moga-db__panel {
+    display: none;
+}
+
+.moga-db__panel.is-active {
+    display: block;
+}
+
+/* Page heading inside content */
+.moga-db__page-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--moga-gray-900, #111827);
+    margin: 0 0 24px;
+}
+
+.moga-db__page-subtitle {
+    font-size: 0.875rem;
+    color: var(--moga-gray-500, #6b7280);
+    margin-top: -18px;
+    margin-bottom: 24px;
+}
+
+
+/* ============================================================
+   5. STAT CARDS (Overview)
+   ============================================================ */
+
+.moga-db__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.moga-db__stat-card {
+    background: #fff;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: box-shadow 0.15s ease;
+}
+
+.moga-db__stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+}
+
+.moga-db__stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--moga-primary-light, #e8f0fe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--moga-primary, #003580);
+    margin-bottom: 4px;
+}
+
+.moga-db__stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--moga-gray-900, #111827);
+    line-height: 1;
+}
+
+.moga-db__stat-label {
+    font-size: 0.78rem;
+    color: var(--moga-gray-500, #6b7280);
+    font-weight: 500;
+}
+
+.moga-db__stat-card--warning .moga-db__stat-icon {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.moga-db__stat-card--success .moga-db__stat-icon {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.moga-db__stat-card--danger .moga-db__stat-icon {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+
+/* ============================================================
+   6. SECTION / CARD
+   ============================================================ */
+
+.moga-db__section {
+    background: #fff;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.moga-db__section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--moga-gray-900, #111827);
+    margin: 0 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--moga-gray-100, #f3f4f6);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.moga-db__section-action {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--moga-primary, #003580);
+    text-decoration: none;
+}
+
+.moga-db__section-action:hover {
+    text-decoration: underline;
+}
+
+
+/* ============================================================
+   7. TABLES
+   ============================================================ */
+
+.moga-db__table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.moga-db__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.moga-db__table th {
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--moga-gray-500, #6b7280);
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--moga-gray-100, #f3f4f6);
+    white-space: nowrap;
+}
+
+[dir="rtl"] .moga-db__table th {
+    text-align: right;
+}
+
+.moga-db__table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--moga-gray-100, #f3f4f6);
+    color: var(--moga-gray-700, #374151);
+    vertical-align: middle;
+}
+
+.moga-db__table tr:last-child td {
+    border-bottom: none;
+}
+
+.moga-db__table tr:hover td {
+    background: var(--moga-gray-50, #f8f9fa);
+}
+
+.moga-db__table-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--moga-gray-400, #9ca3af);
+    font-size: 0.875rem;
+}
+
+
+/* ============================================================
+   8. STATUS BADGES
+   ============================================================ */
+
+.moga-db__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.moga-db__badge--pending  { background: #fef3c7; color: #92400e; }
+.moga-db__badge--confirmed { background: #d1fae5; color: #065f46; }
+.moga-db__badge--completed { background: #dbeafe; color: #1e40af; }
+.moga-db__badge--cancelled { background: #fee2e2; color: #991b1b; }
+.moga-db__badge--refunded  { background: #f3e8ff; color: #6b21a8; }
+.moga-db__badge--no_show   { background: var(--moga-gray-100, #f3f4f6); color: var(--moga-gray-600, #4b5563); }
+.moga-db__badge--approved  { background: #d1fae5; color: #065f46; }
+.moga-db__badge--rejected  { background: #fee2e2; color: #991b1b; }
+
+
+/* ============================================================
+   9. FILTER TABS (inside sections)
+   ============================================================ */
+
+.moga-db__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.moga-db__filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    background: #fff;
+    color: var(--moga-gray-600, #4b5563);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.moga-db__filter-btn:hover {
+    border-color: var(--moga-primary, #003580);
+    color: var(--moga-primary, #003580);
+    text-decoration: none;
+}
+
+.moga-db__filter-btn.is-active {
+    background: var(--moga-primary, #003580);
+    border-color: var(--moga-primary, #003580);
+    color: #fff;
+}
+
+
+/* ============================================================
+   10. ACTION BUTTONS (inside tables)
+   ============================================================ */
+
+.moga-db__action-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.moga-db__action-btn {
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.moga-db__action-btn--approve {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+.moga-db__action-btn--approve:hover {
+    background: #a7f3d0;
+}
+
+.moga-db__action-btn--reject,
+.moga-db__action-btn--cancel {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+.moga-db__action-btn--reject:hover,
+.moga-db__action-btn--cancel:hover {
+    background: #fca5a5;
+}
+
+.moga-db__action-btn--view {
+    background: var(--moga-gray-100, #f3f4f6);
+    color: var(--moga-gray-700, #374151);
+    border-color: var(--moga-gray-200, #e5e7eb);
+}
+
+.moga-db__action-btn--view:hover {
+    background: var(--moga-gray-200, #e5e7eb);
+}
+
+.moga-db__action-btn--primary {
+    background: var(--moga-primary, #003580);
+    color: #fff;
+    border-color: var(--moga-primary, #003580);
+}
+
+.moga-db__action-btn--primary:hover {
+    background: var(--moga-primary-dark, #002560);
+}
+
+
+/* ============================================================
+   11. FORMS (inside dashboard sections)
+   ============================================================ */
+
+.moga-db__form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.moga-db__form-row--full {
+    grid-template-columns: 1fr;
+}
+
+.moga-db__form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.moga-db__form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--moga-gray-700, #374151);
+}
+
+.moga-db__form-label .required {
+    color: var(--moga-danger, #dc2626);
+    margin-left: 2px;
+}
+
+.moga-db__form-input,
+.moga-db__form-select,
+.moga-db__form-textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--moga-gray-300, #d1d5db);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--moga-gray-900, #111827);
+    background: #fff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    box-sizing: border-box;
+}
+
+.moga-db__form-input:focus,
+.moga-db__form-select:focus,
+.moga-db__form-textarea:focus {
+    outline: none;
+    border-color: var(--moga-primary, #003580);
+    box-shadow: 0 0 0 3px rgba(0, 53, 128, 0.1);
+}
+
+.moga-db__form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.moga-db__form-hint {
+    font-size: 0.75rem;
+    color: var(--moga-gray-400, #9ca3af);
+}
+
+.moga-db__form-submit {
+    margin-top: 8px;
+}
+
+/* File upload field */
+.moga-db__form-upload {
+    border: 2px dashed var(--moga-gray-300, #d1d5db);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    background: var(--moga-gray-50, #f8f9fa);
+}
+
+.moga-db__form-upload:hover {
+    border-color: var(--moga-primary, #003580);
+}
+
+.moga-db__form-upload input[type="file"] {
+    display: none;
+}
+
+.moga-db__form-upload-label {
+    font-size: 0.875rem;
+    color: var(--moga-gray-500, #6b7280);
+    cursor: pointer;
+}
+
+.moga-db__form-upload-label strong {
+    color: var(--moga-primary, #003580);
+}
+
+/* Upload preview */
+.moga-db__upload-preview {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.moga-db__upload-thumb {
+    width: 80px;
+    height: 80px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+}
+
+
+/* ============================================================
+   12. NOTICE / ALERT BARS
+   ============================================================ */
+
+.moga-db__notice {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.moga-db__notice--success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.moga-db__notice--warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.moga-db__notice--error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.moga-db__notice--info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+
+/* ============================================================
+   13. EMPTY STATES
+   ============================================================ */
+
+.moga-db__empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--moga-gray-400, #9ca3af);
+}
+
+.moga-db__empty-state-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    opacity: 0.4;
+}
+
+.moga-db__empty-state-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--moga-gray-500, #6b7280);
+    margin-bottom: 6px;
+}
+
+.moga-db__empty-state-text {
+    font-size: 0.875rem;
+    max-width: 320px;
+    margin: 0 auto 16px;
+}
+
+
+/* ============================================================
+   14. OVERVIEW — Recent activity list
+   ============================================================ */
+
+.moga-db__activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.moga-db__activity-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--moga-gray-100, #f3f4f6);
+}
+
+.moga-db__activity-item:last-child {
+    border-bottom: none;
+}
+
+.moga-db__activity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--moga-primary, #003580);
+}
+
+.moga-db__activity-dot--warning { background: #f59e0b; }
+.moga-db__activity-dot--success { background: #10b981; }
+.moga-db__activity-dot--danger  { background: #ef4444; }
+
+.moga-db__activity-text {
+    flex: 1;
+    font-size: 0.875rem;
+    color: var(--moga-gray-700, #374151);
+}
+
+.moga-db__activity-time {
+    font-size: 0.75rem;
+    color: var(--moga-gray-400, #9ca3af);
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   15. BECOME VENDOR — Application form steps
+   ============================================================ */
+
+.moga-db__vendor-steps {
+    display: flex;
+    gap: 0;
+    margin-bottom: 28px;
+    border-bottom: 2px solid var(--moga-gray-200, #e5e7eb);
+}
+
+.moga-db__vendor-step {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--moga-gray-400, #9ca3af);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+
+.moga-db__vendor-step.is-active {
+    color: var(--moga-primary, #003580);
+    border-bottom-color: var(--moga-primary, #003580);
+}
+
+.moga-db__vendor-step.is-done {
+    color: #10b981;
+    border-bottom-color: #10b981;
+}
+
+.moga-db__account-type-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.moga-db__account-type-card {
+    border: 2px solid var(--moga-gray-200, #e5e7eb);
+    border-radius: 10px;
+    padding: 24px 20px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+}
+
+.moga-db__account-type-card:hover {
+    border-color: var(--moga-primary, #003580);
+}
+
+.moga-db__account-type-card.is-selected {
+    border-color: var(--moga-primary, #003580);
+    background: var(--moga-primary-light, #e8f0fe);
+}
+
+.moga-db__account-type-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+}
+
+.moga-db__account-type-label {
+    font-weight: 700;
+    color: var(--moga-gray-900, #111827);
+}
+
+.moga-db__account-type-desc {
+    font-size: 0.78rem;
+    color: var(--moga-gray-500, #6b7280);
+    margin-top: 4px;
+}
+
+
+/* ============================================================
+   16. PAGINATION
+   ============================================================ */
+
+.moga-db__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--moga-gray-100, #f3f4f6);
+}
+
+.moga-db__page-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    background: #fff;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--moga-gray-600, #4b5563);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.moga-db__page-btn:hover {
+    border-color: var(--moga-primary, #003580);
+    color: var(--moga-primary, #003580);
+}
+
+.moga-db__page-btn.is-active {
+    background: var(--moga-primary, #003580);
+    border-color: var(--moga-primary, #003580);
+    color: #fff;
+}
+
+
+/* ============================================================
+   17. MOBILE — Responsive
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+    .moga-db {
+        flex-direction: column;
+    }
+
+    /* Sidebar becomes slide-in drawer on mobile */
+    .moga-db__sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+        height: 100vh;
+    }
+
+    [dir="rtl"] .moga-db__sidebar {
+        left: auto;
+        right: 0;
+        transform: translateX(100%);
+    }
+
+    .moga-db__sidebar.is-open {
+        transform: translateX(0);
+    }
+
+    /* Backdrop when sidebar is open */
+    .moga-db__sidebar-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 999;
+    }
+
+    .moga-db__sidebar-backdrop.is-active {
+        display: block;
+    }
+
+    .moga-db__topbar-hamburger {
+        display: flex;
+    }
+
+    .moga-db__content {
+        padding: 16px;
+    }
+
+    .moga-db__stats {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .moga-db__form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .moga-db__account-type-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .moga-db__topbar-site-link span {
+        display: none; /* hide label, keep icon */
+    }
+}
+
+@media (max-width: 480px) {
+    .moga-db__stats {
+        grid-template-columns: 1fr;
+    }
+
+    .moga-db__topbar {
+        padding: 0 16px;
+    }
+}
+
+
+/* ============================================================
+   18. RTL OVERRIDES
+   ============================================================ */
+
+[dir="rtl"] .moga-db__table th,
+[dir="rtl"] .moga-db__table td {
+    text-align: right;
+}
+
+[dir="rtl"] .moga-db__nav-badge {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+[dir="rtl"] .moga-db__form-label .required {
+    margin-left: 0;
+    margin-right: 2px;
+}
+
+[dir="rtl"] .moga-db__stat-card {
+    text-align: right;
+}
+
+/* ============================================================
+   19. ADMIN SIDEBAR — Pill group switcher
+   ============================================================ */
+
+/* Pill row — sits below the profile block, above the nav */
+.moga-db__group-pills {
+    display: flex;
+    gap: 4px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--moga-gray-100, #f3f4f6);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+/* Individual pill button */
+.moga-db__group-pill {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    background: #fff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--moga-gray-600, #4b5563);
+    cursor: pointer;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+}
+
+.moga-db__group-pill:hover {
+    border-color: var(--moga-primary, #003580);
+    color: var(--moga-primary, #003580);
+    background: var(--moga-primary-light, #e8f0fe);
+}
+
+.moga-db__group-pill.is-active {
+    background: var(--moga-primary, #003580);
+    border-color: var(--moga-primary, #003580);
+    color: #fff;
+}
+
+/* Group panels — only active one visible */
+.moga-db__group-panel {
+    display: none;
+}
+
+.moga-db__group-panel.is-active {
+    display: block;
+}
+
+/* ============================================================
+   20. ADMIN OVERVIEW — Card grid (no sidebar mode)
+   ============================================================ */
+
+/* Full-width content when no sidebar */
+.moga-db--overview {
+    display: block;
+}
+
+.moga-db--overview .moga-db__content-wrap {
+    width: 100%;
+}
+
+.moga-db--overview .moga-db__content {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 28px;
+}
+
+/* Welcome banner */
+.moga-db-admin-overview__banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+}
+
+.moga-db-admin-overview__banner-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--moga-primary, #003580);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.moga-db-admin-overview__banner-avatar img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.moga-db-admin-overview__greeting {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--moga-gray-900, #111827);
+    margin: 0 0 4px;
+}
+
+.moga-db-admin-overview__role {
+    font-size: 0.875rem;
+    color: var(--moga-gray-500, #6b7280);
+    margin: 0;
+}
+
+.moga-db-admin-overview__alerts {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.moga-db-admin-overview__alert {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+}
+
+.moga-db-admin-overview__alert:hover {
+    opacity: 0.85;
+    text-decoration: none;
+}
+
+.moga-db-admin-overview__alert--warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.moga-db-admin-overview__alert--info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+/* Card grid — 3 columns, wraps at smaller screens */
+.moga-db-admin-overview__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+/* Individual card */
+.moga-db-admin-overview__card {
+    background: #fff;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    border-radius: 12px;
+    padding: 24px;
+    transition: box-shadow 0.15s ease;
+}
+
+.moga-db-admin-overview__card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+}
+
+.moga-db-admin-overview__card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--moga-gray-900, #111827);
+    margin: 0 0 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--moga-gray-100, #f3f4f6);
+}
+
+/* Card links list */
+.moga-db-admin-overview__card-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.moga-db-admin-overview__card-links li {
+    border-bottom: 1px solid var(--moga-gray-100, #f3f4f6);
+}
+
+.moga-db-admin-overview__card-links li:last-child {
+    border-bottom: none;
+}
+
+.moga-db-admin-overview__card-links a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 0;
+    font-size: 0.875rem;
+    color: var(--moga-gray-700, #374151);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.moga-db-admin-overview__card-links a:hover {
+    color: var(--moga-primary, #003580);
+    text-decoration: none;
+}
+
+.moga-db-admin-overview__card-links svg {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    color: var(--moga-gray-400, #9ca3af);
+}
+
+.moga-db-admin-overview__card-links a:hover svg {
+    color: var(--moga-primary, #003580);
+}
+
+/* Pending count badge inside link */
+.moga-db-admin-overview__link-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--moga-danger, #dc2626);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+}
+
+/* Chevron arrow — pushed to the right */
+.moga-db-admin-overview__arrow {
+    width: 14px !important;
+    height: 14px !important;
+    margin-left: auto;
+    color: var(--moga-gray-300, #d1d5db) !important;
+    flex-shrink: 0;
+}
+
+/* Back to overview link in topbar */
+.moga-db__topbar-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--moga-gray-600, #4b5563);
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.moga-db__topbar-back:hover {
+    background: var(--moga-gray-50, #f8f9fa);
+    color: var(--moga-primary, #003580);
+    text-decoration: none;
+}
+
+/* Responsive — 2 columns on tablet, 1 on mobile */
+@media (max-width: 900px) {
+    .moga-db-admin-overview__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .moga-db-admin-overview__grid {
+        grid-template-columns: 1fr;
+    }
+    .moga-db-admin-overview__alerts {
+        margin-left: 0;
+        width: 100%;
+    }
+}
