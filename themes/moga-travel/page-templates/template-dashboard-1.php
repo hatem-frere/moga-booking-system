@@ -134,27 +134,38 @@ function moga_dashboard_get_tab_template($tab, $is_admin, $is_vendor) {
 }
 
 // ---- Admin overview mode ----
-// True only when admin is on the overview card grid (no specific tab).
-$moga_admin_overview = $moga_is_admin && $moga_active_tab === 'overview';
+// Admins never see the sidebar — the topbar "← Overview" back link
+// is sufficient navigation. Sidebar is only shown for vendor and client roles.
+$moga_admin_overview = $moga_is_admin;
 
 get_header();
 ?>
 
-<div class="moga-dashboard-page">
+<div class="moga-dashboard-page<?php echo $moga_admin_overview ? ' moga-dashboard-page--admin-overview' : ''; ?>">
     <?php
-    // Topbar now contains the full horizontal navigation for all roles.
-    // Sidebar is no longer used — navigation lives in the topbar nav bar.
     get_template_part('template-parts/dashboard/topbar', null, array(
         'user'           => $moga_user,
         'active_tab'     => $moga_active_tab,
-        'tabs'           => $moga_all_tabs,
-        'is_admin'       => $moga_is_admin,
-        'is_vendor'      => $moga_is_vendor,
         'admin_overview' => $moga_admin_overview,
     ));
     ?>
 
-    <div class="moga-db">
+    <div class="moga-db<?php echo $moga_is_admin ? ' moga-db--overview' : ''; ?><?php echo ($moga_is_admin && $moga_active_tab !== 'overview') ? ' moga-db--admin-tab' : ''; ?>">
+
+        <?php if (! $moga_admin_overview) : ?>
+        <?php
+        // Sidebar — only shown when a specific tab is active.
+        // Determine which admin pill group to show based on active tab.
+        get_template_part('template-parts/dashboard/sidebar', null, array(
+            'tabs'       => $moga_all_tabs,
+            'active_tab' => $moga_active_tab,
+            'user'       => $moga_user,
+            'is_admin'   => $moga_is_admin,
+            'is_vendor'  => $moga_is_vendor,
+        ));
+        ?>
+        <?php endif; ?>
+
         <div class="moga-db__content-wrap">
             <div class="moga-db__content" id="moga-db-content">
                 <?php

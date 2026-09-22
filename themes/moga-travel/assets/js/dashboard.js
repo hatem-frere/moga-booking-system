@@ -1,249 +1,209 @@
 /**
- * Dashboard JS
+ * Dashboard JS — Moga Booking System
  *
- * Handles:
- *  1. AJAX tab switching (no full page reload on nav click)
- *  2. Mobile sidebar open/close via hamburger button
- *  3. URL update via history.pushState on tab switch
- *  4. Active nav link highlight sync
- *  5. Page title update in topbar on tab switch
- *
- * Depends on mogaDashboardData (wp_localize_script):
- *   - mogaDashboardData.ajaxUrl
- *   - mogaDashboardData.nonce
- *   - mogaDashboardData.tab    (initial active tab)
+ * 1. Horizontal nav dropdown open/close
+ * 2. Mobile drawer open/close
+ * 3. AJAX tab content loading
+ * 4. URL update via history.pushState
  *
  * @package MogaTravel
  * @since   1.0.0
  */
 
-(function ($) {
+/* global mogaDashboardData */
+(function () {
     'use strict';
 
-    if (typeof mogaDashboardData === 'undefined') return;
+    if (typeof mogaDashboardData === 'undefined') { return; }
 
-    var ajaxUrl    = mogaDashboardData.ajaxUrl;
-    var nonce      = mogaDashboardData.nonce;
-    var activeTab  = mogaDashboardData.tab || 'overview';
-    var isLoading  = false;
+    var cfg       = mogaDashboardData;
+    var activeTab = cfg.tab || 'overview';
+    var busy      = false;
+    var content   = document.getElementById('moga-db-content');
 
-    var $content   = $('#moga-db-content');
-    var $sidebar   = $('#moga-db-sidebar');
-    var $backdrop  = $('#moga-db-backdrop');
-    var $hamburger = $('#moga-db-hamburger');
-    var $pageTitle = $('#moga-db-page-title');
+    // ── 1. Dropdown menus ────────────────────────────────────────────
+    // Dropdown menus are moved to <body> when opened so they escape
+    // the sticky topbar stacking context and render above all content.
 
-    // ----------------------------------------------------------------
-    // 1. AJAX Tab Switching
-    // ----------------------------------------------------------------
+    var activeDropdown = null; // { trigger, menu, original_parent }
 
-    $(document).on('click', '.moga-db__nav-link[data-tab]', function (e) {
-        var $link = $(this);
-        var tab   = $link.data('tab');
+    function openDropdown(btn) {
+        closeAll();
 
-        // External links (System Management) — let browser handle.
-        if ($link.hasClass('moga-db__nav-link--external')) return;
+        var dropdown = btn.closest('.moga-db__nav-dropdown');
+        var menu     = dropdown.querySelector('.moga-db__nav-dropdown-menu');
+        if (!menu) { return; }
 
-        e.preventDefault();
+        // Store original parent for restore on close.
+        var originalParent = menu.parentNode;
 
-        if (tab === activeTab || isLoading) return;
+        // Get trigger position.
+        var rect = btn.getBoundingClientRect();
 
-        loadTab(tab);
+        // Move menu to body.
+        document.body.appendChild(menu);
 
-        // Close mobile sidebar after nav click.
-        closeSidebar();
+        // Position it below the trigger button.
+        menu.style.position   = 'fixed';
+        menu.style.top        = (rect.bottom + 6) + 'px';
+        menu.style.left       = (rect.left + rect.width / 2) + 'px';
+        menu.style.transform  = 'translateX(-50%)';
+        menu.style.zIndex     = '99999';
+        menu.style.display    = 'block';
+
+        dropdown.classList.add('is-open');
+        btn.setAttribute('aria-expanded', 'true');
+
+        activeDropdown = { btn: btn, menu: menu, parent: originalParent, dropdown: dropdown };
+    }
+
+    function closeAll() {
+        if (activeDropdown) {
+            // Restore menu to original parent.
+            activeDropdown.parent.appendChild(activeDropdown.menu);
+            activeDropdown.menu.style.cssText = '';
+            activeDropdown.dropdown.classList.remove('is-open');
+            activeDropdown.btn.setAttribute('aria-expanded', 'false');
+            activeDropdown = null;
+        }
+    }
+
+    document.querySelectorAll('.moga-db__nav-item--dropdown').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var dropdown = btn.closest('.moga-db__nav-dropdown');
+            var wasOpen  = dropdown.classList.contains('is-open');
+            closeAll();
+            if (!wasOpen) { openDropdown(btn); }
+        });
     });
 
-    function loadTab(tab) {
-        isLoading = true;
-        $content.addClass('moga-db-loading');
+    // Stop clicks inside a detached menu from bubbling to document.
+    document.addEventListener('click', function (e) {
+        if (activeDropdown && activeDropdown.menu.contains(e.target)) { return; }
+        closeAll();
+    });
 
-        $.ajax({
-            url:    ajaxUrl,
-            method: 'POST',
-            data: {
-                action: 'moga_dashboard_tab',
-                nonce:  nonce,
-                tab:    tab,
-            },
-            success: function (response) {
-                if (response.success && response.data && response.data.html) {
-                    $content.html(response.data.html);
-                    activeTab = tab;
-                    updateActiveLink(tab);
-                    updatePageTitle(tab);
-                    updateUrl(tab);
-                    // Scroll content area to top.
-                    $content.scrollTop(0);
-                    window.scrollTo(0, 0);
-                } else {
-                    // Fallback: full page navigation.
-                    window.location.href = buildTabUrl(tab);
-                }
-            },
-            error: function () {
-                // Fallback on network error.
-                window.location.href = buildTabUrl(tab);
-            },
-            complete: function () {
-                isLoading = false;
-                $content.removeClass('moga-db-loading');
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { closeAll(); closeMobile(); }
+    });
+
+    // ── 2. Mobile drawer ─────────────────────────────────────────────
+
+    var mobileNav  = document.getElementById('moga-db-mobile-nav');
+    var backdrop   = document.getElementById('moga-db-backdrop');
+    var hamburger  = document.getElementById('moga-db-hamburger');
+
+    function openMobile() {
+        if (!mobileNav) { return; }
+        mobileNav.classList.add('is-open');
+        mobileNav.setAttribute('aria-hidden', 'false');
+        if (backdrop)  { backdrop.classList.add('is-active'); }
+        if (hamburger) { hamburger.setAttribute('aria-expanded', 'true'); }
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobile() {
+        if (!mobileNav) { return; }
+        mobileNav.classList.remove('is-open');
+        mobileNav.setAttribute('aria-hidden', 'true');
+        if (backdrop)  { backdrop.classList.remove('is-active'); }
+        if (hamburger) { hamburger.setAttribute('aria-expanded', 'false'); }
+        document.body.style.overflow = '';
+    }
+
+    if (hamburger) {
+        hamburger.addEventListener('click', function () {
+            if (mobileNav && mobileNav.classList.contains('is-open')) {
+                closeMobile();
+            } else {
+                openMobile();
             }
         });
     }
 
-    function buildTabUrl(tab) {
-        var url = window.location.pathname + window.location.search;
+    if (backdrop) { backdrop.addEventListener('click', closeMobile); }
+
+    // ── 3. AJAX tab loading ───────────────────────────────────────────
+
+    function buildUrl(tab) {
         var params = new URLSearchParams(window.location.search);
         params.set('tab', tab);
         return window.location.pathname + '?' + params.toString();
     }
 
-    function updateUrl(tab) {
-        if (history.pushState) {
-            var newUrl = buildTabUrl(tab);
-            history.pushState({ tab: tab }, '', newUrl);
-        }
+    function setActive(tab) {
+        document.querySelectorAll('.moga-db__nav-item[data-tab]').forEach(function (el) {
+            el.classList.toggle('is-active', el.getAttribute('data-tab') === tab);
+        });
+        document.querySelectorAll('.moga-db__nav-dropdown-item[data-tab]').forEach(function (el) {
+            el.classList.toggle('is-active', el.getAttribute('data-tab') === tab);
+        });
+        document.querySelectorAll('.moga-db__mobile-nav-link[data-tab]').forEach(function (el) {
+            el.classList.toggle('is-active', el.getAttribute('data-tab') === tab);
+        });
+        // Mark parent dropdown active when a child is active.
+        document.querySelectorAll('.moga-db__nav-dropdown').forEach(function (dd) {
+            var hasActive = dd.querySelector('.moga-db__nav-dropdown-item.is-active');
+            dd.classList.toggle('is-active', !!hasActive);
+            var trigger = dd.querySelector('.moga-db__nav-item--dropdown');
+            if (trigger) { trigger.classList.toggle('is-active', !!hasActive); }
+        });
     }
 
-    function updateActiveLink(tab) {
-        $('.moga-db__nav-link').removeClass('is-active').removeAttr('aria-current');
-        $('.moga-db__nav-link[data-tab="' + tab + '"]')
-            .addClass('is-active')
-            .attr('aria-current', 'page');
+    function goToTab(tab) {
+        if (tab === activeTab || busy || !content) { return; }
+        closeAll();
+        busy = true;
+        content.style.opacity = '0.5';
 
-        // If admin: switch to the pill group that contains this tab.
-        var $panel = $('.moga-db__group-panel .moga-db__nav-link[data-tab="' + tab + '"]').closest('.moga-db__group-panel');
-        if ($panel.length) {
-            var group = $panel.data('group-panel');
-            $('.moga-db__group-pill').removeClass('is-active').attr('aria-selected', 'false');
-            $('.moga-db__group-pill[data-group="' + group + '"]').addClass('is-active').attr('aria-selected', 'true');
-            $('.moga-db__group-panel').removeClass('is-active');
-            $panel.addClass('is-active');
-            try { sessionStorage.setItem('moga_db_group', group); } catch(e) {}
-        }
-    }
+        var body = new FormData();
+        body.append('action', 'moga_dashboard_tab');
+        body.append('nonce',  cfg.nonce);
+        body.append('tab',    tab);
 
-    function updatePageTitle(tab) {
-        var titles = {
-            'overview':         mogaData && mogaData.i18n ? mogaData.i18n.overview         : 'Overview',
-            'bookings':         'My Bookings',
-            'saved':            'Saved',
-            'reviews':          'My Reviews',
-            'wallet':           'Wallet & Credits',
-            'personal-details': 'Personal Details',
-            'security':         'Security',
-            'notifications':    'Notifications',
-            'preferences':      'Preferences',
-            'become-vendor':    'Become a Vendor',
-            'report-problem':   'Report a Problem',
-            'delete-account':   'Delete Account',
-            'properties':       'My Properties',
-            'tours':            'My Tours',
-            'buses':            'My Buses',
-            'vendor-bookings':  'Bookings',
-            'calendar':         'Calendar & Availability',
-            'seat-map':         'Seat Maps',
-            'earnings':         'Earnings & Commissions',
-            'payout-settings':  'Payout Settings',
-            'reviews-received': 'Reviews Received',
-            'all-properties':   'All Properties',
-            'all-tours':        'All Tours',
-            'all-bookings':     'All Bookings',
-            'vendors':          'Vendors',
-            'commissions':      'Commissions',
-            'reports':          'Reports',
-            'notifications-log':'Notifications Log',
-        };
-        $pageTitle.text(titles[tab] || 'Dashboard');
-    }
-
-    // Handle browser back/forward.
-    window.addEventListener('popstate', function (e) {
-        if (e.state && e.state.tab) {
-            loadTab(e.state.tab);
-        }
-    });
-
-    // ----------------------------------------------------------------
-    // 2. Mobile Sidebar
-    // ----------------------------------------------------------------
-
-    $hamburger.on('click', function () {
-        var isOpen = $sidebar.hasClass('is-open');
-        if (isOpen) {
-            closeSidebar();
-        } else {
-            openSidebar();
-        }
-    });
-
-    $backdrop.on('click', closeSidebar);
-
-    $(document).on('keydown', function (e) {
-        if (e.key === 'Escape' && $sidebar.hasClass('is-open')) {
-            closeSidebar();
-            $hamburger.focus();
-        }
-    });
-
-    function openSidebar() {
-        $sidebar.addClass('is-open');
-        $backdrop.addClass('is-active');
-        $hamburger.attr('aria-expanded', 'true');
-        // Prevent body scroll while sidebar is open.
-        $('body').css('overflow', 'hidden');
-    }
-
-    function closeSidebar() {
-        $sidebar.removeClass('is-open');
-        $backdrop.removeClass('is-active');
-        $hamburger.attr('aria-expanded', 'false');
-        $('body').css('overflow', '');
-    }
-
-    // ----------------------------------------------------------------
-    // 4. Admin pill group switcher
-    // ----------------------------------------------------------------
-
-    $(document).on('click', '.moga-db__group-pill', function () {
-        var $pill  = $(this);
-        var group  = $pill.data('group');
-
-        if ($pill.hasClass('is-active')) return;
-
-        // Update pill active state.
-        $('.moga-db__group-pill').removeClass('is-active').attr('aria-selected', 'false');
-        $pill.addClass('is-active').attr('aria-selected', 'true');
-
-        // Show matching group panel, hide others.
-        $('.moga-db__group-panel').removeClass('is-active');
-        $('.moga-db__group-panel[data-group-panel="' + group + '"]').addClass('is-active');
-
-        // Persist active group in sessionStorage so it survives
-        // AJAX tab switches within the same session.
-        try { sessionStorage.setItem('moga_db_group', group); } catch(e) {}
-
-        // Update sidebar data attribute for PHP re-renders.
-        $('#moga-db-sidebar').attr('data-active-group', group);
-    });
-
-    // Restore active group from sessionStorage on page load.
-    (function () {
-        try {
-            var savedGroup = sessionStorage.getItem('moga_db_group');
-            if (savedGroup) {
-                var $pill = $('.moga-db__group-pill[data-group="' + savedGroup + '"]');
-                if ($pill.length && ! $pill.hasClass('is-active')) {
-                    $pill.trigger('click');
+        fetch(cfg.ajaxUrl, { method: 'POST', body: body })
+            .then(function (r) { return r.json(); })
+            .then(function (json) {
+                if (json.success && json.data && json.data.html) {
+                    content.innerHTML = json.data.html;
+                    activeTab = tab;
+                    setActive(tab);
+                    if (history.pushState) {
+                        history.pushState({ tab: tab }, '', buildUrl(tab));
+                    }
+                    window.scrollTo(0, 0);
+                } else {
+                    window.location.href = buildUrl(tab);
                 }
-            }
-        } catch(e) {}
-    })();
+            })
+            .catch(function () {
+                window.location.href = buildUrl(tab);
+            })
+            .finally(function () {
+                busy = false;
+                content.style.opacity = '';
+            });
+    }
 
-    // Add a CSS loading class that dims the content area while AJAX runs.
-    var style = document.createElement('style');
-    style.textContent = '.moga-db-loading { opacity: 0.5; pointer-events: none; transition: opacity 0.15s ease; }';
-    document.head.appendChild(style);
+    // Intercept tab link clicks.
+    document.addEventListener('click', function (e) {
+        var el = e.target.closest('[data-tab]');
+        if (!el) { return; }
+        // Let external / card-grid links navigate normally.
+        if (el.getAttribute('target') === '_blank') { return; }
+        if (el.closest('.moga-db-admin-overview__card-links')) { return; }
+        if (el.tagName === 'A' && el.href && el.href.indexOf('logout') !== -1) { return; }
 
-})(jQuery);
+        e.preventDefault();
+        closeAll();
+        closeMobile();
+        goToTab(el.getAttribute('data-tab'));
+    });
+
+    // Browser back/forward.
+    window.addEventListener('popstate', function (e) {
+        if (e.state && e.state.tab) { goToTab(e.state.tab); }
+    });
+
+}());

@@ -20,20 +20,27 @@
    ============================================================ */
 
 /*
- * --moga-header-h: total height of the theme header above the dashboard.
- * Adjust this value if the header height changes.
- * Logged-in users see the WP admin bar (32px) + site header (~110px) = ~142px.
- * Logged-out users see site header only (~110px).
- * We use 142px as the default (covers the logged-in case).
+ * --moga-header-h: theme header height only (70px).
+ * The WP admin bar (32px) is NOT sticky — it scrolls away with the page.
+ * So the dashboard topbar sticks at 70px from top, right below the theme header.
  */
 :root {
-    --moga-header-h: 222px;
+    --moga-header-h: 70px;
+}
+
+/* .moga-wrapper is the direct parent of .moga-dashboard-page.
+ * overflow:hidden on any ancestor breaks position:sticky AND clips dropdowns.
+ * Neither .moga-wrapper nor .moga-dashboard-page should clip overflow. */
+body.page-template-template-dashboard .moga-wrapper,
+body.page-template-template-dashboard .moga-main {
+    overflow: visible;
 }
 
 .moga-dashboard-page {
     background: var(--moga-gray-50, #f8f9fa);
     display: flex;
     flex-direction: column;
+    overflow: visible; /* must not clip dropdown menus or block sticky */
 }
 
 /* Outer wrapper: sidebar + content side by side */
@@ -43,7 +50,6 @@
     min-height: calc(100vh - var(--moga-header-h));
     position: relative;
 }
-
 
 /* ============================================================
    2. SIDEBAR
@@ -57,7 +63,7 @@
     display: flex;
     flex-direction: column;
     position: sticky;
-    top: var(--moga-header-h);       /* stick below the theme header */
+    top: var(--moga-header-h); /* stick below the theme header */
     height: calc(100vh - var(--moga-header-h)); /* fill remaining viewport */
     overflow-y: auto;
     z-index: 100;
@@ -148,7 +154,9 @@
     color: var(--moga-gray-700, #374151);
     text-decoration: none;
     border-radius: 0;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
     position: relative;
     white-space: nowrap;
 }
@@ -167,7 +175,7 @@
 }
 
 .moga-db__nav-link.is-active::before {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     top: 4px;
@@ -260,44 +268,370 @@
     text-decoration: none;
 }
 
-
 /* ============================================================
-   3. TOP BAR
+   3. TOP BAR + HORIZONTAL NAVIGATION
    ============================================================ */
 
 .moga-db__topbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0 28px;
-    height: 60px;
+    padding: 0 24px;
+    height: 56px;
     background: #fff;
     border-bottom: 1px solid var(--moga-gray-200, #e5e7eb);
     flex-shrink: 0;
     position: sticky;
-    top: 0;
-    z-index: 90;
+    top: var(--moga-header-h);
+    z-index: 9998;
     gap: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
-.moga-db__topbar-title {
-    font-size: 1.05rem;
+/* Content area must sit below the topbar in stacking order.
+   position:relative + z-index:1 means the topbar (z-index:9998) is always on top,
+   and dropdown menus (z-index:9999) appear above everything. */
+.moga-db {
+    position: relative;
+    z-index: 1;
+}
+
+.moga-db__content-wrap {
+    position: relative;
+    z-index: 1;
+}
+
+/* LEFT — avatar + name */
+.moga-db__topbar-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.moga-db__topbar-avatar-link {
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.moga-db__topbar-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--moga-primary, #003580);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.moga-db__topbar-avatar img {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.moga-db__topbar-user {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.moga-db__topbar-name {
+    font-size: 0.82rem;
     font-weight: 700;
     color: var(--moga-gray-900, #111827);
-    flex: 1;
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
+.moga-db__topbar-role {
+    font-size: 0.68rem;
+    color: var(--moga-gray-400, #9ca3af);
+    white-space: nowrap;
+}
+
+/* CENTER — horizontal nav */
+.moga-db__topbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    justify-content: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.moga-db__topbar-nav::-webkit-scrollbar {
+    display: none;
+}
+
+/* Nav item — flat link or dropdown trigger */
+.moga-db__nav-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--moga-gray-600, #4b5563);
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    background: none;
+    border: none;
+    transition:
+        background 0.12s ease,
+        color 0.12s ease;
+    position: relative;
+}
+
+.moga-db__nav-item:hover {
+    background: var(--moga-gray-50, #f8f9fa);
+    color: var(--moga-gray-900, #111827);
+    text-decoration: none;
+}
+
+.moga-db__nav-item.is-active {
+    background: var(--moga-primary-light, #e8f0fe);
+    color: var(--moga-primary, #003580);
+    font-weight: 700;
+}
+
+/* Dropdown wrapper */
+.moga-db__nav-dropdown {
+    position: relative;
+}
+
+.moga-db__nav-item--dropdown svg {
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+}
+
+.moga-db__nav-dropdown.is-open .moga-db__nav-item--dropdown svg {
+    transform: rotate(180deg);
+}
+
+/* Dropdown menu */
+.moga-db__nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    min-width: 200px;
+    z-index: 9999;
+    padding: 4px;
+}
+
+.moga-db__nav-dropdown.is-open .moga-db__nav-dropdown-menu {
+    display: block;
+}
+
+.moga-db__nav-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--moga-gray-700, #374151);
+    text-decoration: none;
+    transition:
+        background 0.1s ease,
+        color 0.1s ease;
+    white-space: nowrap;
+}
+
+.moga-db__nav-dropdown-item:hover {
+    background: var(--moga-gray-50, #f8f9fa);
+    color: var(--moga-gray-900, #111827);
+    text-decoration: none;
+}
+
+.moga-db__nav-dropdown-item.is-active {
+    background: var(--moga-primary-light, #e8f0fe);
+    color: var(--moga-primary, #003580);
+    font-weight: 700;
+}
+
+.moga-db__nav-dropdown-item--danger {
+    color: var(--moga-danger, #dc2626);
+}
+.moga-db__nav-dropdown-item--danger:hover {
+    background: #fef2f2;
+    color: var(--moga-danger, #dc2626);
+}
+.moga-db__nav-dropdown-item--external {
+    color: var(--moga-gray-500, #6b7280);
+    font-style: italic;
+}
+
+.moga-db__nav-dropdown-divider {
+    height: 1px;
+    background: var(--moga-gray-100, #f3f4f6);
+    margin: 4px 0;
+}
+
+/* RIGHT — actions */
 .moga-db__topbar-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 /* Notification bell */
 .moga-db__topbar-bell {
     position: relative;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--moga-gray-600, #4b5563);
+    transition: background 0.15s ease;
+    text-decoration: none;
+}
+
+.moga-db__topbar-bell:hover {
+    background: var(--moga-gray-50, #f8f9fa);
+}
+
+.moga-db__topbar-bell-dot {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--moga-danger, #dc2626);
+    border: 2px solid #fff;
+}
+
+/* Sign out */
+.moga-db__topbar-signout {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--moga-gray-500, #6b7280);
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.moga-db__topbar-signout:hover {
+    color: var(--moga-danger, #dc2626);
+    border-color: #fca5a5;
+    background: #fef2f2;
+    text-decoration: none;
+}
+
+/* Mobile hamburger */
+.moga-db__topbar-hamburger {
+    display: none;
     width: 36px;
     height: 36px;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--moga-gray-700, #374151);
+    padding: 0;
+    flex-shrink: 0;
+}
+
+/* Mobile nav drawer */
+.moga-db__mobile-nav {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 500;
+    pointer-events: none;
+}
+
+.moga-db__mobile-nav.is-open {
+    pointer-events: auto;
+}
+
+.moga-db__mobile-nav-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    background: #fff;
+    border-right: 1px solid var(--moga-gray-200, #e5e7eb);
+    padding: 20px 0;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.moga-db__mobile-nav.is-open .moga-db__mobile-nav-inner {
+    transform: translateX(0);
+}
+
+.moga-db__mobile-nav-link {
+    display: block;
+    padding: 11px 24px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--moga-gray-700, #374151);
+    text-decoration: none;
+    border-bottom: 1px solid var(--moga-gray-50, #f8f9fa);
+    transition: background 0.1s ease;
+}
+
+.moga-db__mobile-nav-link:hover {
+    background: var(--moga-gray-50, #f8f9fa);
+    text-decoration: none;
+}
+.moga-db__mobile-nav-link.is-active {
+    color: var(--moga-primary, #003580);
+    font-weight: 700;
+    background: var(--moga-primary-light, #e8f0fe);
+}
+.moga-db__mobile-nav-link.is-danger {
+    color: var(--moga-danger, #dc2626);
+}
+
+.moga-db__mobile-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 499;
+}
+
+.moga-db__mobile-backdrop.is-active {
+    display: block;
+
     border-radius: 50%;
     border: 1px solid var(--moga-gray-200, #e5e7eb);
     background: #fff;
@@ -324,36 +658,6 @@
     background: var(--moga-danger, #dc2626);
     border: 2px solid #fff;
 }
-
-/* View site link */
-.moga-db__topbar-site-link {
-    font-size: 0.8rem;
-    color: var(--moga-primary, #003580);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-}
-
-.moga-db__topbar-site-link:hover {
-    text-decoration: underline;
-}
-
-/* Mobile hamburger */
-.moga-db__topbar-hamburger {
-    display: none;
-    width: 36px;
-    height: 36px;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--moga-gray-700, #374151);
-    padding: 0;
-}
-
 
 /* ============================================================
    4. CONTENT AREA
@@ -396,7 +700,6 @@
     margin-top: -18px;
     margin-bottom: 24px;
 }
-
 
 /* ============================================================
    5. STAT CARDS (Overview)
@@ -464,7 +767,6 @@
     color: #991b1b;
 }
 
-
 /* ============================================================
    6. SECTION / CARD
    ============================================================ */
@@ -500,7 +802,6 @@
 .moga-db__section-action:hover {
     text-decoration: underline;
 }
-
 
 /* ============================================================
    7. TABLES
@@ -555,7 +856,6 @@
     font-size: 0.875rem;
 }
 
-
 /* ============================================================
    8. STATUS BADGES
    ============================================================ */
@@ -570,15 +870,38 @@
     white-space: nowrap;
 }
 
-.moga-db__badge--pending  { background: #fef3c7; color: #92400e; }
-.moga-db__badge--confirmed { background: #d1fae5; color: #065f46; }
-.moga-db__badge--completed { background: #dbeafe; color: #1e40af; }
-.moga-db__badge--cancelled { background: #fee2e2; color: #991b1b; }
-.moga-db__badge--refunded  { background: #f3e8ff; color: #6b21a8; }
-.moga-db__badge--no_show   { background: var(--moga-gray-100, #f3f4f6); color: var(--moga-gray-600, #4b5563); }
-.moga-db__badge--approved  { background: #d1fae5; color: #065f46; }
-.moga-db__badge--rejected  { background: #fee2e2; color: #991b1b; }
-
+.moga-db__badge--pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+.moga-db__badge--confirmed {
+    background: #d1fae5;
+    color: #065f46;
+}
+.moga-db__badge--completed {
+    background: #dbeafe;
+    color: #1e40af;
+}
+.moga-db__badge--cancelled {
+    background: #fee2e2;
+    color: #991b1b;
+}
+.moga-db__badge--refunded {
+    background: #f3e8ff;
+    color: #6b21a8;
+}
+.moga-db__badge--no_show {
+    background: var(--moga-gray-100, #f3f4f6);
+    color: var(--moga-gray-600, #4b5563);
+}
+.moga-db__badge--approved {
+    background: #d1fae5;
+    color: #065f46;
+}
+.moga-db__badge--rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
 
 /* ============================================================
    9. FILTER TABS (inside sections)
@@ -615,7 +938,6 @@
     border-color: var(--moga-primary, #003580);
     color: #fff;
 }
-
 
 /* ============================================================
    10. ACTION BUTTONS (inside tables)
@@ -685,7 +1007,6 @@
     background: var(--moga-primary-dark, #002560);
 }
 
-
 /* ============================================================
    11. FORMS (inside dashboard sections)
    ============================================================ */
@@ -728,7 +1049,9 @@
     font-size: 0.875rem;
     color: var(--moga-gray-900, #111827);
     background: #fff;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
     box-sizing: border-box;
 }
 
@@ -799,7 +1122,6 @@
     border: 1px solid var(--moga-gray-200, #e5e7eb);
 }
 
-
 /* ============================================================
    12. NOTICE / ALERT BARS
    ============================================================ */
@@ -838,7 +1160,6 @@
     border: 1px solid #bfdbfe;
 }
 
-
 /* ============================================================
    13. EMPTY STATES
    ============================================================ */
@@ -868,7 +1189,6 @@
     max-width: 320px;
     margin: 0 auto 16px;
 }
-
 
 /* ============================================================
    14. OVERVIEW — Recent activity list
@@ -900,9 +1220,15 @@
     background: var(--moga-primary, #003580);
 }
 
-.moga-db__activity-dot--warning { background: #f59e0b; }
-.moga-db__activity-dot--success { background: #10b981; }
-.moga-db__activity-dot--danger  { background: #ef4444; }
+.moga-db__activity-dot--warning {
+    background: #f59e0b;
+}
+.moga-db__activity-dot--success {
+    background: #10b981;
+}
+.moga-db__activity-dot--danger {
+    background: #ef4444;
+}
 
 .moga-db__activity-text {
     flex: 1;
@@ -915,7 +1241,6 @@
     color: var(--moga-gray-400, #9ca3af);
     white-space: nowrap;
 }
-
 
 /* ============================================================
    15. BECOME VENDOR — Application form steps
@@ -990,7 +1315,6 @@
     margin-top: 4px;
 }
 
-
 /* ============================================================
    16. PAGINATION
    ============================================================ */
@@ -1033,13 +1357,11 @@
     color: #fff;
 }
 
-
 /* ============================================================
    17. MOBILE — Responsive
    ============================================================ */
 
 @media (max-width: 768px) {
-
     .moga-db {
         flex-direction: column;
     }
@@ -1114,7 +1436,6 @@
         padding: 0 16px;
     }
 }
-
 
 /* ============================================================
    18. RTL OVERRIDES
@@ -1198,7 +1519,7 @@
    20. ADMIN OVERVIEW — Card grid (no sidebar mode)
    ============================================================ */
 
-/* Full-width content when no sidebar */
+/* Full-width content when no sidebar (admin — all tabs) */
 .moga-db--overview {
     display: block;
 }
@@ -1207,10 +1528,18 @@
     width: 100%;
 }
 
-.moga-db--overview .moga-db__content {
+/* Overview card grid — centred, max-width */
+.moga-db--overview:not(.moga-db--admin-tab) .moga-db__content {
     max-width: 1100px;
     margin: 0 auto;
     padding: 32px 28px;
+}
+
+/* Admin tab pages — full width, standard padding */
+.moga-db--admin-tab .moga-db__content {
+    max-width: 100%;
+    margin: 0;
+    padding: 28px;
 }
 
 /* Welcome banner */
@@ -1423,5 +1752,652 @@
     .moga-db-admin-overview__alerts {
         margin-left: 0;
         width: 100%;
+    }
+}
+
+/* ============================================================
+   21. ALL-BOOKINGS TAB — Stat cards, toolbar, table, pagination
+   ============================================================ */
+
+/* Sidebar sticky height fix */
+.moga-db {
+    align-items: flex-start;
+}
+
+/* Page wrapper */
+.moga-db-all-bookings {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* ---- Stat Cards ---- */
+.moga-db-stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+}
+
+.moga-db-stats__card {
+    background: #fff;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: box-shadow 0.15s ease;
+}
+
+.moga-db-stats__card:hover {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.moga-db-stats__value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--moga-gray-900, #111827);
+    line-height: 1.1;
+}
+
+.moga-db-stats__label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--moga-gray-500, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.moga-db-stats__card--warning .moga-db-stats__value {
+    color: #d97706;
+}
+.moga-db-stats__card--warning {
+    border-left: 3px solid #f59e0b;
+}
+.moga-db-stats__card--success .moga-db-stats__value {
+    color: #059669;
+}
+.moga-db-stats__card--success {
+    border-left: 3px solid #10b981;
+}
+.moga-db-stats__card--info .moga-db-stats__value {
+    color: #2563eb;
+}
+.moga-db-stats__card--info {
+    border-left: 3px solid #3b82f6;
+}
+.moga-db-stats__card--danger .moga-db-stats__value {
+    color: #dc2626;
+}
+.moga-db-stats__card--danger {
+    border-left: 3px solid #ef4444;
+}
+.moga-db-stats__card--revenue .moga-db-stats__value {
+    color: var(--moga-primary, #003580);
+}
+.moga-db-stats__card--revenue {
+    border-left: 3px solid var(--moga-primary, #003580);
+}
+
+/* ---- Toolbar ---- */
+.moga-db-toolbar {
+    background: #fff;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.moga-db-toolbar__form {
+    display: flex;
+    flex-direction: column;
+}
+
+.moga-db-toolbar__search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--moga-gray-100, #f3f4f6);
+}
+
+.moga-db-toolbar__search svg {
+    flex-shrink: 0;
+    color: var(--moga-gray-400, #9ca3af);
+}
+
+.moga-db-toolbar__search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 0.875rem;
+    color: var(--moga-gray-900, #111827);
+    background: transparent;
+    padding: 0;
+}
+
+.moga-db-toolbar__search-input::placeholder {
+    color: var(--moga-gray-400, #9ca3af);
+}
+
+.moga-db-toolbar__filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--moga-gray-600, #4b5563);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.moga-db-toolbar__filter-toggle:hover {
+    border-color: var(--moga-primary, #003580);
+    color: var(--moga-primary, #003580);
+}
+
+.moga-db-toolbar__filter-badge {
+    background: var(--moga-primary, #003580);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 8px;
+    min-width: 16px;
+    text-align: center;
+}
+
+.moga-db-toolbar__filters {
+    display: none;
+    padding: 16px;
+    border-top: 1px solid var(--moga-gray-100, #f3f4f6);
+    background: var(--moga-gray-50, #f8f9fa);
+}
+
+.moga-db-toolbar__filters.is-open {
+    display: block;
+}
+
+.moga-db-toolbar__filters-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.moga-db-toolbar__filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.moga-db-toolbar__filter-group label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--moga-gray-600, #4b5563);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.moga-db-toolbar__select,
+.moga-db-toolbar__input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: var(--moga-gray-900, #111827);
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s ease;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.moga-db-toolbar__select:focus,
+.moga-db-toolbar__input:focus {
+    border-color: var(--moga-primary, #003580);
+    box-shadow: 0 0 0 2px rgba(0, 53, 128, 0.1);
+}
+
+.moga-db-toolbar__filters-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ---- Results summary ---- */
+.moga-db-table-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.moga-db-table-meta__count {
+    font-size: 0.8rem;
+    color: var(--moga-gray-500, #6b7280);
+    margin: 0;
+}
+
+.moga-db-table-meta__count strong {
+    color: var(--moga-gray-900, #111827);
+}
+
+/* ---- Table ---- */
+.moga-db-table-wrap {
+    background: #fff;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    border-radius: 10px;
+    overflow: hidden;
+    overflow-x: auto;
+}
+
+.moga-db-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    min-width: 900px;
+}
+
+.moga-db-table thead {
+    background: var(--moga-gray-50, #f8f9fa);
+    border-bottom: 1px solid var(--moga-gray-200, #e5e7eb);
+}
+
+.moga-db-table__th {
+    padding: 11px 14px;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--moga-gray-500, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+[dir="rtl"] .moga-db-table__th {
+    text-align: right;
+}
+
+.moga-db-table__th--sortable a {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.moga-db-table__th--sortable a:hover {
+    color: var(--moga-primary, #003580);
+    text-decoration: none;
+}
+
+.moga-db-table__sort-icon {
+    font-style: normal;
+    font-size: 0.7rem;
+    line-height: 1;
+}
+.moga-db-table__sort-icon--neutral {
+    opacity: 0.35;
+}
+.moga-db-table__sort-icon--asc,
+.moga-db-table__sort-icon--desc {
+    color: var(--moga-primary, #003580);
+    opacity: 1;
+}
+
+.moga-db-table__row {
+    border-bottom: 1px solid var(--moga-gray-100, #f3f4f6);
+    transition: background 0.12s ease;
+}
+
+.moga-db-table__row:last-child {
+    border-bottom: none;
+}
+.moga-db-table__row:hover {
+    background: var(--moga-gray-50, #f8f9fa);
+}
+
+.moga-db-table__td {
+    padding: 12px 14px;
+    color: var(--moga-gray-700, #374151);
+    vertical-align: middle;
+}
+
+[dir="rtl"] .moga-db-table__td {
+    text-align: right;
+}
+
+.moga-db-table__booking-number {
+    font-family: monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--moga-gray-900, #111827);
+    white-space: nowrap;
+}
+
+.moga-db-table__guest {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.moga-db-table__guest-name {
+    font-weight: 600;
+    color: var(--moga-gray-900, #111827);
+}
+.moga-db-table__guest-email {
+    font-size: 0.72rem;
+    color: var(--moga-gray-400, #9ca3af);
+}
+
+.moga-db-table__listing-link {
+    color: var(--moga-primary, #003580);
+    text-decoration: none;
+    font-weight: 500;
+}
+.moga-db-table__listing-link:hover {
+    text-decoration: underline;
+}
+.moga-db-table__listing-deleted {
+    color: var(--moga-gray-400, #9ca3af);
+    font-style: italic;
+}
+.moga-db-table__owner {
+    font-size: 0.8rem;
+    color: var(--moga-gray-600, #4b5563);
+}
+
+.moga-db-table__type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.moga-db-table__type-badge--property {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+.moga-db-table__type-badge--tour {
+    background: #f0fdf4;
+    color: #15803d;
+}
+.moga-db-table__type-badge--bus {
+    background: #fdf4ff;
+    color: #7e22ce;
+}
+.moga-db-table__type-badge--rental {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.moga-db-table__td--dates {
+    white-space: nowrap;
+    line-height: 1.6;
+}
+.moga-db-table__date {
+    font-size: 0.78rem;
+    color: var(--moga-gray-700, #374151);
+}
+.moga-db-table__date-sep {
+    margin: 0 3px;
+    color: var(--moga-gray-400, #9ca3af);
+    font-size: 0.7rem;
+}
+.moga-db-table__nights {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--moga-gray-400, #9ca3af);
+    margin-top: 1px;
+}
+.moga-db-table__td--amount {
+    white-space: nowrap;
+}
+.moga-db-table__amount {
+    display: block;
+    font-weight: 700;
+    color: var(--moga-gray-900, #111827);
+    font-size: 0.875rem;
+}
+
+.moga-db-table__status-badge,
+.moga-db-table__payment-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    white-space: nowrap;
+    margin-top: 3px;
+}
+
+.moga-db-table__status-badge--success {
+    background: #dcfce7;
+    color: #15803d;
+}
+.moga-db-table__status-badge--warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+.moga-db-table__status-badge--danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+.moga-db-table__status-badge--info {
+    background: #dbeafe;
+    color: #1e40af;
+}
+.moga-db-table__status-badge--neutral {
+    background: var(--moga-gray-100, #f3f4f6);
+    color: var(--moga-gray-600, #4b5563);
+}
+
+.moga-db-table__payment-badge--success {
+    background: #dcfce7;
+    color: #15803d;
+}
+.moga-db-table__payment-badge--warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+.moga-db-table__payment-badge--danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+.moga-db-table__payment-badge--neutral {
+    background: var(--moga-gray-100, #f3f4f6);
+    color: var(--moga-gray-600, #4b5563);
+}
+
+.moga-db-table__th--actions,
+.moga-db-table__td--actions {
+    text-align: center;
+    width: 90px;
+}
+
+.moga-db-table__actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.moga-db-table__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    background: #fff;
+    color: var(--moga-gray-500, #6b7280);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.moga-db-table__action:hover {
+    background: var(--moga-gray-50, #f8f9fa);
+    text-decoration: none;
+}
+.moga-db-table__action--view:hover {
+    border-color: #3b82f6;
+    color: #2563eb;
+}
+.moga-db-table__action--confirm:hover {
+    border-color: #10b981;
+    color: #059669;
+    background: #f0fdf4;
+}
+.moga-db-table__action--cancel:hover {
+    border-color: #ef4444;
+    color: #dc2626;
+    background: #fef2f2;
+}
+
+.moga-db-table__empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--moga-gray-400, #9ca3af);
+}
+.moga-db-table__empty svg {
+    display: block;
+    margin: 0 auto 14px;
+    opacity: 0.3;
+}
+.moga-db-table__empty p {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+/* ---- Pagination ---- */
+.moga-db-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding: 8px 0 4px;
+}
+
+.moga-db-pagination__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    border: 1px solid var(--moga-gray-200, #e5e7eb);
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--moga-gray-700, #374151);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.moga-db-pagination__btn:hover {
+    border-color: var(--moga-primary, #003580);
+    color: var(--moga-primary, #003580);
+    text-decoration: none;
+}
+.moga-db-pagination__btn.is-active {
+    background: var(--moga-primary, #003580);
+    border-color: var(--moga-primary, #003580);
+    color: #fff;
+    font-weight: 700;
+    cursor: default;
+}
+.moga-db-pagination__ellipsis {
+    padding: 0 4px;
+    color: var(--moga-gray-400, #9ca3af);
+    font-size: 0.85rem;
+    line-height: 34px;
+}
+.moga-db-pagination__info {
+    width: 100%;
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--moga-gray-400, #9ca3af);
+    margin-top: 4px;
+}
+
+/* ---- Buttons ---- */
+.moga-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.moga-btn--sm {
+    font-size: 0.8rem;
+    padding: 7px 14px;
+}
+.moga-btn--primary {
+    background: var(--moga-primary, #003580);
+    color: #fff;
+    border-color: var(--moga-primary, #003580);
+}
+.moga-btn--primary:hover {
+    background: #002a6a;
+    text-decoration: none;
+    color: #fff;
+}
+.moga-btn--ghost {
+    background: transparent;
+    color: var(--moga-gray-600, #4b5563);
+    border-color: var(--moga-gray-200, #e5e7eb);
+}
+.moga-btn--ghost:hover {
+    background: var(--moga-gray-50, #f8f9fa);
+    color: var(--moga-gray-900, #111827);
+    text-decoration: none;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 1200px) {
+    .moga-db-stats {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .moga-db-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .moga-db-toolbar__filters-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .moga-db-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+    .moga-db-toolbar__filters-row {
+        grid-template-columns: 1fr;
     }
 }
