@@ -30,10 +30,12 @@ $current_url   = add_query_arg( 'tab', 'all-properties', $dashboard_url );
 $filter_status   = isset( $_GET['pp_status'] )  ? sanitize_key( $_GET['pp_status'] )              : '';
 $filter_type     = isset( $_GET['pp_type'] )    ? absint( $_GET['pp_type'] )                       : 0;
 $filter_search   = isset( $_GET['pp_search'] )  ? sanitize_text_field( wp_unslash( $_GET['pp_search'] ) ) : '';
+$filter_owner    = isset( $_GET['pp_owner'] )   ? absint( $_GET['pp_owner'] )                      : 0;
 $orderby         = isset( $_GET['pp_order'] )   ? sanitize_key( $_GET['pp_order'] )                : 'post_date';
 $order           = isset( $_GET['pp_dir'] ) && strtoupper( $_GET['pp_dir'] ) === 'ASC' ? 'ASC' : 'DESC';
 $paged           = isset( $_GET['pp_paged'] )   ? max( 1, (int) $_GET['pp_paged'] )               : 1;
-$per_page        = 20;
+$per_page        = isset( $_GET['pp_per_page'] ) ? (int) $_GET['pp_per_page'] : 20;
+$per_page        = in_array( $per_page, array( 10, 20, 25, 50, 100 ), true ) ? $per_page : 20;
 $offset          = ( $paged - 1 ) * $per_page;
 
 // Whitelist orderby columns.
@@ -81,6 +83,10 @@ if ( $filter_status && in_array( $filter_status, array( 'publish', 'pending', 'd
 
 if ( $filter_search !== '' ) {
     $query_args['s'] = $filter_search;
+}
+
+if ( $filter_owner > 0 ) {
+    $query_args['author'] = $filter_owner;
 }
 
 if ( $filter_type > 0 ) {
@@ -161,12 +167,25 @@ function moga_prop_sort_indicator( $col, $current_orderby, $current_order ) {
         : '<span class="moga-db-table__sort-icon moga-db-table__sort-icon--desc" aria-hidden="true">↓</span>';
 }
 
-// Active filter count.
-$active_filter_count = (int) ( $filter_status !== '' )
-                     + (int) ( $filter_type > 0 )
-                     + (int) ( $filter_search !== '' );
+// Active filter count — excludes chip-triggered params.
+$pp_via_chip = ! empty( $_GET['pp_chip'] );
+
+$active_filter_count = $pp_via_chip ? 0 :
+    (int) ( $filter_status !== '' )
+  + (int) ( $filter_type > 0 )
+  + (int) ( $filter_owner > 0 )
+  + (int) ( $filter_search !== '' );
 
 $currency_symbol = get_option( 'moga_currency_symbol', '$' );
+
+// Property owners list for filter dropdown.
+$property_owners = $wpdb->get_results(
+    "SELECT DISTINCT u.ID, u.display_name
+     FROM {$wpdb->posts} p
+     JOIN {$wpdb->users} u ON p.post_author = u.ID
+     WHERE p.post_type = 'moga_property' AND p.post_status != 'trash'
+     ORDER BY u.display_name ASC"
+);
 ?>
 
 <div class="moga-db-all-properties">
@@ -198,76 +217,111 @@ $currency_symbol = get_option( 'moga_currency_symbol', '$' );
 
     <?php // ── Toolbar ───────────────────────────────────────────────────────── ?>
     <div class="moga-db-toolbar">
-
         <form method="get" action="<?php echo esc_url( $current_url ); ?>"
               class="moga-db-toolbar__form" id="moga-pp-filter-form">
 
             <input type="hidden" name="tab" value="all-properties">
+            <?php if ( $orderby !== 'post_date' ) : ?><input type="hidden" name="pp_order" value="<?php echo esc_attr( $orderby ); ?>"><?php endif; ?>
+            <?php if ( $order !== 'DESC' ) : ?><input type="hidden" name="pp_dir" value="<?php echo esc_attr( $order ); ?>"><?php endif; ?>
 
-            <?php if ( $orderby !== 'post_date' ) : ?>
-                <input type="hidden" name="pp_order" value="<?php echo esc_attr( $orderby ); ?>">
-            <?php endif; ?>
-            <?php if ( $order !== 'DESC' ) : ?>
-                <input type="hidden" name="pp_dir" value="<?php echo esc_attr( $order ); ?>">
-            <?php endif; ?>
+            <div class="moga-db-toolbar__top">
 
-            <div class="moga-db-toolbar__search">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                     stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
-                </svg>
-                <input type="text"
-                       name="pp_search"
-                       value="<?php echo esc_attr( $filter_search ); ?>"
-                       placeholder="<?php esc_attr_e( 'Search by property title or owner…', 'moga-travel' ); ?>"
-                       class="moga-db-toolbar__search-input"
-                       autocomplete="off">
+                <div class="moga-db-toolbar__search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+                    </svg>
+                    <input type="text" name="pp_search"
+                           value="<?php echo esc_attr( $filter_search ); ?>"
+                           placeholder="<?php esc_attr_e( 'Search by property title or owner…', 'moga-travel' ); ?>"
+                           class="moga-db-toolbar__search-input" autocomplete="off">
+                    <span class="moga-db-toolbar__kbd">⌘K</span>
+                </div>
+
+                <div class="moga-db-toolbar__actions">
+
+                    <button type="button"
+                            class="moga-db-toolbar__filter-toggle"
+                            id="moga-pp-filter-toggle"
+                            aria-expanded="<?php echo $active_filter_count > 0 ? 'true' : 'false'; ?>"
+                            aria-controls="moga-pp-filters">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M7 10h10M10 16h4"/>
+                        </svg>
+                        <?php esc_html_e( 'Filters', 'moga-travel' ); ?>
+                        <?php if ( $active_filter_count > 0 ) : ?>
+                            <span class="moga-db-toolbar__filter-badge"><?php echo esc_html( $active_filter_count ); ?></span>
+                        <?php endif; ?>
+                    </button>
+
+                    <select name="pp_per_page" class="moga-db-toolbar__per-page-select"
+                            onchange="this.form.submit()">
+                        <?php foreach ( array( 10, 20, 25, 50, 100 ) as $n ) : ?>
+                            <option value="<?php echo esc_attr( $n ); ?>" <?php selected( $per_page, $n ); ?>>
+                                <?php echo esc_html( $n ); ?> / <?php esc_html_e( 'page', 'moga-travel' ); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+
+                    <a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=moga_property' ) ); ?>"
+                       class="moga-db-toolbar__cta" target="_blank">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        <?php esc_html_e( 'New Property', 'moga-travel' ); ?>
+                    </a>
+
+                </div>
             </div>
 
-            <button type="button"
-                    class="moga-db-toolbar__filter-toggle"
-                    id="moga-pp-filter-toggle"
-                    aria-expanded="<?php echo $active_filter_count > 0 ? 'true' : 'false'; ?>"
-                    aria-controls="moga-pp-filters">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                     stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M3 4h18M7 10h10M10 16h4"/>
-                </svg>
-                <?php esc_html_e( 'Filters', 'moga-travel' ); ?>
-                <?php if ( $active_filter_count > 0 ) : ?>
-                    <span class="moga-db-toolbar__filter-badge"><?php echo esc_html( $active_filter_count ); ?></span>
-                <?php endif; ?>
-            </button>
+            <?php // ── Quick chips — full page navigation ── ?>
+            <div class="moga-db-toolbar__quick">
+                <span class="moga-db-toolbar__quick-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <?php esc_html_e( 'Quick:', 'moga-travel' ); ?>
+                </span>
+                <?php
+                $pp_chips = array(
+                    array( 'label' => __( 'All Properties', 'moga-travel' ), 'dot' => '',        'active' => ( $filter_status === '' && $filter_search === '' && $filter_owner === 0 ), 'url' => add_query_arg( array( 'tab' => 'all-properties', 'pp_chip' => '1' ), $dashboard_url ) ),
+                    array( 'label' => __( 'Published',      'moga-travel' ), 'dot' => '#10b981', 'active' => $filter_status === 'publish',  'url' => add_query_arg( array( 'tab' => 'all-properties', 'pp_status' => 'publish',  'pp_chip' => '1' ), $dashboard_url ) ),
+                    array( 'label' => __( 'Pending Review', 'moga-travel' ), 'dot' => '#f59e0b', 'active' => $filter_status === 'pending',  'url' => add_query_arg( array( 'tab' => 'all-properties', 'pp_status' => 'pending',  'pp_chip' => '1' ), $dashboard_url ) ),
+                    array( 'label' => __( 'Drafts',         'moga-travel' ), 'dot' => '#9ca3af', 'active' => $filter_status === 'draft',    'url' => add_query_arg( array( 'tab' => 'all-properties', 'pp_status' => 'draft',    'pp_chip' => '1' ), $dashboard_url ) ),
+                );
+                foreach ( $pp_chips as $chip ) : ?>
+                    <a href="<?php echo esc_url( $chip['url'] ); ?>"
+                       class="moga-db-toolbar__chip<?php echo $chip['active'] ? ' is-active' : ''; ?>">
+                        <?php if ( $chip['dot'] ) : ?>
+                            <span class="moga-db-toolbar__chip-dot" style="background:<?php echo esc_attr( $chip['dot'] ); ?>;"></span>
+                        <?php endif; ?>
+                        <?php echo esc_html( $chip['label'] ); ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
 
+            <?php // ── Filter panel ── ?>
             <div class="moga-db-toolbar__filters<?php echo $active_filter_count > 0 ? ' is-open' : ''; ?>"
                  id="moga-pp-filters">
 
-                <div class="moga-db-toolbar__filters-row moga-db-toolbar__filters-row--2col">
+                <div class="moga-db-toolbar__filters-row">
 
                     <div class="moga-db-toolbar__filter-group">
                         <label for="moga-pp-status"><?php esc_html_e( 'Status', 'moga-travel' ); ?></label>
                         <select name="pp_status" id="moga-pp-status" class="moga-db-toolbar__select">
                             <option value=""><?php esc_html_e( 'All Statuses', 'moga-travel' ); ?></option>
-                            <?php
-                            $statuses = array(
-                                'publish' => __( 'Published',     'moga-travel' ),
-                                'pending' => __( 'Pending Review','moga-travel' ),
-                                'draft'   => __( 'Draft',         'moga-travel' ),
-                                'private' => __( 'Private',       'moga-travel' ),
-                            );
-                            foreach ( $statuses as $val => $label ) :
-                                printf(
-                                    '<option value="%s"%s>%s</option>',
-                                    esc_attr( $val ),
-                                    selected( $filter_status, $val, false ),
-                                    esc_html( $label )
-                                );
-                            endforeach;
-                            ?>
+                            <?php foreach ( array(
+                                'publish' => __( 'Published',      'moga-travel' ),
+                                'pending' => __( 'Pending Review', 'moga-travel' ),
+                                'draft'   => __( 'Draft',          'moga-travel' ),
+                                'private' => __( 'Private',        'moga-travel' ),
+                            ) as $val => $label ) :
+                                printf( '<option value="%s"%s>%s</option>', esc_attr( $val ), selected( $filter_status, $val, false ), esc_html( $label ) );
+                            endforeach; ?>
                         </select>
                     </div>
 
@@ -276,52 +330,71 @@ $currency_symbol = get_option( 'moga_currency_symbol', '$' );
                         <select name="pp_type" id="moga-pp-type" class="moga-db-toolbar__select">
                             <option value="0"><?php esc_html_e( 'All Types', 'moga-travel' ); ?></option>
                             <?php foreach ( $property_types as $term ) : ?>
-                                <option value="<?php echo esc_attr( $term->term_id ); ?>"
-                                    <?php selected( $filter_type, $term->term_id ); ?>>
+                                <option value="<?php echo esc_attr( $term->term_id ); ?>" <?php selected( $filter_type, $term->term_id ); ?>>
                                     <?php echo esc_html( $term->name ); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
 
+                    <div class="moga-db-toolbar__filter-group">
+                        <label for="moga-pp-owner"><?php esc_html_e( 'Owner', 'moga-travel' ); ?></label>
+                        <select name="pp_owner" id="moga-pp-owner" class="moga-db-toolbar__select">
+                            <option value="0"><?php esc_html_e( 'All Owners', 'moga-travel' ); ?></option>
+                            <?php foreach ( $property_owners as $owner ) : ?>
+                                <option value="<?php echo esc_attr( $owner->ID ); ?>" <?php selected( $filter_owner, (int) $owner->ID ); ?>>
+                                    <?php echo esc_html( $owner->display_name ); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="moga-db-toolbar__filter-group">
+                        <label><?php esc_html_e( 'Date Added', 'moga-travel' ); ?></label>
+                        <div class="moga-db-toolbar__date-range">
+                            <input type="date" name="pp_from" id="moga-pp-from"
+                                   value="<?php echo esc_attr( isset( $_GET['pp_from'] ) ? sanitize_text_field( $_GET['pp_from'] ) : '' ); ?>"
+                                   class="moga-db-toolbar__input">
+                            <span class="moga-db-toolbar__date-sep">–</span>
+                            <input type="date" name="pp_to" id="moga-pp-to"
+                                   value="<?php echo esc_attr( isset( $_GET['pp_to'] ) ? sanitize_text_field( $_GET['pp_to'] ) : '' ); ?>"
+                                   class="moga-db-toolbar__input">
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="moga-db-toolbar__filters-actions">
-                    <button type="submit" class="moga-btn moga-btn--primary moga-btn--sm">
+                    <a href="<?php echo esc_url( add_query_arg( 'tab', 'all-properties', $dashboard_url ) ); ?>"
+                       class="moga-db-toolbar__btn-clear">
+                        <?php esc_html_e( 'Clear Filters', 'moga-travel' ); ?>
+                    </a>
+                    <button type="submit" class="moga-db-toolbar__btn-apply">
                         <?php esc_html_e( 'Apply Filters', 'moga-travel' ); ?>
                     </button>
-                    <a href="<?php echo esc_url( add_query_arg( 'tab', 'all-properties', $dashboard_url ) ); ?>"
-                       class="moga-btn moga-btn--ghost moga-btn--sm">
-                        <?php esc_html_e( 'Clear', 'moga-travel' ); ?>
-                    </a>
                 </div>
 
             </div>
 
         </form>
-
     </div>
 
     <?php // ── Results summary ───────────────────────────────────────────────── ?>
     <div class="moga-db-table-meta">
         <p class="moga-db-table-meta__count">
-            <?php
-            printf(
-                esc_html( _n( '%s property found', '%s properties found', $total_rows, 'moga-travel' ) ),
+            <?php printf(
+                esc_html( _n( 'Showing %s property found', 'Showing %s properties found', $total_rows, 'moga-travel' ) ),
                 '<strong>' . esc_html( number_format_i18n( $total_rows ) ) . '</strong>'
-            );
-            ?>
+            ); ?>
         </p>
-        <a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=moga_property' ) ); ?>"
-           class="moga-btn moga-btn--primary moga-btn--sm"
-           target="_blank" rel="noopener noreferrer">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
-                 fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                 stroke-width="2.5" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        <span class="moga-db-table-meta__updated">
+            <?php esc_html_e( 'Updated just now', 'moga-travel' ); ?>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
             </svg>
-            <?php esc_html_e( 'Add Property', 'moga-travel' ); ?>
-        </a>
+        </span>
     </div>
 
     <?php // ── Properties Table ──────────────────────────────────────────────── ?>
@@ -553,12 +626,14 @@ $currency_symbol = get_option( 'moga_currency_symbol', '$' );
 
             <?php
             $pagination_args = array_filter( array(
-                'tab'       => 'all-properties',
-                'pp_status' => $filter_status,
-                'pp_type'   => $filter_type > 0 ? $filter_type : '',
-                'pp_search' => $filter_search,
-                'pp_order'  => $orderby !== 'post_date' ? $orderby : '',
-                'pp_dir'    => $order !== 'DESC' ? $order : '',
+                'tab'          => 'all-properties',
+                'pp_status'    => $filter_status,
+                'pp_type'      => $filter_type > 0 ? $filter_type : '',
+                'pp_search'    => $filter_search,
+                'pp_owner'     => $filter_owner > 0 ? $filter_owner : '',
+                'pp_order'     => $orderby !== 'post_date' ? $orderby : '',
+                'pp_dir'       => $order !== 'DESC' ? $order : '',
+                'pp_per_page'  => $per_page !== 20 ? $per_page : '',
             ) );
             $page_base = add_query_arg( $pagination_args, $dashboard_url );
 

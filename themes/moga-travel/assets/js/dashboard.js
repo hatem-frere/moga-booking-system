@@ -5,6 +5,7 @@
  * 2. Mobile drawer open/close
  * 3. AJAX tab content loading
  * 4. URL update via history.pushState
+ * 5. Filter panel expand/collapse (all admin tabs)
  *
  * @package MogaTravel
  * @since   1.0.0
@@ -190,10 +191,17 @@
     document.addEventListener('click', function (e) {
         var el = e.target.closest('[data-tab]');
         if (!el) { return; }
-        // Let external / card-grid links navigate normally.
+        // Let external links navigate normally.
         if (el.getAttribute('target') === '_blank') { return; }
+        // Let card-grid links navigate normally.
         if (el.closest('.moga-db-admin-overview__card-links')) { return; }
+        // Let logout links navigate normally.
         if (el.tagName === 'A' && el.href && el.href.indexOf('logout') !== -1) { return; }
+        // Let quick filter chips do a FULL page reload — no AJAX.
+        // Chips carry query-string params that the PHP needs to process server-side.
+        if (el.closest('.moga-db-toolbar__quick')) { return; }
+        // Let toolbar Clear/Apply actions do full page reloads.
+        if (el.closest('.moga-db-toolbar')) { return; }
 
         e.preventDefault();
         closeAll();
@@ -204,6 +212,34 @@
     // Browser back/forward.
     window.addEventListener('popstate', function (e) {
         if (e.state && e.state.tab) { goToTab(e.state.tab); }
+    });
+
+    // ── 5. Filter panel toggle ────────────────────────────────────────
+    // Expands/collapses the advanced filter panel on all admin tabs.
+
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.moga-db-toolbar__filter-toggle');
+        if (!btn) { return; }
+        var targetId = btn.getAttribute('aria-controls');
+        var panel    = targetId ? document.getElementById(targetId) : null;
+        if (!panel)  { return; }
+        var isOpen = panel.classList.contains('is-open');
+        panel.classList.toggle('is-open', !isOpen);
+        btn.setAttribute('aria-expanded', String(!isOpen));
+    });
+
+    // ── 6. Search input keyboard shortcut ────────────────────────────
+    // Focus search input when ⌘K or Ctrl+K is pressed.
+
+    document.addEventListener('keydown', function (e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            var input = document.querySelector('.moga-db-toolbar__search-input');
+            if (input) {
+                e.preventDefault();
+                input.focus();
+                input.select();
+            }
+        }
     });
 
 }());

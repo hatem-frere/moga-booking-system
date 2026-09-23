@@ -28,15 +28,16 @@ $current_url   = add_query_arg( 'tab', 'all-bookings', $dashboard_url );
 
 // ── Sanitize filter inputs ────────────────────────────────────────────────────
 
-$filter_status  = isset( $_GET['bk_status'] )  ? sanitize_key( $_GET['bk_status'] )  : '';
-$filter_type    = isset( $_GET['bk_type'] )    ? sanitize_key( $_GET['bk_type'] )    : '';
-$filter_search  = isset( $_GET['bk_search'] )  ? sanitize_text_field( wp_unslash( $_GET['bk_search'] ) ) : '';
-$filter_date_from = isset( $_GET['bk_from'] )  ? sanitize_text_field( $_GET['bk_from'] ) : '';
-$filter_date_to   = isset( $_GET['bk_to'] )    ? sanitize_text_field( $_GET['bk_to'] )   : '';
-$orderby        = isset( $_GET['bk_order'] )   ? sanitize_key( $_GET['bk_order'] )   : 'created_at';
+$filter_status  = isset( $_GET['bk_status'] )   ? sanitize_key( $_GET['bk_status'] )  : '';
+$filter_type    = isset( $_GET['bk_type'] )     ? sanitize_key( $_GET['bk_type'] )    : '';
+$filter_search  = isset( $_GET['bk_search'] )   ? sanitize_text_field( wp_unslash( $_GET['bk_search'] ) ) : '';
+$filter_date_from = isset( $_GET['bk_from'] )   ? sanitize_text_field( $_GET['bk_from'] ) : '';
+$filter_date_to   = isset( $_GET['bk_to'] )     ? sanitize_text_field( $_GET['bk_to'] )   : '';
+$orderby        = isset( $_GET['bk_order'] )    ? sanitize_key( $_GET['bk_order'] )   : 'created_at';
 $order          = isset( $_GET['bk_dir'] ) && strtoupper( $_GET['bk_dir'] ) === 'ASC' ? 'ASC' : 'DESC';
-$paged          = isset( $_GET['bk_paged'] )   ? max( 1, (int) $_GET['bk_paged'] )   : 1;
-$per_page       = 20;
+$paged          = isset( $_GET['bk_paged'] )    ? max( 1, (int) $_GET['bk_paged'] )   : 1;
+$per_page       = isset( $_GET['bk_per_page'] ) ? (int) $_GET['bk_per_page']           : 20;
+$per_page       = in_array( $per_page, array( 10, 20, 25, 50, 100 ), true ) ? $per_page : 20;
 $offset         = ( $paged - 1 ) * $per_page;
 
 // Allowed orderby columns — whitelist to prevent SQL injection.
@@ -241,12 +242,16 @@ function moga_sort_indicator( $col, $current_orderby, $current_order ) {
 // Currency symbol.
 $currency_symbol = get_option( 'moga_currency_symbol', '$' );
 
-// Active filter count — for badge on filter toggle button.
-$active_filter_count = (int) ( $filter_status !== '' )
-                     + (int) ( $filter_type !== '' )
-                     + (int) ( $filter_search !== '' )
-                     + (int) ( $filter_date_from !== '' )
-                     + (int) ( $filter_date_to !== '' );
+// Active filter count — only counts params set via the Filters panel,
+// NOT via quick chips (chip=1 means it was set by a chip click).
+$bk_via_chip = ! empty( $_GET['bk_chip'] );
+
+$active_filter_count = $bk_via_chip ? 0 :
+    (int) ( $filter_status !== '' )
+  + (int) ( $filter_type !== '' )
+  + (int) ( $filter_search !== '' )
+  + (int) ( $filter_date_from !== '' )
+  + (int) ( $filter_date_to !== '' );
 ?>
 
 <div class="moga-db-all-bookings">
@@ -288,83 +293,165 @@ $active_filter_count = (int) ( $filter_status !== '' )
 
     </div>
 
-    <?php // ── Toolbar: search + filter toggle ──────────────────────────────── ?>
+    <?php // ── Toolbar ───────────────────────────────────────────────────────── ?>
     <div class="moga-db-toolbar">
-
         <form method="get" action="<?php echo esc_url( $current_url ); ?>"
               class="moga-db-toolbar__form" id="moga-bk-filter-form">
 
-            <?php // Preserve tab param. ?>
             <input type="hidden" name="tab" value="all-bookings">
+            <?php if ( $orderby !== 'created_at' ) : ?><input type="hidden" name="bk_order" value="<?php echo esc_attr( $orderby ); ?>"><?php endif; ?>
+            <?php if ( $order !== 'DESC' ) : ?><input type="hidden" name="bk_dir" value="<?php echo esc_attr( $order ); ?>"><?php endif; ?>
 
-            <?php // Preserve sort state when filtering. ?>
-            <?php if ( $orderby !== 'created_at' ) : ?>
-                <input type="hidden" name="bk_order" value="<?php echo esc_attr( $orderby ); ?>">
-            <?php endif; ?>
-            <?php if ( $order !== 'DESC' ) : ?>
-                <input type="hidden" name="bk_dir" value="<?php echo esc_attr( $order ); ?>">
-            <?php endif; ?>
+            <?php // ── Top row: search LEFT | actions RIGHT ── ?>
+            <div class="moga-db-toolbar__top">
 
-            <div class="moga-db-toolbar__search">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                     stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
-                </svg>
-                <input type="text"
-                       name="bk_search"
-                       value="<?php echo esc_attr( $filter_search ); ?>"
-                       placeholder="<?php esc_attr_e( 'Search by booking #, guest, or listing…', 'moga-travel' ); ?>"
-                       class="moga-db-toolbar__search-input"
-                       autocomplete="off">
+                <div class="moga-db-toolbar__search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+                    </svg>
+                    <input type="text" name="bk_search"
+                           value="<?php echo esc_attr( $filter_search ); ?>"
+                           placeholder="<?php esc_attr_e( 'Search by booking #, guest, or listing…', 'moga-travel' ); ?>"
+                           class="moga-db-toolbar__search-input" autocomplete="off">
+                    <span class="moga-db-toolbar__kbd">⌘K</span>
+                </div>
+
+                <div class="moga-db-toolbar__actions">
+
+                    <?php // Filters button ?>
+                    <button type="button"
+                            class="moga-db-toolbar__filter-toggle"
+                            id="moga-bk-filter-toggle"
+                            aria-expanded="<?php echo $active_filter_count > 0 ? 'true' : 'false'; ?>"
+                            aria-controls="moga-bk-filters">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M7 10h10M10 16h4"/>
+                        </svg>
+                        <?php esc_html_e( 'Filters', 'moga-travel' ); ?>
+                        <?php if ( $active_filter_count > 0 ) : ?>
+                            <span class="moga-db-toolbar__filter-badge"><?php echo esc_html( $active_filter_count ); ?></span>
+                        <?php endif; ?>
+                    </button>
+
+                    <?php // Per-page select ?>
+                    <select name="bk_per_page" class="moga-db-toolbar__per-page-select"
+                            onchange="this.form.submit()">
+                        <?php foreach ( array( 10, 20, 25, 50, 100 ) as $n ) : ?>
+                            <option value="<?php echo esc_attr( $n ); ?>" <?php selected( $per_page, $n ); ?>>
+                                <?php echo esc_html( $n ); ?> / <?php esc_html_e( 'page', 'moga-travel' ); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+
+                    <?php // New Booking CTA ?>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=moga-bookings' ) ); ?>"
+                       class="moga-db-toolbar__cta" target="_blank">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none"
+                             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        <?php esc_html_e( 'New Booking', 'moga-travel' ); ?>
+                    </a>
+
+                </div>
             </div>
 
-            <button type="button"
-                    class="moga-db-toolbar__filter-toggle"
-                    id="moga-bk-filter-toggle"
-                    aria-expanded="false"
-                    aria-controls="moga-bk-filters">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"
-                     fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                     stroke-width="2" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M3 4h18M7 10h10M10 16h4"/>
-                </svg>
-                <?php esc_html_e( 'Filters', 'moga-travel' ); ?>
-                <?php if ( $active_filter_count > 0 ) : ?>
-                    <span class="moga-db-toolbar__filter-badge"><?php echo esc_html( $active_filter_count ); ?></span>
-                <?php endif; ?>
-            </button>
+            <?php // ── Quick filter chips — full page navigation, no AJAX ── ?>
+            <div class="moga-db-toolbar__quick">
+                <span class="moga-db-toolbar__quick-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <?php esc_html_e( 'Quick:', 'moga-travel' ); ?>
+                </span>
 
-            <?php // ── Expandable filter panel ───────────────────────────────── ?>
+                <?php
+                $bk_chips = array(
+                    array(
+                        'label'  => __( 'All Bookings', 'moga-travel' ),
+                        'dot'    => '',
+                        'active' => ( $filter_status === '' && $filter_type === '' && $filter_search === '' && empty( $_GET['bk_pay'] ) ),
+                        'url'    => add_query_arg( array( 'tab' => 'all-bookings', 'bk_chip' => '1' ), $dashboard_url ),
+                    ),
+                    array(
+                        'label'  => __( 'Pending Approval', 'moga-travel' ),
+                        'dot'    => '#f59e0b',
+                        'active' => ( $filter_status === 'pending' ),
+                        'url'    => add_query_arg( array( 'tab' => 'all-bookings', 'bk_status' => 'pending',   'bk_chip' => '1' ), $dashboard_url ),
+                    ),
+                    array(
+                        'label'  => __( 'Confirmed', 'moga-travel' ),
+                        'dot'    => '#10b981',
+                        'active' => ( $filter_status === 'confirmed' ),
+                        'url'    => add_query_arg( array( 'tab' => 'all-bookings', 'bk_status' => 'confirmed', 'bk_chip' => '1' ), $dashboard_url ),
+                    ),
+                    array(
+                        'label'  => __( 'Unpaid', 'moga-travel' ),
+                        'dot'    => '#ef4444',
+                        'active' => ( isset( $_GET['bk_pay'] ) && sanitize_key( $_GET['bk_pay'] ) === 'unpaid' ),
+                        'url'    => add_query_arg( array( 'tab' => 'all-bookings', 'bk_pay' => 'unpaid',       'bk_chip' => '1' ), $dashboard_url ),
+                    ),
+                    array(
+                        'label'  => __( 'Tours Only', 'moga-travel' ),
+                        'dot'    => '#8b5cf6',
+                        'active' => ( $filter_type === 'tour' ),
+                        'url'    => add_query_arg( array( 'tab' => 'all-bookings', 'bk_type' => 'tour',        'bk_chip' => '1' ), $dashboard_url ),
+                    ),
+                );
+                foreach ( $bk_chips as $chip ) :
+                ?>
+                    <a href="<?php echo esc_url( $chip['url'] ); ?>"
+                       class="moga-db-toolbar__chip<?php echo $chip['active'] ? ' is-active' : ''; ?>">
+                        <?php if ( $chip['dot'] ) : ?>
+                            <span class="moga-db-toolbar__chip-dot"
+                                  style="background:<?php echo esc_attr( $chip['dot'] ); ?>;"></span>
+                        <?php endif; ?>
+                        <?php echo esc_html( $chip['label'] ); ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+
+            <?php // ── Advanced filter panel — all fields in ONE row ── ?>
             <div class="moga-db-toolbar__filters<?php echo $active_filter_count > 0 ? ' is-open' : ''; ?>"
                  id="moga-bk-filters">
 
                 <div class="moga-db-toolbar__filters-row">
 
                     <div class="moga-db-toolbar__filter-group">
-                        <label for="moga-bk-status"><?php esc_html_e( 'Status', 'moga-travel' ); ?></label>
+                        <label for="moga-bk-status"><?php esc_html_e( 'Booking Status', 'moga-travel' ); ?></label>
                         <select name="bk_status" id="moga-bk-status" class="moga-db-toolbar__select">
                             <option value=""><?php esc_html_e( 'All Statuses', 'moga-travel' ); ?></option>
-                            <?php
-                            $statuses = array(
+                            <?php foreach ( array(
                                 'pending'   => __( 'Pending',   'moga-travel' ),
                                 'confirmed' => __( 'Confirmed', 'moga-travel' ),
                                 'completed' => __( 'Completed', 'moga-travel' ),
                                 'cancelled' => __( 'Cancelled', 'moga-travel' ),
                                 'refunded'  => __( 'Refunded',  'moga-travel' ),
                                 'no_show'   => __( 'No Show',   'moga-travel' ),
-                            );
-                            foreach ( $statuses as $val => $label ) :
-                                printf(
-                                    '<option value="%s"%s>%s</option>',
-                                    esc_attr( $val ),
-                                    selected( $filter_status, $val, false ),
-                                    esc_html( $label )
-                                );
-                            endforeach;
-                            ?>
+                            ) as $val => $label ) :
+                                printf( '<option value="%s"%s>%s</option>', esc_attr( $val ), selected( $filter_status, $val, false ), esc_html( $label ) );
+                            endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="moga-db-toolbar__filter-group">
+                        <label for="moga-bk-pay"><?php esc_html_e( 'Payment Status', 'moga-travel' ); ?></label>
+                        <select name="bk_pay" id="moga-bk-pay" class="moga-db-toolbar__select">
+                            <option value=""><?php esc_html_e( 'All Payments', 'moga-travel' ); ?></option>
+                            <?php
+                            $selected_pay = isset( $_GET['bk_pay'] ) ? sanitize_key( $_GET['bk_pay'] ) : '';
+                            foreach ( array(
+                                'unpaid'         => __( 'Unpaid',         'moga-travel' ),
+                                'paid'           => __( 'Paid',           'moga-travel' ),
+                                'partially_paid' => __( 'Partially Paid', 'moga-travel' ),
+                                'refunded'       => __( 'Refunded',       'moga-travel' ),
+                            ) as $val => $label ) :
+                                printf( '<option value="%s"%s>%s</option>', esc_attr( $val ), selected( $selected_pay, $val, false ), esc_html( $label ) );
+                            endforeach; ?>
                         </select>
                     </div>
 
@@ -372,72 +459,63 @@ $active_filter_count = (int) ( $filter_status !== '' )
                         <label for="moga-bk-type"><?php esc_html_e( 'Type', 'moga-travel' ); ?></label>
                         <select name="bk_type" id="moga-bk-type" class="moga-db-toolbar__select">
                             <option value=""><?php esc_html_e( 'All Types', 'moga-travel' ); ?></option>
-                            <?php
-                            $types = array(
+                            <?php foreach ( array(
                                 'property' => __( 'Property', 'moga-travel' ),
                                 'tour'     => __( 'Tour',     'moga-travel' ),
                                 'bus'      => __( 'Bus',      'moga-travel' ),
                                 'rental'   => __( 'Rental',   'moga-travel' ),
-                            );
-                            foreach ( $types as $val => $label ) :
-                                printf(
-                                    '<option value="%s"%s>%s</option>',
-                                    esc_attr( $val ),
-                                    selected( $filter_type, $val, false ),
-                                    esc_html( $label )
-                                );
-                            endforeach;
-                            ?>
+                            ) as $val => $label ) :
+                                printf( '<option value="%s"%s>%s</option>', esc_attr( $val ), selected( $filter_type, $val, false ), esc_html( $label ) );
+                            endforeach; ?>
                         </select>
                     </div>
 
                     <div class="moga-db-toolbar__filter-group">
-                        <label for="moga-bk-from"><?php esc_html_e( 'Check-in From', 'moga-travel' ); ?></label>
-                        <input type="date"
-                               name="bk_from"
-                               id="moga-bk-from"
-                               value="<?php echo esc_attr( $filter_date_from ); ?>"
-                               class="moga-db-toolbar__input">
-                    </div>
-
-                    <div class="moga-db-toolbar__filter-group">
-                        <label for="moga-bk-to"><?php esc_html_e( 'Check-out To', 'moga-travel' ); ?></label>
-                        <input type="date"
-                               name="bk_to"
-                               id="moga-bk-to"
-                               value="<?php echo esc_attr( $filter_date_to ); ?>"
-                               class="moga-db-toolbar__input">
+                        <label><?php esc_html_e( 'Date Range', 'moga-travel' ); ?></label>
+                        <div class="moga-db-toolbar__date-range">
+                            <input type="date" name="bk_from" id="moga-bk-from"
+                                   value="<?php echo esc_attr( $filter_date_from ); ?>"
+                                   class="moga-db-toolbar__input">
+                            <span class="moga-db-toolbar__date-sep">–</span>
+                            <input type="date" name="bk_to" id="moga-bk-to"
+                                   value="<?php echo esc_attr( $filter_date_to ); ?>"
+                                   class="moga-db-toolbar__input">
+                        </div>
                     </div>
 
                 </div>
 
                 <div class="moga-db-toolbar__filters-actions">
-                    <button type="submit" class="moga-btn moga-btn--primary moga-btn--sm">
+                    <a href="<?php echo esc_url( add_query_arg( 'tab', 'all-bookings', $dashboard_url ) ); ?>"
+                       class="moga-db-toolbar__btn-clear">
+                        <?php esc_html_e( 'Clear Filters', 'moga-travel' ); ?>
+                    </a>
+                    <button type="submit" class="moga-db-toolbar__btn-apply">
                         <?php esc_html_e( 'Apply Filters', 'moga-travel' ); ?>
                     </button>
-                    <a href="<?php echo esc_url( add_query_arg( 'tab', 'all-bookings', $dashboard_url ) ); ?>"
-                       class="moga-btn moga-btn--ghost moga-btn--sm">
-                        <?php esc_html_e( 'Clear', 'moga-travel' ); ?>
-                    </a>
                 </div>
 
             </div>
 
         </form>
-
     </div>
 
     <?php // ── Results summary ───────────────────────────────────────────────── ?>
     <div class="moga-db-table-meta">
         <p class="moga-db-table-meta__count">
-            <?php
-            printf(
-                /* translators: 1: number of results */
-                esc_html( _n( '%s booking found', '%s bookings found', $total_rows, 'moga-travel' ) ),
+            <?php printf(
+                esc_html( _n( 'Showing %s booking found', 'Showing %s bookings found', $total_rows, 'moga-travel' ) ),
                 '<strong>' . esc_html( number_format_i18n( $total_rows ) ) . '</strong>'
-            );
-            ?>
+            ); ?>
         </p>
+        <span class="moga-db-table-meta__updated">
+            <?php esc_html_e( 'Updated just now', 'moga-travel' ); ?>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+        </span>
     </div>
 
     <?php // ── Bookings Table ────────────────────────────────────────────────── ?>
@@ -673,14 +751,15 @@ $active_filter_count = (int) ( $filter_status !== '' )
             <?php
             // Build base URL preserving all active filters.
             $pagination_args = array_filter( array(
-                'tab'       => 'all-bookings',
-                'bk_status' => $filter_status,
-                'bk_type'   => $filter_type,
-                'bk_search' => $filter_search,
-                'bk_from'   => $filter_date_from,
-                'bk_to'     => $filter_date_to,
-                'bk_order'  => $orderby !== 'created_at' ? $orderby : '',
-                'bk_dir'    => $order !== 'DESC' ? $order : '',
+                'tab'          => 'all-bookings',
+                'bk_status'    => $filter_status,
+                'bk_type'      => $filter_type,
+                'bk_search'    => $filter_search,
+                'bk_from'      => $filter_date_from,
+                'bk_to'        => $filter_date_to,
+                'bk_order'     => $orderby !== 'created_at' ? $orderby : '',
+                'bk_dir'       => $order !== 'DESC' ? $order : '',
+                'bk_per_page'  => $per_page !== 20 ? $per_page : '',
             ) );
             $page_base = add_query_arg( $pagination_args, $dashboard_url );
 
