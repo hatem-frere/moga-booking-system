@@ -271,6 +271,12 @@ class Moga_Booking
             $availability_manager->block_dates($listing_id, $availability_type, $check_in, $check_out, $booking_id);
         }
 
+        // Fire notification hook — triggers guest confirmation + owner alert.
+        $new_booking = $this->get_booking( $booking_id );
+        if ( $new_booking ) {
+            do_action( 'moga_booking_created', $booking_id, $new_booking );
+        }
+
         return $booking_id;
     }
 
@@ -470,9 +476,26 @@ class Moga_Booking
             array('%d')
         );
 
-        return false !== $updated
-            ? true
-            : new WP_Error('db_error', __('Could not update booking status.', 'moga-travel-core'));
+        if ( false !== $updated ) {
+            // Fire notification hooks for relevant status transitions.
+            $booking = $this->get_booking( $booking_id );
+            if ( $booking ) {
+                switch ( $new_status ) {
+                    case 'confirmed':
+                        do_action( 'moga_booking_confirmed', $booking_id, $booking );
+                        break;
+                    case 'cancelled':
+                        do_action( 'moga_booking_cancelled', $booking_id, $booking );
+                        break;
+                    case 'completed':
+                        do_action( 'moga_booking_completed', $booking_id, $booking );
+                        break;
+                }
+            }
+            return true;
+        }
+
+        return new WP_Error('db_error', __('Could not update booking status.', 'moga-travel-core'));
     }
 
     /**

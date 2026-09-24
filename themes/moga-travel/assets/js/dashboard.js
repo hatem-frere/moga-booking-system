@@ -242,4 +242,47 @@
         }
     });
 
+    // ── 7. Resend notification (notifications log) ────────────────
+    // Handles click on .moga-nl-resend-btn buttons in the log table.
+
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.moga-nl-resend-btn');
+        if (!btn) { return; }
+
+        var logId = btn.getAttribute('data-log-id');
+        var nonce = btn.getAttribute('data-nonce');
+        if (!logId || !nonce) { return; }
+
+        if (!confirm(mogaDashboardData.i18n && mogaDashboardData.i18n.resendConfirm
+            ? mogaDashboardData.i18n.resendConfirm
+            : 'Resend this notification?')) { return; }
+
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+
+        var body = new FormData();
+        body.append('action', 'moga_resend_notification');
+        body.append('nonce',  nonce);
+        body.append('log_id', logId);
+
+        fetch(cfg.ajaxUrl, { method: 'POST', body: body })
+            .then(function (r) { return r.json(); })
+            .then(function (json) {
+                if (json.success) {
+                    btn.style.opacity = '1';
+                    btn.title = json.data && json.data.message ? json.data.message : 'Resent!';
+                    btn.style.color = '#10b981';
+                } else {
+                    alert(json.data && json.data.message ? json.data.message : 'Failed to resend.');
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }
+            })
+            .catch(function () {
+                alert('Request failed. Please try again.');
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            });
+    });
+
 }());

@@ -346,6 +346,12 @@ class Moga_Activator
         dbDelta($sql_loc_provinces);
         dbDelta($sql_loc_cities);
         dbDelta($sql_loc_districts);
+
+        // Notifications log table — created via the notification class
+        // so it stays in sync with Moga_Notification::create_table().
+        if ( class_exists( 'Moga_Notification' ) ) {
+            Moga_Notification::create_table();
+        }
     }
 
 

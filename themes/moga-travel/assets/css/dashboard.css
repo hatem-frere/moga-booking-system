@@ -2512,6 +2512,11 @@ body.page-template-template-dashboard .moga-main {
     border-color: #3b82f6;
     color: #2563eb;
 }
+.moga-db-table__action--edit:hover {
+    border-color: #f59e0b;
+    color: #d97706;
+    background: #fffbeb;
+}
 .moga-db-table__action--confirm:hover {
     border-color: #10b981;
     color: #059669;
@@ -2521,6 +2526,14 @@ body.page-template-template-dashboard .moga-main {
     border-color: #ef4444;
     color: #dc2626;
     background: #fef2f2;
+}
+
+/* Resend button — button element styled like an action icon */
+.moga-nl-resend-btn {
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .moga-db-table__empty {
@@ -2656,4 +2669,73 @@ body.page-template-template-dashboard .moga-main {
     .moga-db-toolbar__filters-row {
         grid-template-columns: 1fr;
     }
+}
+
+/* ============================================================
+   Notifications Log — specific styles
+   ============================================================ */
+
+.moga-db-nl__type-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--moga-gray-700, #374151);
+    white-space: nowrap;
+}
+
+.moga-db-nl__recipient {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.moga-db-nl__recipient-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--moga-gray-900, #111827);
+}
+
+.moga-db-nl__recipient-email {
+    font-size: 0.75rem;
+    color: var(--moga-gray-400, #9ca3af);
+}
+
+.moga-db-nl__subject {
+    font-size: 0.82rem;
+    color: var(--moga-gray-700, #374151);
+    display: block;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.moga-db-nl__booking-link {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--moga-primary, #003580);
+    text-decoration: none;
+    font-family: monospace;
+}
+
+.moga-db-nl__booking-link:hover {
+    text-decoration: underline;
+}
+
+.moga-db-nl__error-hint {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--moga-danger, #dc2626);
+    margin-top: 2px;
+    cursor: help;
+}
+
+.moga-db-table__td--muted {
+    color: var(--moga-gray-300, #d1d5db);
+    font-size: 0.82rem;
+}
+
+.moga-db-table__empty-hint {
+    font-size: 0.78rem;
+    color: var(--moga-gray-400, #9ca3af);
+    margin-top: 4px;
 }
